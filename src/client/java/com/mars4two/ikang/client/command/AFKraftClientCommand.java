@@ -1,5 +1,7 @@
 package com.mars4two.ikang.client.command;
 
+import com.mars4two.ikang.client.screens.QRModalScreen;
+import com.mars4two.ikang.client.util.DtoEncryptor;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -20,10 +22,18 @@ import java.util.concurrent.CompletableFuture;
 public class AFKraftClientCommand {
     
     private static final Logger LOGGER = LoggerFactory.getLogger("AFKraft");
+
     //private static final String BACKEND_URL = "http://localhost:4242/core/auth";
-    private static final String BACKEND_URL = "https://api-mvp.afkraft.com/core/auth";
+    private static final String BACKEND_URL = "https://api-mvp.afkraft.com/core";
+
+    private static final String CONNECT_URL = "https://afkraft.com/connect";
+
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
-    
+
+    private AFKraftClientCommand() {
+        // Command class, no instances allowed
+    }
+
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(
             LiteralArgumentBuilder.<FabricClientCommandSource>literal("afkraft")
@@ -41,11 +51,12 @@ public class AFKraftClientCommand {
             return 0;
         }
         
-        source.sendFeedback(Component.literal("Iniciando enlace..."));
+        source.sendFeedback(Component.literal("Conectando a AFKraft Companion..."));
         
         var sessionService = minecraft.services().sessionService();
         var user = minecraft.getUser();
         UUID profileId = user.getProfileId();
+//        UUID profileId = UUID.fromString("2c349e41-d68a-49e3-9385-111bb484ed32");
         String username = user.getName();
         
         LOGGER.info("[AFKraft] Iniciando autenticación para usuario: {} ({})", username, profileId);
@@ -54,19 +65,23 @@ public class AFKraftClientCommand {
             try {
                 LOGGER.debug("[AFKraft] Paso 1: Solicitando serverId al backend...");
                 String serverId = requestServerId(profileId);
+//                String serverId = "a7830bd9-3a7d-4792-a9cc-00607520106f";
                 LOGGER.info("[AFKraft] serverId obtenido: {}", serverId);
 
                 LOGGER.debug("[AFKraft] Paso 2: Realizando joinServer con Mojang...");
-                sessionService.joinServer(profileId, user.getAccessToken(), serverId);
+                sessionService.joinServer(profileId, user.getAccessToken(), serverId);  // Comment in local dev
                 LOGGER.info("[AFKraft] joinServer completado exitosamente");
 
                 LOGGER.debug("[AFKraft] Paso 3: Validando con hasJoined en backend...");
-                validateHasJoined(username, serverId, profileId);
+                validateHasJoined(username, serverId, profileId);                                       // Comment in local dev
                 LOGGER.info("[AFKraft] Validación hasJoined exitosa");
 
-                minecraft.execute(() -> 
-                    source.sendFeedback(Component.literal("Conexión establecida correctamente"))
-                );
+                String connectUrl = generateConnectUrl(profileId, UUID.fromString(serverId));
+
+                minecraft.execute(() -> {
+                    source.sendFeedback(Component.literal("Esperando aprobación de vinculación..."));
+                    minecraft.setScreenAndShow(new QRModalScreen(connectUrl));
+                });
                 
             } catch (AuthenticationException e) {
                 LOGGER.error("[AFKraft] Error de autenticación", e);
@@ -93,7 +108,7 @@ public class AFKraftClientCommand {
             String jsonBody = String.format("{\"profileId\":\"%s\"}", profileId.toString());
             
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BACKEND_URL + "/get-server"))
+                .uri(URI.create(BACKEND_URL + "/mod-auth/get-server"))
                 .header("Content-Type", "application/json")
                 .timeout(REQUEST_TIMEOUT)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -135,7 +150,7 @@ public class AFKraftClientCommand {
             );
             
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BACKEND_URL + "/has-joined"))
+                .uri(URI.create(BACKEND_URL + "/mod-auth/has-joined"))
                 .header("Content-Type", "application/json")
                 .timeout(REQUEST_TIMEOUT)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -156,6 +171,16 @@ public class AFKraftClientCommand {
         } catch (Exception e) {
             throw new AuthenticationException("Error de conexión con el backend: " + e.getMessage());
         }
+    }
+
+    private static String generateConnectUrl(UUID profileId, UUID serverId) {
+        LOGGER.info("Generating connect URL for profileId: {}, serverId: {}", profileId, serverId);
+        ConnectRequestContent content = new ConnectRequestContent(profileId, serverId);
+        String encryptedCode = DtoEncryptor.encryptToBase64Url(content);
+        String url = CONNECT_URL + "?code=" + encryptedCode;
+        LOGGER.info("Generated connect URL: {}", url);
+
+        return url;
     }
     
     private static class AuthenticationException extends Exception {
