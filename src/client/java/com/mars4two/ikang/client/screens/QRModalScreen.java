@@ -20,10 +20,15 @@ public class QRModalScreen extends Screen {
     private final int qrSize = 196;
     private DynamicTexture qrTexture;
     private Identifier qrTextureId;
+    private volatile Runnable onClosed = () -> {};
 
     public QRModalScreen(String url) {
         super(Component.literal("AFKraft: Conectar cuenta"));
         this.url = url;
+    }
+
+    public void setOnClosed(Runnable onClosed) {
+        this.onClosed = onClosed;
     }
 
     @Override
@@ -61,6 +66,7 @@ public class QRModalScreen extends Screen {
             Minecraft.getInstance().getTextureManager().release(this.qrTextureId);
             LOGGER.info("QR code image released successfully");
         }
+        this.onClosed.run();
     }
 
     @Override
