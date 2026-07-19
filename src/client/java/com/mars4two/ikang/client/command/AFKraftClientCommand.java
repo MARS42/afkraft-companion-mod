@@ -1,7 +1,7 @@
 package com.mars4two.ikang.client.command;
 
+import com.google.gson.Gson;
 import com.mars4two.ikang.client.screens.QRModalScreen;
-import com.mars4two.ikang.client.util.DtoEncryptor;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -26,9 +26,9 @@ public class AFKraftClientCommand {
     //private static final String BACKEND_URL = "http://localhost:4242/core/auth";
     private static final String BACKEND_URL = "https://api-mvp.afkraft.com/core";
 
-    private static final String CONNECT_URL = "https://afkraft.com/connect";
-
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+
+    private static final Gson GSON = new Gson();
 
     private AFKraftClientCommand() {
         // Command class, no instances allowed
@@ -73,10 +73,10 @@ public class AFKraftClientCommand {
                 LOGGER.info("[AFKraft] joinServer completado exitosamente");
 
                 LOGGER.debug("[AFKraft] Paso 3: Validando con hasJoined en backend...");
-                validateHasJoined(username, serverId, profileId);                                       // Comment in local dev
+                HasJoinedResponse hasJoined = validateHasJoined(username, serverId, profileId);       // Comment in local dev
                 LOGGER.info("[AFKraft] Validación hasJoined exitosa");
 
-                String connectUrl = generateConnectUrl(profileId, UUID.fromString(serverId));
+                String connectUrl = hasJoined.verificationUrl();
 
                 minecraft.execute(() -> {
                     source.sendFeedback(Component.literal("Esperando aprobación de vinculación..."));
@@ -137,50 +137,47 @@ public class AFKraftClientCommand {
         }
     }
     
-    private static void validateHasJoined(String username, String serverId, UUID profileId)
+    private static HasJoinedResponse validateHasJoined(String username, String serverId, UUID profileId)
             throws AuthenticationException {
         try {
             HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(REQUEST_TIMEOUT)
                 .build();
-            
+
             String jsonBody = String.format(
                 "{\"name\":\"%s\",\"serverId\":\"%s\",\"profileId\":\"%s\"}",
                 username, serverId, profileId.toString()
             );
-            
+
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BACKEND_URL + "/mod-auth/has-joined"))
                 .header("Content-Type", "application/json")
                 .timeout(REQUEST_TIMEOUT)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
-            
+
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            
+
             if (response.statusCode() == 401) {
                 throw new AuthenticationException("Validación fallida: credenciales inválidas");
             }
-            
-            if (response.statusCode() != 200 && response.statusCode() != 204) {
+
+            if (response.statusCode() != 200) {
                 throw new AuthenticationException("Error en validación (HTTP " + response.statusCode() + ")");
             }
-            
-        } catch (AuthenticationException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new AuthenticationException("Error de conexión con el backend: " + e.getMessage());
+
+            HasJoinedResponse dto = GSON.fromJson(response.body(), HasJoinedResponse.class);
+
+            if (dto == null || dto.verificationUrl() == null || dto.deviceCode() == null) {
+                throw new AuthenticationException("Invalid server response");
+            }
+
+            return dto;
+
+        }  catch (Exception e) {
+            LOGGER.error("Unexpected error during hasJoined validation: ", e);
+            throw new AuthenticationException(e.getMessage());
         }
-    }
-
-    private static String generateConnectUrl(UUID profileId, UUID serverId) {
-        LOGGER.info("Generating connect URL for profileId: {}, serverId: {}", profileId, serverId);
-        ConnectRequestContent content = new ConnectRequestContent(profileId, serverId);
-        String encryptedCode = DtoEncryptor.encryptToBase64Url(content);
-        String url = CONNECT_URL + "?code=" + encryptedCode;
-        LOGGER.info("Generated connect URL: {}", url);
-
-        return url;
     }
     
     private static class AuthenticationException extends Exception {
