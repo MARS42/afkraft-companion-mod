@@ -1,6 +1,6 @@
 package com.mars4two.ikang.client.screens;
 
-import com.mars4two.ikang.client.util.QRGenerator;
+import com.mars4two.ikang.client.core.util.QRGenerator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;

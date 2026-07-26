@@ -1,4 +1,4 @@
-package com.mars4two.ikang.client.util;
+package com.mars4two.ikang.client.core.util;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;

@@ -1,4 +1,4 @@
-package com.mars4two.ikang.client.command;
+package com.mars4two.ikang.client.core.auth.dtos;
 
 /**
  * Response DTO for the device authorization flow returned by /mod-auth/has-joined.

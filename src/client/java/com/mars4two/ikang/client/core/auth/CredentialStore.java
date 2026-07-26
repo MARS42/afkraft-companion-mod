@@ -1,7 +1,8 @@
-package com.mars4two.ikang.client.auth;
+package com.mars4two.ikang.client.core.auth;
 
 import com.google.gson.Gson;
-import com.mars4two.ikang.client.command.ModCredentialsResponse;
+import com.mars4two.ikang.client.core.auth.dtos.ModCredentials;
+import com.mars4two.ikang.client.core.auth.dtos.ModCredentialsResponse;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,41 +26,50 @@ public final class CredentialStore {
     private static final Path CREDENTIALS_FILE = FabricLoader.getInstance().getConfigDir()
         .resolve("afkraft").resolve("credentials.json");
 
-    private static volatile ModCredentialsResponse cached;
+    private static volatile ModCredentials cachedCredentials;
 
     private CredentialStore() {
         // Utility class, no instances allowed
     }
 
-    public static synchronized void save(ModCredentialsResponse credentials) {
+    public static synchronized void save(ModCredentialsResponse credentialsResponse) {
         try {
+            ModCredentials credentials = new ModCredentials(
+                credentialsResponse.access_token(),
+                credentialsResponse.expires_in(),
+                credentialsResponse.refresh_expires_in(),
+                credentialsResponse.refresh_token(),
+                credentialsResponse.token_type(),
+                credentialsResponse.scope()
+            );
+
             Files.createDirectories(CREDENTIALS_FILE.getParent());
             try (Writer writer = Files.newBufferedWriter(CREDENTIALS_FILE)) {
                 GSON.toJson(credentials, writer);
             }
             restrictToOwner(CREDENTIALS_FILE);
-            cached = credentials;
+            cachedCredentials = credentials;
             LOGGER.info("Mod credentials stored at {}", CREDENTIALS_FILE);
         } catch (IOException e) {
             LOGGER.error("Could not store mod credentials", e);
         }
     }
 
-    public static Optional<ModCredentialsResponse> load() {
-        ModCredentialsResponse current = cached;
+    public static Optional<ModCredentials> load() {
+        ModCredentials current = cachedCredentials;
         if (current != null) {
             return Optional.of(current);
         }
         synchronized (CredentialStore.class) {
-            if (cached != null) {
-                return Optional.of(cached);
+            if (cachedCredentials != null) {
+                return Optional.of(cachedCredentials);
             }
             if (!Files.exists(CREDENTIALS_FILE)) {
                 return Optional.empty();
             }
             try (Reader reader = Files.newBufferedReader(CREDENTIALS_FILE)) {
-                cached = GSON.fromJson(reader, ModCredentialsResponse.class);
-                return Optional.ofNullable(cached);
+                cachedCredentials = GSON.fromJson(reader, ModCredentials.class);
+                return Optional.ofNullable(cachedCredentials);
             } catch (Exception e) {
                 LOGGER.error("Could not read mod credentials", e);
                 return Optional.empty();
@@ -68,7 +78,7 @@ public final class CredentialStore {
     }
 
     public static synchronized void clear() {
-        cached = null;
+        cachedCredentials = null;
         try {
             Files.deleteIfExists(CREDENTIALS_FILE);
         } catch (IOException e) {
