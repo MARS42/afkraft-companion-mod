@@ -1,0 +1,13 @@
+package com.mars4two.ikang.client.core.worker.dtos;
+
+import com.mars4two.ikang.client.core.snapshots.SnapshotBase;
+
+import java.util.List;
+
+public record SnapshotsIngestRequest(List<SnapshotContent> snapshots) {
+    public record SnapshotContent(String name, Object data) {
+        public static <T extends SnapshotBase>SnapshotContent fromBase(T snapshotBase) {
+            return new SnapshotContent(snapshotBase.getSnapshotName(), snapshotBase);
+        }
+    }
+}
