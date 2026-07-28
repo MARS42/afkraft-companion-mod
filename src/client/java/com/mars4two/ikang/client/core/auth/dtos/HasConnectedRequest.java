@@ -1,5 +1,5 @@
 package com.mars4two.ikang.client.core.auth.dtos;
 
 
-public record HasConnectedRequest (String deviceId) {
+public record HasConnectedRequest (String deviceCode) {
 }
