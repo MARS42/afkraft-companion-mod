@@ -1,4 +1,4 @@
-package com.mars4two.ikang.client.screens;
+package com.mars4two.ikang.client.core.screens;
 
 import com.mars4two.ikang.client.core.util.QRGenerator;
 import net.minecraft.client.Minecraft;

@@ -8,7 +8,7 @@ import com.mars4two.ikang.client.core.config.HttpConfig;
 import com.mars4two.ikang.client.core.config.GsonConfig;
 import com.mars4two.ikang.client.core.auth.dtos.HasJoinedResponse;
 import com.mars4two.ikang.client.core.auth.dtos.ModCredentialsResponse;
-import com.mars4two.ikang.client.screens.QRModalScreen;
+import com.mars4two.ikang.client.core.screens.QRModalScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
