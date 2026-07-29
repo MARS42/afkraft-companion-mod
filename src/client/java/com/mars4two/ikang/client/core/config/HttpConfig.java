@@ -30,4 +30,8 @@ public class HttpConfig {
     public static URI getHasConnectedUri() {
         return URI.create(BACKEND_URL + "/mod-auth/has-connected");
     }
+
+    public static URI getSnapshotsIngestUri() {
+        return URI.create(BACKEND_URL + "/mod-worker/ingest");
+    }
 }

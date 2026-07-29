@@ -1,5 +1,9 @@
 package com.mars4two.ikang.client.core.worker;
 
+import com.mars4two.ikang.client.core.auth.AuthenticationException;
+import com.mars4two.ikang.client.core.auth.CredentialStore;
+import com.mars4two.ikang.client.core.config.GsonConfig;
+import com.mars4two.ikang.client.core.config.HttpConfig;
 import com.mars4two.ikang.client.core.snapshots.PlayerStatsSnapshot;
 import com.mars4two.ikang.client.core.snapshots.SnapshotBase;
 import com.mars4two.ikang.client.core.worker.dtos.SnapshotsIngestRequest;
@@ -8,6 +12,10 @@ import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,6 +26,7 @@ public abstract class AFKraftWorker {
 
     private long lastExecution = 0;
     private static final long INTERVAL_MS = 1500;
+    private final HttpClient client = HttpConfig.getHttpClient();
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "afkraft-event-worker");
@@ -56,9 +65,45 @@ public abstract class AFKraftWorker {
     }
 
     private <T extends SnapshotBase> void publishSnapshots(List<T> snapshots) {
-        var request = new SnapshotsIngestRequest(snapshots.stream()
-                .map(SnapshotsIngestRequest.SnapshotContent::fromBase)
-                .toList());
-        log.info("Publishing snapshots: {}", request);
+        try {
+            var request = new SnapshotsIngestRequest(snapshots.stream()
+                    .map(SnapshotsIngestRequest.SnapshotContent::fromBase)
+                    .toList());
+            log.info("Publishing snapshots: {}", request);
+            ingestSnapshots(request);
+        } catch (AuthenticationException e) {
+            log.error("Authentication error: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected backend error: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void ingestSnapshots(SnapshotsIngestRequest request) throws AuthenticationException, IOException, InterruptedException {
+
+        var credentials = CredentialStore.load();
+        if(credentials.isEmpty()) {
+            log.warn("Mod credentials not found");
+            return;
+        }
+
+        var jwt = credentials.get().accessToken();
+        String jsonBody = GsonConfig.toJson(request);
+
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(HttpConfig.getSnapshotsIngestUri())
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + jwt)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 401) {
+            throw new AuthenticationException("Mod credentials are invalid");
+        }
+        if(response.statusCode() >= 500) {
+            throw new AuthenticationException("Error ingesting snapshots (HTTP " + response.statusCode() + ")");
+        }
     }
 }
