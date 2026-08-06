@@ -34,4 +34,8 @@ public class HttpConfig {
     public static URI getSnapshotsIngestUri() {
         return URI.create(BACKEND_URL + "/mod-worker/ingest");
     }
+
+    public static URI getRefreshAccessTokenUri() {
+        return URI.create(BACKEND_URL + "/mod-auth/refresh-credentials");
+    }
 }

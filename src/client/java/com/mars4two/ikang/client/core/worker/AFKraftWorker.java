@@ -1,11 +1,10 @@
 package com.mars4two.ikang.client.core.worker;
 
-import com.mars4two.ikang.client.core.auth.AuthenticationException;
-import com.mars4two.ikang.client.core.auth.CredentialStore;
+import com.mars4two.ikang.client.core.auth.AuthService;
 import com.mars4two.ikang.client.core.config.GsonConfig;
 import com.mars4two.ikang.client.core.config.HttpConfig;
 import com.mars4two.ikang.client.core.snapshots.PlayerStatsSnapshot;
-import com.mars4two.ikang.client.core.snapshots.SnapshotBase;
+import com.mars4two.ikang.core.snapshots.SnapshotBase;
 import com.mars4two.ikang.client.core.worker.dtos.SnapshotsIngestRequest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.GameType;
@@ -65,45 +64,33 @@ public abstract class AFKraftWorker {
     }
 
     private <T extends SnapshotBase> void publishSnapshots(List<T> snapshots) {
-        try {
-            var request = new SnapshotsIngestRequest(snapshots.stream()
-                    .map(SnapshotsIngestRequest.SnapshotContent::fromBase)
-                    .toList());
-            log.info("Publishing snapshots: {}", request);
-            ingestSnapshots(request);
-        } catch (AuthenticationException e) {
-            log.error("Authentication error: {}", e.getMessage());
-        } catch (Exception e) {
-            log.error("Unexpected backend error: {}", e.getMessage());
-            Thread.currentThread().interrupt();
-        }
-    }
+        var request = new SnapshotsIngestRequest(snapshots.stream()
+                .map(SnapshotsIngestRequest.SnapshotContent::fromBase)
+                .toList());
+        log.info("Publishing snapshots: {}", request);
 
-    private void ingestSnapshots(SnapshotsIngestRequest request) throws AuthenticationException, IOException, InterruptedException {
+        AuthService.getAccessToken(accessToken -> {
 
-        var credentials = CredentialStore.load();
-        if(credentials.isEmpty()) {
-            log.warn("Mod credentials not found");
-            return;
-        }
+            if(accessToken.isEmpty()) {
+                log.warn("Mod credentials not found");
+                return;
+            }
 
-        var jwt = credentials.get().accessToken();
-        String jsonBody = GsonConfig.toJson(request);
+            try {
+                String jsonBody = GsonConfig.toJson(request);
 
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(HttpConfig.getSnapshotsIngestUri())
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + jwt)
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                .build();
+                HttpRequest httpRequest = HttpRequest.newBuilder()
+                        .uri(HttpConfig.getSnapshotsIngestUri())
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + accessToken.get())
+                        .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                        .build();
 
-        HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() == 401) {
-            throw new AuthenticationException("Mod credentials are invalid");
-        }
-        if(response.statusCode() >= 500) {
-            throw new AuthenticationException("Error ingesting snapshots (HTTP " + response.statusCode() + ")");
-        }
+                HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                log.info("Snapshots ingest response: {}", response.body());
+            }catch (Exception e) {
+                log.error("Error ingesting snapshots: {}", e.getMessage());
+            }
+        });
     }
 }

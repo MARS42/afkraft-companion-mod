@@ -1,6 +1,6 @@
 package com.mars4two.ikang.client.command;
 
-import com.mars4two.ikang.client.core.auth.AuthService;
+import com.mars4two.ikang.client.core.auth.ConnectService;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -24,7 +24,7 @@ public class AFKraftClientCommand {
     private static int executeConnect(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
 
-        return AuthService.executeConnect(
+        return ConnectService.executeConnect(
                 msg -> source.sendFeedback(Component.literal(msg)),
                 erroMsg -> source.sendError(Component.literal(erroMsg))
         );

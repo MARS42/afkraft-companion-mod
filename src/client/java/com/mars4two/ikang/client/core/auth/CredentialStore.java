@@ -19,12 +19,17 @@ import java.util.Optional;
  * Stores the mod credentials obtained from the device authorization flow.
  * Persists them as JSON under the config directory and keeps an in-memory cache.
  */
-public final class CredentialStore {
+final class CredentialStore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("AFKraft-CredentialStore");
     private static final Gson GSON = new Gson();
     private static final Path CREDENTIALS_FILE = FabricLoader.getInstance().getConfigDir()
         .resolve("afkraft").resolve("credentials.json");
+
+    private static final int ACCESS_TOKEN_EXPIRATION_THRESHOLD_SECONDS = 30;
+
+    private static volatile String accessToken;
+    private static volatile long accessTokenExpiresAt;
 
     private static volatile ModCredentials cachedCredentials;
 
@@ -34,9 +39,8 @@ public final class CredentialStore {
 
     public static synchronized void save(ModCredentialsResponse credentialsResponse) {
         try {
+            LOGGER.info("Saving mod credentials...");
             ModCredentials credentials = new ModCredentials(
-                credentialsResponse.access_token(),
-                credentialsResponse.expires_in(),
                 credentialsResponse.refresh_expires_in(),
                 credentialsResponse.refresh_token(),
                 credentialsResponse.token_type(),
@@ -48,6 +52,9 @@ public final class CredentialStore {
                 GSON.toJson(credentials, writer);
             }
             restrictToOwner(CREDENTIALS_FILE);
+            accessToken = credentialsResponse.access_token();
+            accessTokenExpiresAt = System.currentTimeMillis() + ((credentialsResponse.expires_in() * 1000) - (ACCESS_TOKEN_EXPIRATION_THRESHOLD_SECONDS * 1000));
+
             cachedCredentials = credentials;
             LOGGER.info("Mod credentials stored at {}", CREDENTIALS_FILE);
         } catch (IOException e) {
@@ -75,6 +82,21 @@ public final class CredentialStore {
                 return Optional.empty();
             }
         }
+    }
+
+    public static Optional<String> getAccessToken() {
+
+        if(accessToken == null) {
+            return Optional.empty();
+        }
+
+        if(System.currentTimeMillis() > accessTokenExpiresAt) {
+            LOGGER.info("Access token expired");
+            accessToken = null;
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(accessToken);
     }
 
     public static synchronized void clear() {
