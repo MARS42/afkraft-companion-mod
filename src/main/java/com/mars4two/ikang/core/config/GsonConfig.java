@@ -1,4 +1,4 @@
-package com.mars4two.ikang.client.core.config;
+package com.mars4two.ikang.core.config;
 
 import com.google.gson.Gson;
 
