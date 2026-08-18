@@ -1,9 +1,13 @@
 package com.mars4two.ikang.client.core.auth;
 
-import com.mars4two.ikang.client.core.auth.dtos.*;
-import com.mars4two.ikang.client.core.config.GsonConfig;
-import com.mars4two.ikang.client.core.config.HttpConfig;
+import com.mars4two.ikang.client.core.auth.dtos.ConnectRequest;
+import com.mars4two.ikang.client.core.auth.dtos.ConnectResponse;
 import com.mars4two.ikang.client.core.screens.QRModalScreen;
+import com.mars4two.ikang.core.auth.AuthService;
+import com.mars4two.ikang.core.auth.AuthenticationException;
+import com.mars4two.ikang.core.auth.dtos.*;
+import com.mars4two.ikang.core.config.GsonConfig;
+import com.mars4two.ikang.core.config.HttpConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
@@ -12,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -22,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-public class ConnectService {
+public class ClientConnectService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("afkraft-connect-service");
 
@@ -35,7 +38,7 @@ public class ConnectService {
         return thread;
     });
 
-    private ConnectService() {
+    private ClientConnectService() {
         // Utility class, no instances allowed
     }
 
@@ -55,7 +58,7 @@ public class ConnectService {
         CompletableFuture.runAsync(() -> {
             try {
                 LOGGER.debug("[AFKraft] Paso 1: Solicitando serverId al backend...");
-                String serverId = getServerId(profileId);
+                String serverId = AuthService.getServerId(profileId);
 //                String serverId = "a7830bd9-3a7d-4792-a9cc-00607520106f";
                 LOGGER.info("[AFKraft] serverId obtenido: {}", serverId);
 
@@ -64,13 +67,17 @@ public class ConnectService {
                 LOGGER.info("[AFKraft] joinServer completado exitosamente");
 
                 LOGGER.debug("[AFKraft] Paso 3: Validando con hasJoined en backend...");
-                HasJoinedResponse hasJoined = validateHasJoined(username, serverId, profileId);       // Comment in local dev
+                var hasJoinedResponse = AuthService.validateHasJoined(username, serverId, profileId);                                         // Comment in local dev
                 LOGGER.info("[AFKraft] Validación hasJoined exitosa");
 
-                String connectUrl = hasJoined.verificationUrl();
+                LOGGER.debug("[AFKraft] Paso 4: Realizando connect con AFKraft...");
+                ConnectResponse connectData = connect(serverId, profileId, hasJoinedResponse);
+                LOGGER.info("[AFKraft] connect completado exitosamente");
+
+                String connectUrl = connectData.verificationUrl();
 
                 var screen = new QRModalScreen(connectUrl);
-                validateHasConnected(hasJoined.deviceCode(), hasJoined.interval(), hasJoined.expiresIn(), screen);
+                validateHasConnected(connectData.deviceCode(), connectData.interval(), connectData.expiresIn(), screen);
 
                 minecraft.execute(() -> {
                     onFeedback.accept("Esperando aprobación de vinculación...");
@@ -89,39 +96,13 @@ public class ConnectService {
         return 1;
     }
 
-    private static String getServerId(UUID profileId) throws AuthenticationException {
-        try {
-            String jsonBody = GsonConfig.toJson(new GetServerIdRequest(profileId));
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getServerIdUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                throw new AuthenticationException("No se pudo obtener serverId (HTTP " + response.statusCode() + ")");
-            }
-
-            GetServerIdResponse responseDto = GsonConfig.fromJson(response.body(), GetServerIdResponse.class);
-            return responseDto.serverId();
-
-        } catch (AuthenticationException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new AuthenticationException("Error de conexión con el backend: " + e.getMessage());
-        }
-    }
-
-    private static HasJoinedResponse validateHasJoined(String username, String serverId, UUID profileId)
+    private static ConnectResponse connect(String serverId, UUID profileId, HasJoinedResponse hasJoinedResponse)
             throws AuthenticationException {
         try {
-            String jsonBody = GsonConfig.toJson(new HasJoinedRequest(username, serverId, profileId));
+            String jsonBody = GsonConfig.toJson(new ConnectRequest(serverId, profileId, hasJoinedResponse.joinOtp()));
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getHasJoinedUri())
+                    .uri(HttpConfig.getConnectUri())
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
@@ -136,7 +117,7 @@ public class ConnectService {
                 throw new AuthenticationException("Error en validación (HTTP " + response.statusCode() + ")");
             }
 
-            HasJoinedResponse dto = GsonConfig.fromJson(response.body(), HasJoinedResponse.class);
+            ConnectResponse dto = GsonConfig.fromJson(response.body(), ConnectResponse.class);
 
             if (dto == null || dto.verificationUrl() == null || dto.deviceCode() == null) {
                 throw new AuthenticationException("Invalid server response");
@@ -145,7 +126,7 @@ public class ConnectService {
             return dto;
 
         }  catch (Exception e) {
-            LOGGER.error("Unexpected error during hasJoined validation: ", e);
+            LOGGER.error("Unexpected error during connect request: ", e);
             throw new AuthenticationException(e.getMessage());
         }
     }
@@ -187,11 +168,9 @@ public class ConnectService {
                 return;
             }
 
-            Optional<ModCredentialsResponse> credentials = validateHasConnected(deviceCode)
-                    .filter(dto -> dto.access_token() != null && !dto.access_token().isBlank());
+            var hasConnected = validateHasConnected(deviceCode);
 
-            if (credentials.isPresent()) {
-                CredentialStore.save(credentials.get());
+            if (hasConnected) {
                 LOGGER.info("[AFKraft] Vinculación completada, credenciales del mod guardadas");
                 notifyUser(minecraft, "Cuenta vinculada con AFKraft correctamente");
                 closeModal(minecraft, screen);
@@ -202,7 +181,7 @@ public class ConnectService {
         }, interval, TimeUnit.SECONDS);
     }
 
-    private static Optional<ModCredentialsResponse> validateHasConnected(String deviceCode) {
+    private static boolean validateHasConnected(String deviceCode) {
         try {
             String jsonBody = GsonConfig.toJson(new HasConnectedRequest(deviceCode));
 
@@ -217,15 +196,14 @@ public class ConnectService {
 
             if (response.statusCode() != 200) {
                 LOGGER.warn("Has connected is not success (HTTP {}, Body: {}), retrying...", response.statusCode(), body);
-                return Optional.empty();
+                return false;
             }
 
-            ModCredentialsResponse dto = GsonConfig.fromJson(body, ModCredentialsResponse.class);
-            return Optional.ofNullable(dto);
+            return true;
 
         }  catch (Exception e) {
             LOGGER.error("Unexpected error during hasConnected validation: ", e);
-            return Optional.empty();
+            return false;
         }
     }
 
