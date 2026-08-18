@@ -3,7 +3,9 @@
 	"package": "com.mars4two.ikang.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"BlockItemMixin",
+		"BlockEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
