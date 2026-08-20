@@ -1,6 +1,7 @@
 package com.mars4two.ikang.client;
 
 import com.mars4two.ikang.client.command.AFKraftClientConnectCommand;
+import com.mars4two.ikang.client.command.AFKraftClientEnableCommand;
 import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.client.core.worker.AFKraftWorker;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
@@ -19,6 +20,7 @@ public class AFKraftCompanionClient extends AFKraftWorker implements ClientModIn
         // Registrar comandos client-side
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             AFKraftClientConnectCommand.register(dispatcher);
+            AFKraftClientEnableCommand.register(dispatcher);
         });
 
         ClientPlayNetworking.registerGlobalReceiver(GetCredentialsStatusClientboundPayload.TYPE, (payload, context) -> {
