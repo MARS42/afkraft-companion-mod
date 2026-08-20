@@ -1,6 +1,5 @@
 package com.mars4two.ikang;
 
-import com.mars4two.ikang.command.AFKraftConnectCommand;
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.events.ServerEvents;
 import com.mars4two.ikang.network.PayloadRegister;
@@ -8,7 +7,6 @@ import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServ
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsStatusServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.player.BlockEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -28,8 +26,6 @@ public class AFKraftCompanion implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		log.info("Hello Fabric world!");
-
-		CommandRegistrationCallback.EVENT.register(AFKraftConnectCommand::register);
 
         PayloadRegister.registerClientboundPayloads();
         PayloadRegister.registerServerboundPayloads();
