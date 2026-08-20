@@ -4,6 +4,8 @@ import com.mars4two.ikang.core.auth.dtos.*;
 import com.mars4two.ikang.core.config.GsonConfig;
 import com.mars4two.ikang.core.config.HttpConfig;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,17 +100,19 @@ public class AuthService {
         });
     }
 
-    public static void authenticate(GetCredentialsRequestServerboundPayload payload) {
-        log.info("Authenticating...");
+    public static void authenticate(GetCredentialsRequestServerboundPayload payload, ServerPlayer player) {
+        log.info("Authenticating mod by user {}...", player.getGameProfile().name());
         CompletableFuture.runAsync(() -> {
 
             var modCredentials = getModCredentials(payload.profileId(), payload.serverId(), payload.joinOtp());
 
             if(modCredentials.isEmpty()) {
                 log.warn("Unable to authenticate user");
+                player.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft"));
                 return;
             }
 
+            player.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
             CredentialStore.save(modCredentials.get());
         });
     }

@@ -40,8 +40,7 @@ public class AFKraftCompanion implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(GetCredentialsRequestServerboundPayload.TYPE, (payload, context) -> {
 			log.info("Server received credentials request payload for user {}: {}", context.player().getGameProfile().id(), payload);
-			// TODO: Obtener credenciales de este usuario con el OTP recibido
-			AuthService.authenticate(payload);
+			AuthService.authenticate(payload, context.player());
 		});
 
 		ServerPlayNetworking.registerGlobalReceiver(RegisterAFKContainerServerPayload.PAYLOAD_TYPE,
