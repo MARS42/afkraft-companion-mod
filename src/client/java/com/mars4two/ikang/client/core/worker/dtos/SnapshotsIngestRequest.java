@@ -1,6 +1,6 @@
 package com.mars4two.ikang.client.core.worker.dtos;
 
-import com.mars4two.ikang.client.core.snapshots.SnapshotBase;
+import com.mars4two.ikang.core.snapshots.SnapshotBase;
 
 import java.util.List;
 
