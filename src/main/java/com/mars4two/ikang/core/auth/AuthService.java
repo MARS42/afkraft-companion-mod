@@ -121,37 +121,31 @@ public class AuthService {
         return CredentialStore.load().isPresent();
     }
 
-//    public static void getAccessToken(Consumer<Optional<String>> callback) {
-//        log.info("Checking authentication...");
-//        CompletableFuture.runAsync(() -> {
-//            var modCredentials = CredentialStore.load();
-//            if(modCredentials.isEmpty()) {
-//                log.info("No mod credentials found");
-//                callback.accept(Optional.empty());
-//                return;
-//            }
-//
-//            var currentAccessToken = CredentialStore.getAccessToken();
-//            if(currentAccessToken.isPresent()) {
-//                log.info("Access token is present");
-//                callback.accept(currentAccessToken);
-//                return;
-//            }
-//
-//            log.info("Access token is not present, refreshing with mod credentials...");
-//            var refreshedCredentials = refreshAccessToken(modCredentials.get());
-//
-//            if(refreshedCredentials.isEmpty()) {
-//                callback.accept(Optional.empty());
-//                return;
-//            }
-//
-//            CredentialStore.save(refreshedCredentials.get());
-//
-//            log.info("Access token refreshed successfully");
-//            callback.accept(CredentialStore.getAccessToken());
-//        });
-//    }
+    public static Optional<String> getAccessToken() {
+        var modCredentials = CredentialStore.load();
+        if(modCredentials.isEmpty()) {
+            log.info("No mod credentials found");
+            return Optional.empty();
+        }
+
+        var currentAccessToken = CredentialStore.getAccessToken();
+        if(currentAccessToken.isPresent()) {
+            log.info("Access token is present");
+            return currentAccessToken;
+        }
+
+        log.info("Access token is not present, refreshing with mod credentials...");
+        var refreshedCredentials = refreshAccessToken(modCredentials.get());
+
+        if(refreshedCredentials.isEmpty()) {
+            return Optional.empty();
+        }
+
+        CredentialStore.save(refreshedCredentials.get());
+
+        log.info("Access token refreshed successfully");
+        return CredentialStore.getAccessToken();
+    }
 
     public static boolean getIsConnected(UUID profileId) {
         try {

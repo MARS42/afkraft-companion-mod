@@ -45,13 +45,13 @@ final class CredentialStore {
     public static Optional<ModCredentials> load() {
         ModCredentials current = cachedCredentials;
         if (current != null) {
-            LOGGER.info("Mod credentials loaded from memory");
+            LOGGER.debug("Mod credentials loaded from memory");
             return Optional.of(current);
         }
 
         synchronized (CredentialStore.class) {
             if (cachedCredentials != null) {
-                LOGGER.info("Mod credentials loaded from memory");
+                LOGGER.debug("Mod credentials loaded from memory");
                 return Optional.of(cachedCredentials);
             }
             return Optional.empty();
