@@ -5,4 +5,14 @@ public record PlayerStatsSnapshot(String gameMode, float health, float maxHealth
     public String getSnapshotName() {
         return "playerStats";
     }
+
+    @Override
+    public String key() {
+        return "";
+    }
+
+    @Override
+    public String changeToken() {
+        return "";
+    }
 }
