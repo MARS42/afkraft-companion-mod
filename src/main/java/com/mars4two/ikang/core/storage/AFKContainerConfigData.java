@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-
 public class AFKContainerConfigData extends SavedData {
 
     public static final Logger log = LoggerFactory.getLogger("AFKContainerConfigData");
@@ -27,6 +26,9 @@ public class AFKContainerConfigData extends SavedData {
     private static final Identifier ID = AFKraftCompanion.id("afk_container_config_data");
 
     private final HashMap<UUID, Map<Identifier, Map<BlockPos, ContainerData>>> config;
+
+    // Índice inverso derivado (NO se serializa): dimensión -> pos -> jugadores activos.
+    private final transient Map<Identifier, Map<BlockPos, Set<UUID>>> enabledIndex = new HashMap<>();
 
     public record ContainerData(boolean enabled) implements CustomPacketPayload {
 
@@ -66,6 +68,35 @@ public class AFKContainerConfigData extends SavedData {
         });
 
         this.config = deepMutableCopy;
+        rebuildIndex();
+    }
+
+    private void rebuildIndex() {
+        enabledIndex.clear();
+        config.forEach((playerId, byDim) ->
+                byDim.forEach((dimId, byPos) ->
+                        byPos.forEach((pos, data) -> {
+                            if (data.enabled()) {
+                                indexAdd(playerId, dimId, pos);
+                            }
+                        })));
+    }
+
+    private void indexAdd(UUID playerId, Identifier dimId, BlockPos pos) {
+        enabledIndex
+                .computeIfAbsent(dimId, k -> new HashMap<>())
+                .computeIfAbsent(pos, k -> new HashSet<>())
+                .add(playerId);
+    }
+
+    private void indexRemove(UUID playerId, Identifier dimId, BlockPos pos) {
+        var byPos = enabledIndex.get(dimId);
+        if (byPos == null) return;
+        var owners = byPos.get(pos);
+        if (owners == null) return;
+        owners.remove(playerId);
+        if (owners.isEmpty()) byPos.remove(pos);
+        if (byPos.isEmpty()) enabledIndex.remove(dimId);
     }
 
     public static final Codec<AFKContainerConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -101,6 +132,12 @@ public class AFKContainerConfigData extends SavedData {
         }
 
         this.config.get(playerId).get(dimensionId).put(pos, new ContainerData(active));
+
+        if (active) {
+            indexAdd(playerId, dimensionId, pos);
+        } else {
+            indexRemove(playerId, dimensionId, pos);
+        }
         setDirty();
     }
 
@@ -131,6 +168,7 @@ public class AFKContainerConfigData extends SavedData {
         }
 
         this.config.get(playerId).get(dimensionId).remove(pos);
+        indexRemove(playerId, dimensionId, pos);
         log.info("Container data has been deleted from the server for player {}", playerId);
 
         setDirty();
@@ -139,6 +177,19 @@ public class AFKContainerConfigData extends SavedData {
     public boolean isContainerEnabledIn(ServerPlayer player, List<BlockPos> positions) {
         return positions.stream()
                 .anyMatch(pos -> getContainerData(player, pos).isPresent() && getContainerData(player, pos).get().enabled());
+    }
+
+    public boolean isContainerEnabledAt(Identifier dimensionId, BlockPos pos) {
+        var byPos = enabledIndex.get(dimensionId);
+        if (byPos == null) return false;
+        var owners = byPos.get(pos);
+        return owners != null && !owners.isEmpty();
+    }
+
+    public Set<UUID> getEnabledOwnersAt(Identifier dimensionId, BlockPos pos) {
+        var byPos = enabledIndex.get(dimensionId);
+        if (byPos == null) return Set.of();
+        return Set.copyOf(byPos.getOrDefault(pos, Set.of()));
     }
 
     public Map<UUID, Map<Identifier, Map<BlockPos, ContainerData>>> getConfig() {
