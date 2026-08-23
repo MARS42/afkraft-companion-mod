@@ -2,12 +2,14 @@ package com.mars4two.ikang;
 
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.events.ServerEvents;
+import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.network.PayloadRegister;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsStatusServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.BlockEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -18,10 +20,9 @@ import org.slf4j.LoggerFactory;
 
 
 public class AFKraftCompanion implements ModInitializer {
+
 	public static final String MOD_ID = "afkraft-companion";
 	public static final Logger log = LoggerFactory.getLogger(MOD_ID);
-
-
 
 	@Override
 	public void onInitialize() {
@@ -29,6 +30,9 @@ public class AFKraftCompanion implements ModInitializer {
 
         PayloadRegister.registerClientboundPayloads();
         PayloadRegister.registerServerboundPayloads();
+
+		ServerLifecycleEvents.SERVER_STARTED.register(_ -> SnapshotIngestManager.getInstance().start());
+		ServerLifecycleEvents.SERVER_STOPPED.register(_ -> SnapshotIngestManager.getInstance().close());
 
 		ServerPlayerEvents.JOIN.register(ServerEvents::onJoinServerPlayer);
 		BlockEvents.USE_WITHOUT_ITEM.register(ServerEvents::onUseWithoutItem);
@@ -52,7 +56,6 @@ public class AFKraftCompanion implements ModInitializer {
 				(level, player, blockPos, state, blockEntity) ->
 						ServerEvents.onPlayerBlockBreak((ServerPlayer) player, blockPos, state)
 		);
-
 	}
 
 	public static Identifier id(String path) {
