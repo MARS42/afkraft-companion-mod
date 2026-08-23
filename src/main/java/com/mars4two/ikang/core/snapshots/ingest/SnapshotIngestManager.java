@@ -1,5 +1,8 @@
 package com.mars4two.ikang.core.snapshots.ingest;
 
+import com.mars4two.ikang.core.auth.AuthService;
+import com.mars4two.ikang.core.config.GsonConfig;
+import com.mars4two.ikang.core.config.HttpConfig;
 import com.mars4two.ikang.core.snapshots.ContainerSnapshot;
 import com.mars4two.ikang.core.snapshots.SnapshotBase;
 import com.mars4two.ikang.core.util.Conflater;
@@ -7,6 +10,9 @@ import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 
 public class SnapshotIngestManager implements AutoCloseable {
@@ -14,6 +20,7 @@ public class SnapshotIngestManager implements AutoCloseable {
     private static final SnapshotIngestManager INSTANCE = new SnapshotIngestManager();
 
     private static final Logger log = LoggerFactory.getLogger(SnapshotIngestManager.class);
+    private final HttpClient client = HttpConfig.getHttpClient();
 
     private Conflater<SnapshotBase> conflater;
 
@@ -33,7 +40,42 @@ public class SnapshotIngestManager implements AutoCloseable {
     }
 
     private void onEmit(List<SnapshotBase> snapshots) {
-        log.info("Emitting {} snapshots...", snapshots.size());
+        if(!AuthService.isAuthenticated()){
+            return;
+        }
+
+        log.debug("Emitting {} snapshots...", snapshots.size());
+
+        var request = new SnapshotsIngestRequest(snapshots.stream()
+                .map(SnapshotsIngestRequest.SnapshotContent::fromBase)
+                .toList());
+
+        var accessToken = AuthService.getAccessToken();
+
+        if(accessToken.isEmpty()) {
+            log.debug("Mod credentials not found");
+            return;
+        }
+
+        try {
+            String jsonBody = GsonConfig.toJson(request);
+
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(HttpConfig.getSnapshotsIngestUri())
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + accessToken.get())
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            if(response.statusCode() < 200 || response.statusCode() >= 300) {
+                return;
+            }
+
+            log.warn("Snapshots ingest response status: {}", response.statusCode());
+        }catch (Exception e) {
+            log.error("Error ingesting snapshots: {}", e.getMessage());
+        }
     }
 
     private void onEmitError(Throwable error) {

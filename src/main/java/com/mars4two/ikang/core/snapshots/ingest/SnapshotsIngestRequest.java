@@ -1,4 +1,4 @@
-package com.mars4two.ikang.client.core.worker.dtos;
+package com.mars4two.ikang.core.snapshots.ingest;
 
 import com.mars4two.ikang.core.snapshots.SnapshotBase;
 
