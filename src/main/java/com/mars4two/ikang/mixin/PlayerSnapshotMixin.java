@@ -1,6 +1,7 @@
 package com.mars4two.ikang.mixin;
 
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
+import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,14 +15,40 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 @Mixin(ServerPlayer.class)
-public abstract class PlayerSnapshotMixin extends Player {
+public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsContainer {
 
     @Unique
     private static final SnapshotIngestManager ingestManager = SnapshotIngestManager.getInstance();
 
+    @Unique
+    private final Map<String, String> playerStatsMap = new HashMap<>();
+
     protected PlayerSnapshotMixin(Level level, GameProfile gameProfile) {
         super(level, gameProfile);
+    }
+
+    @Override
+    public UUID afkraft_companion$getProfileId() {
+        return getUUID();
+    }
+
+    @Override
+    public Map<String, String> afkraft_companion$getStats() {
+        playerStatsMap.put("gameMode", gameMode() != null ? gameMode().getName() : "");
+        playerStatsMap.put("health", String.valueOf(getHealth()));
+        playerStatsMap.put("maxHealth", String.valueOf(getMaxHealth()));
+        playerStatsMap.put("foodLevel", String.valueOf(getFoodData().getFoodLevel()));
+        playerStatsMap.put("experience", String.valueOf(experienceLevel));
+        playerStatsMap.put("xPos", String.valueOf(getX()));
+        playerStatsMap.put("yPos", String.valueOf(getY()));
+        playerStatsMap.put("zPos", String.valueOf(getZ()));
+
+        return playerStatsMap;
     }
 
     @Inject(at = @At("TAIL"), method = "setExperienceLevels")

@@ -7,7 +7,7 @@ import com.mars4two.ikang.core.snapshots.ContainerSnapshot;
 import com.mars4two.ikang.core.snapshots.PlayerStatsSnapshot;
 import com.mars4two.ikang.core.snapshots.SnapshotBase;
 import com.mars4two.ikang.core.util.Conflater;
-import net.minecraft.world.entity.player.Player;
+import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +41,7 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.submit(ContainerSnapshot.of(containerBlockEntity));
     }
 
-    public void ingestPlayerStats(Player player) {
+    public void ingestPlayerStats(PlayerStatsContainer player) {
         conflater.submit(PlayerStatsSnapshot.of(player));
     }
 

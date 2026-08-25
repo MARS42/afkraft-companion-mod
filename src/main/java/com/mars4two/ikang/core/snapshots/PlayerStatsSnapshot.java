@@ -1,8 +1,11 @@
 package com.mars4two.ikang.core.snapshots;
 
-import net.minecraft.world.entity.player.Player;
+import com.mars4two.ikang.core.util.PlayerStatsContainer;
 
-public record PlayerStatsSnapshot(String playerId, String gameMode, float health, float maxHealth, int foodLevel, double xPos, double yPos, double zPos) implements SnapshotBase {
+import java.util.Map;
+
+public record PlayerStatsSnapshot(String playerId, Map<String, String> data) implements SnapshotBase {
+
     @Override
     public String getSnapshotName() {
         return "playerStats";
@@ -15,11 +18,10 @@ public record PlayerStatsSnapshot(String playerId, String gameMode, float health
 
     @Override
     public String changeToken() {
-        return playerId + gameMode + health + maxHealth + foodLevel + xPos + yPos + zPos;
+        return playerId + ":" + String.join(",", data.values());
     }
 
-    public static PlayerStatsSnapshot of(Player player) {
-        var gm = player.gameMode() != null ? player.gameMode().getName() : "";
-        return new PlayerStatsSnapshot(player.getUUID().toString(), gm, player.getHealth(), player.getMaxHealth(), player.getFoodData().getFoodLevel(), player.getX(), player.getY(), player.getZ());
+    public static PlayerStatsSnapshot of(PlayerStatsContainer player) {
+        return new PlayerStatsSnapshot(player.afkraft_companion$getProfileId().toString(), player.afkraft_companion$getStats());
     }
 }
