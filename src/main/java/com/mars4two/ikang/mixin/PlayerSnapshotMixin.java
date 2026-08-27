@@ -3,8 +3,10 @@ package com.mars4two.ikang.mixin;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -51,9 +53,23 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         playerStatsMap.put("xPos", String.valueOf(getX()));
         playerStatsMap.put("yPos", String.valueOf(getY()));
         playerStatsMap.put("zPos", String.valueOf(getZ()));
-        playerStatsMap.put("effects", buildPlayerStatsEffects());
 
         return playerStatsMap;
+    }
+
+    @Override
+    public String afkraft_companion$getEffects() {
+        return buildPlayerStatsEffects();
+    }
+
+    @Override
+    public String afkraft_companion$getMainHand() {
+        return buildPlayerStatsHand(InteractionHand.MAIN_HAND);
+    }
+
+    @Override
+    public String afkraft_companion$getOffHand() {
+        return buildPlayerStatsHand(InteractionHand.OFF_HAND);
     }
 
     @Inject(at = @At("TAIL"), method = "setExperienceLevels")
@@ -99,5 +115,21 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
                 key("am", effect.isAmbient(), true) +
                 key("v", effect.isVisible(), false) +
                 "}").collect(Collectors.joining(", ")) + "]";
+    }
+
+    @Unique
+    private String buildPlayerStatsHand(InteractionHand hand) {
+        var stack = getItemInHand(hand);
+        if(stack.isEmpty()){
+            return null;
+        }
+
+        return "{" +
+                key("i", stack.getItemName().getString(), true) +
+                key("c", stack.getCount(), true) +
+                key("e", stack.getEnchantments()
+                        .keySet().stream().map(Holder::getRegisteredName)
+                        .collect(Collectors.joining(", ")), false) +
+                "}";
     }
 }

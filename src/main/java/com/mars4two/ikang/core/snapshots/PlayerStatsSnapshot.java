@@ -13,7 +13,7 @@ public record PlayerStatsSnapshot(String playerId, Map<String, String> data) imp
 
     @Override
     public String key() {
-        return playerId;
+        return playerId + getSnapshotName();
     }
 
     @Override

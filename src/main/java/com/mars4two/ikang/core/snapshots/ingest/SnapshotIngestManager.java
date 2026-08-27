@@ -3,9 +3,7 @@ package com.mars4two.ikang.core.snapshots.ingest;
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.config.GsonConfig;
 import com.mars4two.ikang.core.config.HttpConfig;
-import com.mars4two.ikang.core.snapshots.ContainerSnapshot;
-import com.mars4two.ikang.core.snapshots.PlayerStatsSnapshot;
-import com.mars4two.ikang.core.snapshots.SnapshotBase;
+import com.mars4two.ikang.core.snapshots.*;
 import com.mars4two.ikang.core.util.Conflater;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
@@ -43,6 +41,8 @@ public class SnapshotIngestManager implements AutoCloseable {
 
     public void ingestPlayerStats(PlayerStatsContainer player) {
         conflater.submit(PlayerStatsSnapshot.of(player));
+        conflater.submit(PlayerEffectStatsSnapshot.of(player));
+        conflater.submit(PlayerHandsStatsSnapshot.of(player));
     }
 
     private void onEmit(List<SnapshotBase> snapshots) {
