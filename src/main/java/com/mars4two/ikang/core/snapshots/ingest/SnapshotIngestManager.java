@@ -74,7 +74,7 @@ public class SnapshotIngestManager implements AutoCloseable {
                     .build();
 
             HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            if(response.statusCode() < 200 || response.statusCode() >= 300) {
+            if(response.statusCode() >= 200 && response.statusCode() < 300) {
                 return;
             }
 

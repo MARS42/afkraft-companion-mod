@@ -130,11 +130,11 @@ public class AuthService {
 
         var currentAccessToken = CredentialStore.getAccessToken();
         if(currentAccessToken.isPresent()) {
-            log.info("Access token is present");
+            log.debug("Access token is present");
             return currentAccessToken;
         }
 
-        log.info("Access token is not present, refreshing with mod credentials...");
+        log.info("Access token is not present or expired, refreshing with mod credentials...");
         var refreshedCredentials = refreshAccessToken(modCredentials.get());
 
         if(refreshedCredentials.isEmpty()) {
