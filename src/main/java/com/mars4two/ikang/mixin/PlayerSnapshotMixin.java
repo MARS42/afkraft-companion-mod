@@ -18,6 +18,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static com.mars4two.ikang.core.util.PrimitiveJsonUtils.key;
 
 @Mixin(ServerPlayer.class)
 public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsContainer {
@@ -44,9 +47,11 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         playerStatsMap.put("maxHealth", String.valueOf(getMaxHealth()));
         playerStatsMap.put("foodLevel", String.valueOf(getFoodData().getFoodLevel()));
         playerStatsMap.put("experience", String.valueOf(experienceLevel));
+        playerStatsMap.put("experienceProgress", String.valueOf(experienceProgress));
         playerStatsMap.put("xPos", String.valueOf(getX()));
         playerStatsMap.put("yPos", String.valueOf(getY()));
         playerStatsMap.put("zPos", String.valueOf(getZ()));
+        playerStatsMap.put("effects", buildPlayerStatsEffects());
 
         return playerStatsMap;
     }
@@ -83,5 +88,16 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         }
 
         ingestManager.ingestPlayerStats(this);
+    }
+
+    @Unique
+    private String buildPlayerStatsEffects(){
+        return "[" + getActiveEffects().stream().map(effect -> "{" +
+                key("e", effect.getDescriptionId(), true) +
+                key("a", effect.getAmplifier(), true) +
+                key("d", effect.getDuration(), true) +
+                key("am", effect.isAmbient(), true) +
+                key("v", effect.isVisible(), false) +
+                "}").collect(Collectors.joining(", ")) + "]";
     }
 }
