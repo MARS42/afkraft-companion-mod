@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 public record ContainerSnapshot(String containerName, int containerSize, String content, BlockPos pos) implements SnapshotBase {
     @Override
     public String getSnapshotName() {
-        return containerName;
+        return "container";
     }
 
     @Override
