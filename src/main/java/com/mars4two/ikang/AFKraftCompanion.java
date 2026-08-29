@@ -31,7 +31,7 @@ public class AFKraftCompanion implements ModInitializer {
         PayloadRegister.registerClientboundPayloads();
         PayloadRegister.registerServerboundPayloads();
 
-		ServerLifecycleEvents.SERVER_STARTED.register(_ -> SnapshotIngestManager.getInstance().start());
+		ServerLifecycleEvents.SERVER_STARTED.register(minecraftServer -> SnapshotIngestManager.getInstance().start(minecraftServer));
 		ServerLifecycleEvents.SERVER_STOPPED.register(_ -> SnapshotIngestManager.getInstance().close());
 
 		ServerPlayerEvents.JOIN.register(ServerEvents::onJoinServerPlayer);
