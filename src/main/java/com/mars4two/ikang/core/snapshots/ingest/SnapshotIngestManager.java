@@ -6,6 +6,7 @@ import com.mars4two.ikang.core.config.HttpConfig;
 import com.mars4two.ikang.core.snapshots.*;
 import com.mars4two.ikang.core.util.Conflater;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +24,15 @@ public class SnapshotIngestManager implements AutoCloseable {
     private final HttpClient client = HttpConfig.getHttpClient();
 
     private Conflater<SnapshotBase> conflater;
+    private String worldName;
 
     public static SnapshotIngestManager getInstance() {
         return INSTANCE;
     }
 
-    public void start() {
+    public void start(MinecraftServer minecraftServer) {
+        worldName = minecraftServer.getWorldData().getLevelName();
+
         conflater = new Conflater<>(1000,
                 SnapshotBase::key, SnapshotBase::changeToken,
                 this::onEmit, this::onEmitError);
@@ -52,8 +56,8 @@ public class SnapshotIngestManager implements AutoCloseable {
 
         log.debug("Emitting {} snapshots...", snapshots.size());
 
-        var request = new SnapshotsIngestRequest(snapshots.stream()
-                .map(SnapshotsIngestRequest.SnapshotContent::fromBase)
+        var request = new SnapshotsIngestRequest(worldName, snapshots.stream()
+                .map(s -> new SnapshotsIngestRequest.SnapshotContent(s.getSnapshotName(), GsonConfig.toJson(s)))
                 .toList());
 
         var accessToken = AuthService.getAccessToken();
@@ -65,6 +69,7 @@ public class SnapshotIngestManager implements AutoCloseable {
 
         try {
             String jsonBody = GsonConfig.toJson(request);
+            log.debug("Sending snapshots ingest request: {}", jsonBody);
 
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(HttpConfig.getSnapshotsIngestUri())
