@@ -1,8 +1,19 @@
 package com.mars4two.ikang.core.snapshots;
 
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
+import org.jspecify.annotations.NonNull;
 
-public record PlayerEffectStatsSnapshot(String playerId, String data) implements SnapshotBase {
+import java.util.Set;
+import java.util.UUID;
+
+public record PlayerEffectStatsSnapshot(Set<UUID> playerIds, PlayerEffectsData data) implements SnapshotBase {
+
+    public record PlayerEffectsData (UUID playerId, String effects){
+        @Override
+        public @NonNull String toString() {
+            return playerId + ":" + effects;
+        }
+    }
 
     @Override
     public String getSnapshotName() {
@@ -11,16 +22,19 @@ public record PlayerEffectStatsSnapshot(String playerId, String data) implements
 
     @Override
     public String key() {
-        return playerId + getSnapshotName();
+        return data.playerId + getSnapshotName();
     }
 
     @Override
     public String changeToken() {
-        return playerId + ":" + data;
+        return data.toString();
     }
 
     public static PlayerEffectStatsSnapshot of(PlayerStatsContainer player) {
         return
-                new PlayerEffectStatsSnapshot(player.afkraft_companion$getProfileId().toString(), player.afkraft_companion$getEffects());
+                new PlayerEffectStatsSnapshot(Set.of(player.afkraft_companion$getProfileId()),
+                        new PlayerEffectsData(
+                                player.afkraft_companion$getProfileId(),
+                                player.afkraft_companion$getEffects()));
     }
 }

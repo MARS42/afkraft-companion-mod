@@ -1,8 +1,19 @@
 package com.mars4two.ikang.core.snapshots;
 
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
+import org.jspecify.annotations.NonNull;
 
-public record PlayerHandsStatsSnapshot(String playerId, String mainHandData, String offHandData) implements SnapshotBase {
+import java.util.Set;
+import java.util.UUID;
+
+public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, PlayerHandsStatsData data) implements SnapshotBase {
+
+    public record PlayerHandsStatsData(UUID playerId, String mainHand, String offHand){
+        @Override
+        public @NonNull String toString() {
+            return playerId + ":" + mainHand + ":" + offHand;
+        }
+    }
 
     @Override
     public String getSnapshotName() {
@@ -11,18 +22,20 @@ public record PlayerHandsStatsSnapshot(String playerId, String mainHandData, Str
 
     @Override
     public String key() {
-        return playerId + getSnapshotName();
+        return data.playerId + getSnapshotName();
     }
 
     @Override
     public String changeToken() {
-        return playerId + ":" + mainHandData + ":" + offHandData;
+        return data.toString();
     }
 
     public static PlayerHandsStatsSnapshot of(PlayerStatsContainer player) {
         return
-                new PlayerHandsStatsSnapshot(player.afkraft_companion$getProfileId().toString(),
+                new PlayerHandsStatsSnapshot(Set.of(player.afkraft_companion$getProfileId()), new PlayerHandsStatsData(
+                        player.afkraft_companion$getProfileId(),
                         player.afkraft_companion$getMainHand(),
-                        player.afkraft_companion$getOffHand());
+                        player.afkraft_companion$getOffHand()
+                ));
     }
 }
