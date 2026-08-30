@@ -15,6 +15,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public class SnapshotIngestManager implements AutoCloseable {
 
@@ -39,8 +41,8 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.start();
     }
 
-    public void ingestContainerBlockEntity(BaseContainerBlockEntity containerBlockEntity) {
-        conflater.submit(ContainerSnapshot.of(containerBlockEntity));
+    public void ingestContainerBlockEntity(Set<UUID> playerIds, BaseContainerBlockEntity containerBlockEntity) {
+        conflater.submit(ContainerSnapshot.of(playerIds, containerBlockEntity));
     }
 
     public void ingestPlayerStats(PlayerStatsContainer player) {
@@ -57,7 +59,8 @@ public class SnapshotIngestManager implements AutoCloseable {
         log.debug("Emitting {} snapshots...", snapshots.size());
 
         var request = new SnapshotsIngestRequest(worldName, snapshots.stream()
-                .map(s -> new SnapshotsIngestRequest.SnapshotContent(s.getSnapshotName(), GsonConfig.toJson(s)))
+                .map(s -> new SnapshotsIngestRequest.SnapshotContent
+                        (s.getSnapshotName(), s.playerIds(), GsonConfig.toJson(s.data())))
                 .toList());
 
         var accessToken = AuthService.getAccessToken();
