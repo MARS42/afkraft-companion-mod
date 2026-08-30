@@ -39,7 +39,7 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
 
     @Override
     public UUID afkraft_companion$getProfileId() {
-        return getUUID();
+        return getGameProfile().id();
     }
 
     @Override

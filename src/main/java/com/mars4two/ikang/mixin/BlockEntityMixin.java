@@ -28,8 +28,9 @@ public class BlockEntityMixin {
 
         var config = AFKContainerConfigData.getConfig(level.getServer());
         if(config == null) return;
-        if(!config.isContainerEnabledAt(level.dimension().identifier(), container.getBlockPos())) return;
+        var dimensionId = level.dimension().identifier();
+        if(!config.isContainerEnabledAt(dimensionId, container.getBlockPos())) return;
 
-        ingestManager.ingestContainerBlockEntity(container);
+        ingestManager.ingestContainerBlockEntity(config.getEnabledOwnersAt(dimensionId, container.getBlockPos()), container);
     }
 }
