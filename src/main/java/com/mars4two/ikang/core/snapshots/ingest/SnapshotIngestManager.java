@@ -17,6 +17,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class SnapshotIngestManager implements AutoCloseable {
 
@@ -58,10 +59,13 @@ public class SnapshotIngestManager implements AutoCloseable {
 
         log.debug("Emitting {} snapshots...", snapshots.size());
 
-        var request = new SnapshotsIngestRequest(worldName, snapshots.stream()
+        var snapshotContent = snapshots.stream()
                 .map(s -> new SnapshotsIngestRequest.SnapshotContent
                         (s.getSnapshotName(), s.playerIds(), GsonConfig.toJson(s.data())))
-                .toList());
+                .toList();
+        var participants = snapshots.stream().flatMap(s -> s.playerIds().stream()).collect(Collectors.toSet());
+
+        var request = new SnapshotsIngestRequest(worldName, participants, snapshotContent);
 
         var accessToken = AuthService.getAccessToken();
 
