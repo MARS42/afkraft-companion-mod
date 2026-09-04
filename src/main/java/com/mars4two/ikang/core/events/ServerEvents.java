@@ -2,6 +2,7 @@ package com.mars4two.ikang.core.events;
 
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
+import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
@@ -43,12 +44,23 @@ public class ServerEvents {
         var isSinglePlayer = level.isSingleplayer();
         var isSinglePlayerOwner = level.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
 
-        var needsCredentials = !isDedicated && isSinglePlayer && isSinglePlayerOwner;
+        log.info("Player {} joined the server, (dedicated={}, singleplayer={}, owner={})",
+                playerId, level.isDedicatedServer(), level.isSingleplayer(), isSinglePlayerOwner);
 
-        log.info("Player {} joined the server, (dedicated={}, singleplayer={}, owner={}, needsCredentials={})",
-                playerId, level.isDedicatedServer(), level.isSingleplayer(), isSinglePlayerOwner, needsCredentials);
-        ServerPlayNetworking.send(player,
-                new GetCredentialsStatusClientboundPayload(playerId.toString(), needsCredentials));
+        if(isSinglePlayer && isSinglePlayerOwner) {
+            log.info("Singleplayer owner detected, sending get credentials request to player {}", playerId);
+            ServerPlayNetworking.send(player,
+                    new GetCredentialsStatusClientboundPayload(playerId.toString(), true));
+            return;
+        }
+
+        if(isDedicated) {
+            log.info("Dedicated server detected, sending authorize server request to player {}", playerId);
+
+            // Todo: Check if admin already logged in and server has credentials
+
+            ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload());
+        }
     }
 
     public static InteractionResult onUseWithoutItem(BlockState state, Level level, BlockPos blockPos, Player player, BlockHitResult hitResult) {

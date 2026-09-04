@@ -1,12 +1,12 @@
 package com.mars4two.ikang.client.core.events;
 
 import com.mars4two.ikang.client.core.auth.ClientAuthService;
+import com.mars4two.ikang.client.core.auth.ClientAuthorizeServerService;
 import com.mars4two.ikang.client.mixin.AbstractContainerScreenAccessor;
-import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
+import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
-import com.mars4two.ikang.core.network.payloads.server.GetCredentialsStatusServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientEvents {
@@ -48,14 +47,20 @@ public class ClientEvents {
                     (e) -> log.error("Error while authenticating", e),
                     () -> log.info("Client is not connected")
             );
-        }else {
-            log.info("Client does not need credentials");
-            AuthService.checkIfIsConnected(UUID.fromString(payload.profileId()), isConnected -> {
-                Minecraft.getInstance().execute(
-                        () -> ClientPlayNetworking.send(new GetCredentialsStatusServerboundPayload(isConnected))
-                );
-            });
         }
+//        }else {
+//            log.info("Client does not need credentials");
+//            AuthService.checkIfIsConnected(UUID.fromString(payload.profileId()), isConnected -> {
+//                Minecraft.getInstance().execute(
+//                        () -> ClientPlayNetworking.send(new GetCredentialsStatusServerboundPayload(isConnected))
+//                );
+//            });
+//        }
+    }
+
+    public static void onAuthorizeServerRequest(AuthorizeServerRequestClientboundPayload payload) {
+        log.info("Server wants to authorize server join, payload");
+        ClientAuthorizeServerService.showAuthorizationScreen();
     }
 
     public static void onGetAfkraftStatus(AFKraftStatusClientBoundPayload afkraftStatus) {

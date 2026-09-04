@@ -5,7 +5,7 @@ import com.mars4two.ikang.client.command.AFKraftClientEnableCommand;
 import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.client.core.worker.AFKraftWorker;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
-import com.mars4two.ikang.core.network.payloads.client.GetCredentialsRequestClientboundPayload;
+import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -27,10 +27,13 @@ public class AFKraftCompanionClient extends AFKraftWorker implements ClientModIn
             ClientEvents.onGetCredentialsStatus(payload);
         });
 
-
-        ClientPlayNetworking.registerGlobalReceiver(GetCredentialsRequestClientboundPayload.TYPE, (payload, context) -> {
-
+        ClientPlayNetworking.registerGlobalReceiver(AuthorizeServerRequestClientboundPayload.TYPE, (payload, context) -> {
+            ClientEvents.onAuthorizeServerRequest(payload);
         });
+
+//        ClientPlayNetworking.registerGlobalReceiver(GetCredentialsRequestClientboundPayload.TYPE, (payload, context) -> {
+//
+//        });
 
         ClientPlayNetworking.registerGlobalReceiver(AFKraftStatusClientBoundPayload.TYPE,
                 (afkraftStatus, context) ->
