@@ -3,7 +3,6 @@ package com.mars4two.ikang.client.core.auth;
 import com.mars4two.ikang.client.core.auth.dtos.ConnectRequest;
 import com.mars4two.ikang.client.core.auth.dtos.ConnectResponse;
 import com.mars4two.ikang.client.core.screens.QRModalScreen;
-import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.auth.AuthenticationException;
 import com.mars4two.ikang.core.auth.dtos.*;
 import com.mars4two.ikang.core.config.GsonConfig;
@@ -47,31 +46,15 @@ public class ClientConnectService {
 
         onFeedback.accept("Conectando a AFKraft Companion...");
 
-        var sessionService = minecraft.services().sessionService();
-        var user = minecraft.getUser();
-        UUID profileId = user.getProfileId();
-//        UUID profileId = UUID.fromString("2c349e41-d68a-49e3-9385-111bb484ed32");
-        String username = user.getName();
-
-        LOGGER.info("[AFKraft] Iniciando autenticación para usuario: {} ({})", username, profileId);
-
         CompletableFuture.runAsync(() -> {
             try {
-                LOGGER.debug("[AFKraft] Paso 1: Solicitando serverId al backend...");
-                String serverId = AuthService.getServerId(profileId);
-//                String serverId = "a7830bd9-3a7d-4792-a9cc-00607520106f";
-                LOGGER.info("[AFKraft] serverId obtenido: {}", serverId);
+                UUID profileId = Minecraft.getInstance().getUser().getProfileId();
+                LOGGER.info("[AFKraft] Iniciando autenticación para usuario: {}", profileId);
 
-                LOGGER.debug("[AFKraft] Paso 2: Realizando joinServer con Mojang...");
-                sessionService.joinServer(profileId, user.getAccessToken(), serverId);  // Comment in local dev
-                LOGGER.info("[AFKraft] joinServer completado exitosamente");
-
-                LOGGER.debug("[AFKraft] Paso 3: Validando con hasJoined en backend...");
-                var hasJoinedResponse = AuthService.validateHasJoined(username, serverId, profileId);                                         // Comment in local dev
-                LOGGER.info("[AFKraft] Validación hasJoined exitosa");
+                var joinServerResult = ClientAuthService.joinServer();
 
                 LOGGER.debug("[AFKraft] Paso 4: Realizando connect con AFKraft...");
-                ConnectResponse connectData = connect(serverId, profileId, hasJoinedResponse);
+                ConnectResponse connectData = connect(joinServerResult.serverId(), profileId, joinServerResult.hasJoinedResponse());
                 LOGGER.info("[AFKraft] connect completado exitosamente");
 
                 String connectUrl = connectData.verificationUrl();
