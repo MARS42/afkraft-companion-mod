@@ -107,7 +107,7 @@ public class AuthService {
         });
     }
 
-    public static void authenticate(GetCredentialsRequestServerboundPayload payload, ServerPlayer player) {
+    public static void authenticate(GetCredentialsRequestServerboundPayload payload, ServerPlayer player, Runnable successCallback, Runnable errorCallback) {
         log.info("Authenticating mod by user {}...", player.getGameProfile().name());
         CompletableFuture.runAsync(() -> {
 
@@ -115,13 +115,13 @@ public class AuthService {
 
             if(modCredentials.isEmpty()) {
                 log.warn("Unable to authenticate user");
-                player.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft"));
+                errorCallback.run();
                 return;
             }
 
-            player.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
             CredentialStore.save(modCredentials.get());
             credentialsOwner.set(player.getGameProfile().name());
+            successCallback.run();
         });
     }
 

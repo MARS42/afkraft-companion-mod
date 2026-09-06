@@ -83,7 +83,24 @@ public class ServerEvents {
 
     public static void onGetCredentialsRequest(ServerPlayer player, GetCredentialsRequestServerboundPayload payload) {
         log.info("Server received credentials request payload for user {}: {}", player.getGameProfile().id(), payload);
-        AuthService.authenticate(payload, player);
+        AuthService.authenticate(payload, player, () -> {
+            player.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
+            sendServerAuthorizeRequestToPlayers(player);
+        }, () -> player.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft")));
+    }
+
+    private static void sendServerAuthorizeRequestToPlayers(ServerPlayer admin) {
+        var level = admin.level().getServer();
+        var isDedicated = level.isDedicatedServer();
+        if(!isDedicated) {
+            log.info("Server is not dedicated, no need to send authorize server request to players");
+            return;
+        }
+
+        level.getPlayerList().getPlayers().forEach(player -> {
+            log.info("Sending authorize server request to player {}", player.getGameProfile().id());
+            ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload());
+        });
     }
 
     public static InteractionResult onUseWithoutItem(BlockState state, Level level, BlockPos blockPos, Player player, BlockHitResult hitResult) {
