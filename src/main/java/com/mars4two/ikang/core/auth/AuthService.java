@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class AuthService {
@@ -28,6 +29,8 @@ public class AuthService {
     private static final AtomicBoolean isConnected = new AtomicBoolean(false);
 
     private static final Set<UUID> authorizedPlayers = ConcurrentHashMap.newKeySet();
+
+    private static final AtomicReference<String> credentialsOwner = new AtomicReference<>();
 
     private AuthService() {
         // Utility class, no instances allowed
@@ -118,11 +121,15 @@ public class AuthService {
 
             player.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
             CredentialStore.save(modCredentials.get());
+            credentialsOwner.set(player.getGameProfile().name());
         });
     }
 
     public static boolean isAuthenticated() {
         return getAccessToken().isPresent();
+    }
+    public static String getCredentialsOwner() {
+        return credentialsOwner.get();
     }
 
     public static Optional<String> getAccessToken() {

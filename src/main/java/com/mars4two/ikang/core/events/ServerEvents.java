@@ -77,7 +77,7 @@ public class ServerEvents {
     }
 
     public static void onIsServerAuthenticatedRequest(ServerPlayer player, IsServerAuthenticatedRequest payload) {
-        ServerPlayNetworking.send(player, new IsServerAuthenticatedResponse(AuthService.isAuthenticated()));
+        ServerPlayNetworking.send(player, new IsServerAuthenticatedResponse(AuthService.isAuthenticated(), AuthService.getCredentialsOwner()));
     }
 
     public static void onGetCredentialsRequest(ServerPlayer player, GetCredentialsRequestServerboundPayload payload) {
