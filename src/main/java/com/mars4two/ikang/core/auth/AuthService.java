@@ -13,8 +13,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -24,6 +26,8 @@ public class AuthService {
     private static final HttpClient client = HttpConfig.getHttpClient();
 
     private static final AtomicBoolean isConnected = new AtomicBoolean(false);
+
+    private static final Set<UUID> authorizedPlayers = ConcurrentHashMap.newKeySet();
 
     private AuthService() {
         // Utility class, no instances allowed
@@ -225,5 +229,14 @@ public class AuthService {
             log.error("Unexpected error during refreshing mod credentials: ", e);
             return Optional.empty();
         }
+    }
+
+    public static void sendPlayerAuthorization(UUID profileId, String serverId, String joinOtp){
+        // TODO: Send player authorization with current credentials
+        authorizedPlayers.add(profileId);
+    }
+
+    public static boolean isPlayerAuthorized(UUID profileId){
+        return authorizedPlayers.contains(profileId);
     }
 }

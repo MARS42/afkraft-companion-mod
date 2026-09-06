@@ -4,10 +4,12 @@ import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
+import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.NameAndId;
@@ -55,10 +57,20 @@ public class ServerEvents {
         }
 
         if(isDedicated && AuthService.isAuthenticated()) {
-            // Todo: Check if user already has been authorized the server
             log.info("Dedicated server detected and authenticated, sending authorize server request to player {}", playerId);
+            if(AuthService.isPlayerAuthorized(playerId)){
+                log.info("Player {} already authorized the server", playerId);
+                player.sendSystemMessage(Component.literal("Bienvenido, ya estás autorizado en este servidor para AFKraft"));
+                return;
+            }
             ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload());
         }
+    }
+
+    public static void onServerAuthorizedByPlayer(ServerPlayer player, AuthorizeServerResponseServerboundPayload payload) {
+        var profileId = player.getGameProfile().id();
+        log.info("Server has been authorized by player {}", player.getGameProfile().id());
+        AuthService.sendPlayerAuthorization(profileId, payload.serverId(), payload.joinOtp());
     }
 
     public static InteractionResult onUseWithoutItem(BlockState state, Level level, BlockPos blockPos, Player player, BlockHitResult hitResult) {
