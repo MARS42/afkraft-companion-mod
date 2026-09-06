@@ -6,6 +6,7 @@ import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestCli
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
+import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedResponse;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
@@ -77,6 +78,11 @@ public class ServerEvents {
 
     public static void onIsServerAuthenticatedRequest(ServerPlayer player, IsServerAuthenticatedRequest payload) {
         ServerPlayNetworking.send(player, new IsServerAuthenticatedResponse(AuthService.isAuthenticated()));
+    }
+
+    public static void onGetCredentialsRequest(ServerPlayer player, GetCredentialsRequestServerboundPayload payload) {
+        log.info("Server received credentials request payload for user {}: {}", player.getGameProfile().id(), payload);
+        AuthService.authenticate(payload, player);
     }
 
     public static InteractionResult onUseWithoutItem(BlockState state, Level level, BlockPos blockPos, Player player, BlockHitResult hitResult) {
