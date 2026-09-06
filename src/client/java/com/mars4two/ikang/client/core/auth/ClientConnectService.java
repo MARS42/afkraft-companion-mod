@@ -3,6 +3,7 @@ package com.mars4two.ikang.client.core.auth;
 import com.mars4two.ikang.client.core.auth.dtos.ConnectRequest;
 import com.mars4two.ikang.client.core.auth.dtos.ConnectResponse;
 import com.mars4two.ikang.client.core.screens.QRModalScreen;
+import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.auth.AuthenticationException;
 import com.mars4two.ikang.core.auth.dtos.*;
 import com.mars4two.ikang.core.config.GsonConfig;
@@ -44,11 +45,18 @@ public class ClientConnectService {
     public static int executeConnect(Consumer<String> onFeedback, Consumer<String> onFeedbackError) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        onFeedback.accept("Conectando a AFKraft Companion...");
-
         CompletableFuture.runAsync(() -> {
             try {
                 UUID profileId = Minecraft.getInstance().getUser().getProfileId();
+
+                var isConnected = AuthService.getIsConnected(profileId);
+                if(isConnected) {
+                    minecraft.execute(() -> onFeedback.accept("Ya te encuentras conectado a AFKraft Companion"));
+                    return;
+                }
+
+                minecraft.execute(() -> onFeedback.accept("Conectando a AFKraft Companion..."));
+
                 LOGGER.info("[AFKraft] Iniciando autenticación para usuario: {}", profileId);
 
                 var joinServerResult = ClientAuthService.joinServer();
