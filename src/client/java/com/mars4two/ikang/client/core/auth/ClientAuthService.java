@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 
 public class ClientAuthService {
 
-    private static final Logger log = LoggerFactory.getLogger("afkraft-auth-service");
+    private static final Logger log = LoggerFactory.getLogger("afkraft-client-auth-service");
 
     private static final AtomicBoolean isConnected = new AtomicBoolean(false);
 
@@ -40,6 +40,30 @@ public class ClientAuthService {
 
                 var joinServerResult = joinServer();
                 successCallback.accept(joinServerResult.serverId, joinServerResult.hasJoinedResponse.joinOtp());
+            } catch (Exception e) {
+                log.error("Error while authentication", e);
+                errorCallback.accept(e);
+            }
+        });
+    }
+
+    public static void authorizeServer(Consumer<HasJoinedResult> successCallback, Consumer<Exception> errorCallback, Runnable notConnectedCallback) {
+        var minecraft = Minecraft.getInstance();
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                log.info("Authorizing server...");
+
+                UUID profileId = minecraft.getUser().getProfileId();
+                var isConnected = AuthService.getIsConnected(profileId);
+                if(!isConnected) {
+                    log.info("User is not connected");
+                    notConnectedCallback.run();
+                    return;
+                }
+
+                var joinServerResult = joinServer();
+                successCallback.accept(joinServerResult);
             } catch (Exception e) {
                 log.error("Error while authentication", e);
                 errorCallback.accept(e);

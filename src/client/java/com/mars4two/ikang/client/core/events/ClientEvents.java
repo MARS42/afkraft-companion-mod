@@ -6,6 +6,7 @@ import com.mars4two.ikang.client.mixin.AbstractContainerScreenAccessor;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
+import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -15,6 +16,7 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,9 +60,14 @@ public class ClientEvents {
 //        }
     }
 
-    public static void onAuthorizeServerRequest(AuthorizeServerRequestClientboundPayload payload) {
+    public static void onAuthorizeServerRequest(AuthorizeServerRequestClientboundPayload payload, Player player) {
         log.info("Server wants to authorize server join, payload");
-        ClientAuthorizeServerService.showAuthorizationScreen();
+        var authorizeService = new ClientAuthorizeServerService(player, ClientEvents::sendAuthorizeServerRequest);
+        authorizeService.showAuthorizationScreen();
+    }
+
+    public static void sendAuthorizeServerRequest(ClientAuthService.HasJoinedResult hasJoinedResult) {
+        ClientPlayNetworking.send(new AuthorizeServerResponseServerboundPayload(hasJoinedResult.serverId(), hasJoinedResult.hasJoinedResponse().joinOtp()));
     }
 
     public static void onGetAfkraftStatus(AFKraftStatusClientBoundPayload afkraftStatus) {

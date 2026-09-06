@@ -28,7 +28,7 @@ public class AFKraftCompanionClient extends AFKraftWorker implements ClientModIn
         });
 
         ClientPlayNetworking.registerGlobalReceiver(AuthorizeServerRequestClientboundPayload.TYPE, (payload, context) -> {
-            ClientEvents.onAuthorizeServerRequest(payload);
+            ClientEvents.onAuthorizeServerRequest(payload, context.player());
         });
 
 //        ClientPlayNetworking.registerGlobalReceiver(GetCredentialsRequestClientboundPayload.TYPE, (payload, context) -> {
