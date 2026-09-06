@@ -238,7 +238,7 @@ public class AuthService {
         }
     }
 
-    public static void sendPlayerAuthorization(UUID profileId, String serverId, String joinOtp){
+    public static void sendPlayerAuthorization(UUID profileId, String serverName, String serverId, String joinOtp){
         // TODO: Send player authorization with current credentials
         authorizedPlayers.add(profileId);
     }

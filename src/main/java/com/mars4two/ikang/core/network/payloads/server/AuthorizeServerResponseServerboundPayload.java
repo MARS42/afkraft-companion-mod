@@ -6,13 +6,14 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record AuthorizeServerResponseServerboundPayload(String serverId, String joinOtp) implements CustomPacketPayload {
+public record AuthorizeServerResponseServerboundPayload(String serverName, String serverId, String joinOtp) implements CustomPacketPayload {
 
     public static final Type<AuthorizeServerResponseServerboundPayload> TYPE =
             new Type<>(AFKraftCompanion.id("authorize_server_response_payload"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, AuthorizeServerResponseServerboundPayload> STREAM_CODEC =
             StreamCodec.composite(
+                    ByteBufCodecs.STRING_UTF8, AuthorizeServerResponseServerboundPayload::serverName,
                     ByteBufCodecs.STRING_UTF8, AuthorizeServerResponseServerboundPayload::serverId,
                     ByteBufCodecs.STRING_UTF8, AuthorizeServerResponseServerboundPayload::joinOtp,
                     AuthorizeServerResponseServerboundPayload::new

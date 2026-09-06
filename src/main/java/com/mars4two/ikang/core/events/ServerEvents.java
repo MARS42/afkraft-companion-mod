@@ -74,7 +74,7 @@ public class ServerEvents {
     public static void onServerAuthorizedByPlayer(ServerPlayer player, AuthorizeServerResponseServerboundPayload payload) {
         var profileId = player.getGameProfile().id();
         log.info("Server has been authorized by player {}", player.getGameProfile().id());
-        AuthService.sendPlayerAuthorization(profileId, payload.serverId(), payload.joinOtp());
+        AuthService.sendPlayerAuthorization(profileId,  payload.serverName(), payload.serverId(), payload.joinOtp());
     }
 
     public static void onIsServerAuthenticatedRequest(ServerPlayer player, IsServerAuthenticatedRequest payload) {

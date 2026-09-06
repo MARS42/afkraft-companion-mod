@@ -66,8 +66,10 @@ public class ClientEvents {
         authorizeService.showAuthorizationScreen();
     }
 
-    private static void sendAuthorizeServerRequest(ClientAuthService.HasJoinedResult hasJoinedResult) {
-        ClientPlayNetworking.send(new AuthorizeServerResponseServerboundPayload(hasJoinedResult.serverId(), hasJoinedResult.hasJoinedResponse().joinOtp()));
+    private static void sendAuthorizeServerRequest(ClientAuthorizeServerService.AuthorizeServerResult result) {
+        var hasJoinedResult = result.hasJoinedResult();
+        var serverName = result.serverName();
+        ClientPlayNetworking.send(new AuthorizeServerResponseServerboundPayload(serverName, hasJoinedResult.serverId(), hasJoinedResult.hasJoinedResponse().joinOtp()));
     }
 
     public static void onGetAfkraftStatus(AFKraftStatusClientBoundPayload afkraftStatus) {

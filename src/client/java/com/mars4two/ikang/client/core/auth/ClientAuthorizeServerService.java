@@ -12,23 +12,24 @@ import java.util.function.Consumer;
 public class ClientAuthorizeServerService {
 
     private final Player player;
-    private final Consumer<ClientAuthService.HasJoinedResult> hasJoinedResultConsumer;
+    private final String serverName;
+    private final Consumer<AuthorizeServerResult> hasJoinedResultConsumer;
     private static final Logger log = LoggerFactory.getLogger("afkraft-auth-server-service");
 
-    public ClientAuthorizeServerService(Player player, Consumer<ClientAuthService.HasJoinedResult> hasJoinedResultConsumer) {
+    public ClientAuthorizeServerService(Player player, Consumer<AuthorizeServerResult> hasJoinedResultConsumer) {
         this.player = player;
         this.hasJoinedResultConsumer = hasJoinedResultConsumer;
+
+        var serverData = Minecraft.getInstance().getCurrentServer();
+        if(serverData == null) {
+            throw new IllegalStateException("No server selected");
+        }
+
+        this.serverName = serverData.name;
     }
 
     public void showAuthorizationScreen() {
-        Minecraft client = Minecraft.getInstance();
-        var serverData = client.getCurrentServer();
-        if(serverData == null) {
-            log.info("No server selected");
-            return;
-        }
-
-        var serverName = serverData.name;
+        var client = Minecraft.getInstance();
         client.execute(() -> client.setScreenAndShow(new AuthorizeServerRequestScreen(
                 null,
                 serverName,
@@ -48,7 +49,7 @@ public class ClientAuthorizeServerService {
 
     private void successAuthorizeServer(ClientAuthService.HasJoinedResult hasJoinedResult) {
         log.info("Server authorized successfully");
-        hasJoinedResultConsumer.accept(hasJoinedResult);
+        hasJoinedResultConsumer.accept(new AuthorizeServerResult(serverName, hasJoinedResult));
         player.sendSystemMessage(Component.literal("Servidor autorizado correctamente"));
     }
 
@@ -60,5 +61,8 @@ public class ClientAuthorizeServerService {
     private void notConnectedCallback() {
         log.info("User is not connected");
         player.sendSystemMessage(Component.literal("Debes estar conectado para autorizar un servidor"));
+    }
+
+    public record AuthorizeServerResult(String serverName, ClientAuthService.HasJoinedResult hasJoinedResult) {
     }
 }
