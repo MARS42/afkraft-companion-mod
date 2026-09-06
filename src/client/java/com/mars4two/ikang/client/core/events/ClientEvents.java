@@ -66,7 +66,7 @@ public class ClientEvents {
         authorizeService.showAuthorizationScreen();
     }
 
-    public static void sendAuthorizeServerRequest(ClientAuthService.HasJoinedResult hasJoinedResult) {
+    private static void sendAuthorizeServerRequest(ClientAuthService.HasJoinedResult hasJoinedResult) {
         ClientPlayNetworking.send(new AuthorizeServerResponseServerboundPayload(hasJoinedResult.serverId(), hasJoinedResult.hasJoinedResponse().joinOtp()));
     }
 
