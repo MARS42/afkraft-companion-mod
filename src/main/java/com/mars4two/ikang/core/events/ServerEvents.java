@@ -54,11 +54,9 @@ public class ServerEvents {
             return;
         }
 
-        if(isDedicated) {
-            log.info("Dedicated server detected, sending authorize server request to player {}", playerId);
-
-            // Todo: Check if admin already logged in and server has credentials
-
+        if(isDedicated && AuthService.isAuthenticated()) {
+            // Todo: Check if user already has been authorized the server
+            log.info("Dedicated server detected and authenticated, sending authorize server request to player {}", playerId);
             ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload());
         }
     }

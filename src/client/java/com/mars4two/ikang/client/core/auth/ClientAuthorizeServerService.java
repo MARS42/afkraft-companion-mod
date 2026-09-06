@@ -11,21 +11,23 @@ public class ClientAuthorizeServerService {
 
     public static void showAuthorizationScreen() {
         Minecraft client = Minecraft.getInstance();
+        var serverData = client.getCurrentServer();
+        if(serverData == null) {
+            log.info("No server selected");
+            return;
+        }
 
-        client.execute(() -> {
-            client.setScreenAndShow(new AuthorizeServerRequestScreen(
-                    null,
-                    "XD",    // Nombre a mostrar en el placeholder
-                    authorized -> {
-                        // Aquí recibes la decisión
-                        if (authorized) {
-                            log.info("El usuario AUTORIZÓ el servidor: XD");
-                            // Ejecutar lógica de autorización o envío de CustomPayload al backend
-                        } else {
-                            log.info("El usuario eligió EN OTRO MOMENTO.");
-                        }
+        var serverName = serverData.name;
+        client.execute(() -> client.setScreenAndShow(new AuthorizeServerRequestScreen(
+                null,
+                serverName,
+                authorized -> {
+                    if (!Boolean.TRUE.equals(authorized)) {
+                        log.info("User doesn't want authorize the server");
+                        return;
                     }
-            ));
-        });
+                    ClientAuthService.authorizeServer(serverName);
+                }
+        )));
     }
 }
