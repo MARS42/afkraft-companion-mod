@@ -2,6 +2,7 @@ package com.mars4two.ikang;
 
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.events.ServerEvents;
+import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.network.PayloadRegister;
@@ -44,6 +45,10 @@ public class AFKraftCompanion implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(AuthorizeServerResponseServerboundPayload.TYPE, (payload, context) -> {
 			ServerEvents.onServerAuthorizedByPlayer(context.player(), payload);
+		});
+
+		ServerPlayNetworking.registerGlobalReceiver(IsServerAuthenticatedRequest.TYPE, (payload, context) -> {
+			ServerEvents.onIsServerAuthenticatedRequest(context.player(), payload);
 		});
 
 		ServerPlayNetworking.registerGlobalReceiver(GetCredentialsRequestServerboundPayload.TYPE, (payload, context) -> {

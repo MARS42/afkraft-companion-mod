@@ -1,13 +1,7 @@
 package com.mars4two.ikang.network;
 
-import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
-import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
-import com.mars4two.ikang.core.network.payloads.client.GetCredentialsRequestClientboundPayload;
-import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
-import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
-import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
-import com.mars4two.ikang.core.network.payloads.server.GetCredentialsStatusServerboundPayload;
-import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
+import com.mars4two.ikang.core.network.payloads.client.*;
+import com.mars4two.ikang.core.network.payloads.server.*;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 
@@ -24,6 +18,7 @@ public class PayloadRegister {
         PayloadTypeRegistry.clientboundPlay().register(GetCredentialsRequestClientboundPayload.TYPE, GetCredentialsRequestClientboundPayload.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(AFKraftStatusClientBoundPayload.TYPE, AFKraftStatusClientBoundPayload.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(AuthorizeServerRequestClientboundPayload.TYPE, AuthorizeServerRequestClientboundPayload.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(IsServerAuthenticatedResponse.TYPE, IsServerAuthenticatedResponse.STREAM_CODEC);
     }
 
     public static void registerServerboundPayloads() {
@@ -31,5 +26,6 @@ public class PayloadRegister {
         PayloadTypeRegistry.serverboundPlay().register(GetCredentialsStatusServerboundPayload.TYPE, GetCredentialsStatusServerboundPayload.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(GetCredentialsRequestServerboundPayload.TYPE, GetCredentialsRequestServerboundPayload.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(AuthorizeServerResponseServerboundPayload.TYPE, AuthorizeServerResponseServerboundPayload.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(IsServerAuthenticatedRequest.TYPE, IsServerAuthenticatedRequest.STREAM_CODEC);
     }
 }

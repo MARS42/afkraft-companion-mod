@@ -4,7 +4,9 @@ import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
+import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
+import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedResponse;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -71,6 +73,10 @@ public class ServerEvents {
         var profileId = player.getGameProfile().id();
         log.info("Server has been authorized by player {}", player.getGameProfile().id());
         AuthService.sendPlayerAuthorization(profileId, payload.serverId(), payload.joinOtp());
+    }
+
+    public static void onIsServerAuthenticatedRequest(ServerPlayer player, IsServerAuthenticatedRequest payload) {
+        ServerPlayNetworking.send(player, new IsServerAuthenticatedResponse(AuthService.isAuthenticated()));
     }
 
     public static InteractionResult onUseWithoutItem(BlockState state, Level level, BlockPos blockPos, Player player, BlockHitResult hitResult) {
