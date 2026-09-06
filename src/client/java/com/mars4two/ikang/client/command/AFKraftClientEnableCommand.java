@@ -30,7 +30,7 @@ public class AFKraftClientEnableCommand {
         );
 
         ClientPlayNetworking.registerGlobalReceiver(IsServerAuthenticatedResponse.TYPE, (payload, context) -> {
-            onIsServerAuthenticatedResponse(context.player(), payload.isAuthenticated());
+            onIsServerAuthenticatedResponse(context.player(), payload);
         });
     }
 
@@ -39,9 +39,9 @@ public class AFKraftClientEnableCommand {
         return 1;
     }
 
-    private static void onIsServerAuthenticatedResponse(Player player, boolean isAuthenticated) {
-        if(isAuthenticated) {
-            player.sendSystemMessage(Component.literal("Credenciales de AFKraft activas, generadas por: ..."));
+    private static void onIsServerAuthenticatedResponse(Player player,IsServerAuthenticatedResponse payload) {
+        if(payload.isAuthenticated()) {
+            player.sendSystemMessage(Component.literal("Credenciales de AFKraft activas, generadas por: " + payload.credentialsOwner()));
             return;
         }
 
