@@ -118,7 +118,7 @@ public class AuthService {
     }
 
     public static boolean isAuthenticated() {
-        return CredentialStore.load().isPresent();
+        return getAccessToken().isPresent();
     }
 
     public static Optional<String> getAccessToken() {
