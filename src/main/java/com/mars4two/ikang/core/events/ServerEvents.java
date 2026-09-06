@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,7 +64,7 @@ public class ServerEvents {
             log.info("Dedicated server detected and authenticated, sending authorize server request to player {}", playerId);
             if(AuthService.isPlayerAuthorized(playerId)){
                 log.info("Player {} already authorized the server", playerId);
-                player.sendSystemMessage(Component.literal("Bienvenido, ya estás autorizado en este servidor para AFKraft"));
+                player.sendSystemMessage(Component.literal("Bienvenido de nuevo, ya has autorizado este servidor para AFKraft"));
                 return;
             }
             ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload());
@@ -77,7 +78,7 @@ public class ServerEvents {
     }
 
     public static void onIsServerAuthenticatedRequest(ServerPlayer player, IsServerAuthenticatedRequest payload) {
-        ServerPlayNetworking.send(player, new IsServerAuthenticatedResponse(AuthService.isAuthenticated(), AuthService.getCredentialsOwner()));
+        ServerPlayNetworking.send(player, new IsServerAuthenticatedResponse(AuthService.isAuthenticated(), Optional.ofNullable(AuthService.getCredentialsOwner()).orElse("")));
     }
 
     public static void onGetCredentialsRequest(ServerPlayer player, GetCredentialsRequestServerboundPayload payload) {
