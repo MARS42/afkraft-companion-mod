@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -25,8 +24,6 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger("afkraft-auth-service");
     private static final HttpClient client = HttpConfig.getHttpClient();
-
-    private static final AtomicBoolean isConnected = new AtomicBoolean(false);
 
     private static final Set<UUID> authorizedPlayers = ConcurrentHashMap.newKeySet();
 
@@ -90,21 +87,6 @@ public class AuthService {
             log.error("Unexpected error during hasJoined validation: ", e);
             throw new AuthenticationException(e.getMessage());
         }
-    }
-
-    public static void checkIfIsConnected(UUID profileId, Consumer<Boolean> callback) {
-        log.info("Checking if profile {} is connected...", profileId);
-        CompletableFuture.runAsync(() -> {
-            var isConnected = getIsConnected(profileId);
-            AuthService.isConnected.set(isConnected);
-            if(!isConnected) {
-                log.info("User is not connected");
-                callback.accept(false);
-                return;
-            }
-            log.info("User is connected");
-            callback.accept(true);
-        });
     }
 
     public static void authenticate(GetCredentialsRequestServerboundPayload payload, ServerPlayer player, Runnable successCallback, Runnable errorCallback) {
@@ -177,6 +159,20 @@ public class AuthService {
             log.error("Unexpected error during hasConnected validation: ", e);
             return false;
         }
+    }
+
+    public static void checkIfIsConnected(UUID profileId, Consumer<Boolean> callback) {
+        log.info("Checking if profile {} is connected...", profileId);
+        CompletableFuture.runAsync(() -> {
+            var isConnected = getIsConnected(profileId);
+            if(!isConnected) {
+                log.info("User is not connected");
+                callback.accept(false);
+                return;
+            }
+            log.info("User is connected");
+            callback.accept(true);
+        });
     }
 
 
