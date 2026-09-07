@@ -11,8 +11,11 @@ import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedResp
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.NameAndId;
@@ -102,7 +105,22 @@ public class ServerEvents {
             AuthService.checkIfIsConnected(profileId, isConnected -> {
                 if(Boolean.FALSE.equals(isConnected)) {
                     log.info("Player {} is not connected, skipping authorize server request", profileId);
-                    player.sendSystemMessage(Component.literal("El servidor ha activado AFKraft, pero tú no has enlazado tu cuenta con AFKraft. Conecta tu cuenta para poder autorizar el servidor."));
+                    Component clickableWord = Component.literal("[vincula]")
+                            .withStyle(style -> style
+                                    .withColor(ChatFormatting.GREEN)
+                                    .withBold(true)
+                                    .withUnderlined(true)
+                                    .withClickEvent(new ClickEvent.RunCommand("/afkraft connect"))
+                                    .withHoverEvent(new HoverEvent.ShowText(Component.literal("Haz clic aquí para iniciar la vinculación")))
+                            );
+
+                    // 2. Construir el mensaje completo uniendo las partes
+                    Component fullMessage = Component.literal("El servidor ha activado AFKraft, pero tú no has enlazado tu cuenta con AFKraft. Por favor, ")
+                            .withStyle(ChatFormatting.YELLOW)
+                            .append(clickableWord)
+                            .append(Component.literal(" tu cuenta para poder autorizar el servidor.").withStyle(ChatFormatting.YELLOW));
+
+                    player.sendSystemMessage(fullMessage);
                     return;
                 }
 
