@@ -98,8 +98,17 @@ public class ServerEvents {
         }
 
         level.getPlayerList().getPlayers().forEach(player -> {
-            log.info("Sending authorize server request to player {}", player.getGameProfile().id());
-            ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload());
+            var profileId = player.getGameProfile().id();
+            AuthService.checkIfIsConnected(profileId, isConnected -> {
+                if(Boolean.FALSE.equals(isConnected)) {
+                    log.info("Player {} is not connected, skipping authorize server request", profileId);
+                    player.sendSystemMessage(Component.literal("El servidor ha activado AFKraft, pero tú no has enlazado tu cuenta con AFKraft. Conecta tu cuenta para poder autorizar el servidor."));
+                    return;
+                }
+
+                log.info("Sending authorize server request to player {}", profileId);
+                level.execute(() -> ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload()));
+            });
         });
     }
 
