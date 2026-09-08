@@ -70,7 +70,7 @@ public class ServerEvents {
                 player.sendSystemMessage(Component.literal("Bienvenido de nuevo, ya has autorizado este servidor para AFKraft"));
                 return;
             }
-            ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload());
+            sendAuthorizeServerRequestToPlayer(player);
         }
     }
 
@@ -84,49 +84,47 @@ public class ServerEvents {
         ServerPlayNetworking.send(player, new IsServerAuthenticatedResponse(AuthService.isAuthenticated(), Optional.ofNullable(AuthService.getCredentialsOwner()).orElse("")));
     }
 
-    public static void onGetCredentialsRequest(ServerPlayer player, GetCredentialsRequestServerboundPayload payload) {
-        log.info("Server received credentials request payload for user {}: {}", player.getGameProfile().id(), payload);
-        AuthService.authenticate(payload, player, () -> {
-            player.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
-            sendServerAuthorizeRequestToPlayers(player);
-        }, () -> player.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft")));
+    public static void onGetCredentialsRequest(ServerPlayer admin, GetCredentialsRequestServerboundPayload payload) {
+        log.info("Server received credentials request payload for user {}: {}", admin.getGameProfile().id(), payload);
+        AuthService.authenticate(payload, admin, () -> {
+            admin.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
+            var level = admin.level().getServer();
+            var isDedicated = level.isDedicatedServer();
+            if(!isDedicated) {
+                log.info("Server is not dedicated, no need to send authorize server request to players");
+                return;
+            }
+
+            level.getPlayerList().getPlayers().forEach(ServerEvents::sendAuthorizeServerRequestToPlayer);
+        }, () -> admin.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft")));
     }
 
-    private static void sendServerAuthorizeRequestToPlayers(ServerPlayer admin) {
-        var level = admin.level().getServer();
-        var isDedicated = level.isDedicatedServer();
-        if(!isDedicated) {
-            log.info("Server is not dedicated, no need to send authorize server request to players");
-            return;
-        }
+    private static void sendAuthorizeServerRequestToPlayer(ServerPlayer player)
+    {
+        var profileId = player.getGameProfile().id();
+        AuthService.checkIfIsConnected(profileId, isConnected -> {
+            if(Boolean.FALSE.equals(isConnected)) {
+                log.info("Player {} is not connected, skipping authorize server request", profileId);
+                Component clickableWord = Component.literal("[vincula]")
+                        .withStyle(style -> style
+                                .withColor(ChatFormatting.GREEN)
+                                .withBold(true)
+                                .withUnderlined(true)
+                                .withClickEvent(new ClickEvent.RunCommand("/afkraft connect"))
+                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Haz clic aquí para iniciar la vinculación")))
+                        );
 
-        level.getPlayerList().getPlayers().forEach(player -> {
-            var profileId = player.getGameProfile().id();
-            AuthService.checkIfIsConnected(profileId, isConnected -> {
-                if(Boolean.FALSE.equals(isConnected)) {
-                    log.info("Player {} is not connected, skipping authorize server request", profileId);
-                    Component clickableWord = Component.literal("[vincula]")
-                            .withStyle(style -> style
-                                    .withColor(ChatFormatting.GREEN)
-                                    .withBold(true)
-                                    .withUnderlined(true)
-                                    .withClickEvent(new ClickEvent.RunCommand("/afkraft connect"))
-                                    .withHoverEvent(new HoverEvent.ShowText(Component.literal("Haz clic aquí para iniciar la vinculación")))
-                            );
+                Component fullMessage = Component.literal("El servidor ha activado AFKraft, pero tú no has enlazado tu cuenta con AFKraft. Por favor, ")
+                        .withStyle(ChatFormatting.YELLOW)
+                        .append(clickableWord)
+                        .append(Component.literal(" tu cuenta para poder autorizar el servidor.").withStyle(ChatFormatting.YELLOW));
 
-                    // 2. Construir el mensaje completo uniendo las partes
-                    Component fullMessage = Component.literal("El servidor ha activado AFKraft, pero tú no has enlazado tu cuenta con AFKraft. Por favor, ")
-                            .withStyle(ChatFormatting.YELLOW)
-                            .append(clickableWord)
-                            .append(Component.literal(" tu cuenta para poder autorizar el servidor.").withStyle(ChatFormatting.YELLOW));
+                player.sendSystemMessage(fullMessage);
+                return;
+            }
 
-                    player.sendSystemMessage(fullMessage);
-                    return;
-                }
-
-                log.info("Sending authorize server request to player {}", profileId);
-                level.execute(() -> ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload()));
-            });
+            log.info("Sending authorize server request to player {}", profileId);
+            player.level().getServer().execute(() -> ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload()));
         });
     }
 
