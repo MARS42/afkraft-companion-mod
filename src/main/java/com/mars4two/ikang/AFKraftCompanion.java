@@ -44,7 +44,7 @@ public class AFKraftCompanion implements ModInitializer {
 //		});
 
 		ServerPlayNetworking.registerGlobalReceiver(AuthorizeServerResponseServerboundPayload.TYPE, (payload, context) -> {
-			ServerEvents.onServerAuthorizedByPlayer(context.player(), payload);
+			ServerEvents.onServerAuthorizedByPlayer(context.server(), context.player(), payload);
 		});
 
 		ServerPlayNetworking.registerGlobalReceiver(IsServerAuthenticatedRequest.TYPE, (payload, context) -> {

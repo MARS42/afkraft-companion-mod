@@ -50,4 +50,8 @@ public class HttpConfig {
     public static URI getRefreshAccessTokenUri() {
         return URI.create(BACKEND_URL + "/mod-auth/refresh-credentials");
     }
+
+    public static URI getSendPlayerAuthorizationUri() {
+        return URI.create(BACKEND_URL + "/mod-auth/authorize-join");
+    }
 }
