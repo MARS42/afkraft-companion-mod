@@ -50,7 +50,6 @@ public class ClientAuthorizeServerService {
     private void successAuthorizeServer(ClientAuthService.HasJoinedResult hasJoinedResult) {
         log.info("Server authorized successfully");
         hasJoinedResultConsumer.accept(new AuthorizeServerResult(serverName, hasJoinedResult));
-        player.sendSystemMessage(Component.literal("Servidor autorizado correctamente"));
     }
 
     private void failAuthorizeServer(Exception e) {
