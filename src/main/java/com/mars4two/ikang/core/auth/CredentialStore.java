@@ -29,14 +29,15 @@ final class CredentialStore {
     public static synchronized void save(ModCredentialsResponse credentialsResponse) {
         LOGGER.info("Saving mod credentials...");
         ModCredentials credentials = new ModCredentials(
-                credentialsResponse.refresh_expires_in(),
-                credentialsResponse.refresh_token(),
-                credentialsResponse.token_type(),
-                credentialsResponse.scope()
+                credentialsResponse.tokenData().refresh_expires_in(),
+                credentialsResponse.tokenData().refresh_token(),
+                credentialsResponse.tokenData().token_type(),
+                credentialsResponse.tokenData().scope(),
+                credentialsResponse.serverId()
         );
 
-        accessToken = credentialsResponse.access_token();
-        accessTokenExpiresAt = System.currentTimeMillis() + ((credentialsResponse.expires_in() * 1000) - (ACCESS_TOKEN_EXPIRATION_THRESHOLD_SECONDS * 1000));
+        accessToken = credentialsResponse.tokenData().access_token();
+        accessTokenExpiresAt = System.currentTimeMillis() + ((credentialsResponse.tokenData().expires_in() * 1000) - (ACCESS_TOKEN_EXPIRATION_THRESHOLD_SECONDS * 1000));
 
         cachedCredentials = credentials;
         LOGGER.info("Mod credentials stored in memory");

@@ -207,7 +207,7 @@ public class AuthService {
         log.info("Refreshing access token...");
 
         try {
-            String jsonBody = GsonConfig.toJson(new RefreshModCredentialsRequest(modCredentials.refreshToken()));
+            String jsonBody = GsonConfig.toJson(new RefreshModCredentialsRequest(modCredentials.refreshToken(), modCredentials.serverId()));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(HttpConfig.getRefreshAccessTokenUri())
