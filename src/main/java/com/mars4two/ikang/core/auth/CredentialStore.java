@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Stores the mod credentials obtained from the device authorization flow.
@@ -72,5 +73,9 @@ final class CredentialStore {
         }
 
         return Optional.ofNullable(accessToken);
+    }
+
+    public static UUID getServerId() {
+        return load().map(ModCredentials::serverId).orElseThrow();
     }
 }

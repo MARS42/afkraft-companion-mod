@@ -114,6 +114,10 @@ public class AuthService {
         return credentialsOwner.get();
     }
 
+    public static UUID getCurrentServerId() {
+        return CredentialStore.getServerId();
+    }
+
     public static Optional<String> getAccessToken() {
         var modCredentials = CredentialStore.load();
         if(modCredentials.isEmpty()) {

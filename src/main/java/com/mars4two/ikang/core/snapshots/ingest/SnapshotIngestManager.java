@@ -59,22 +59,23 @@ public class SnapshotIngestManager implements AutoCloseable {
 
         log.debug("Emitting {} snapshots...", snapshots.size());
 
-        var snapshotContent = snapshots.stream()
-                .map(s -> new SnapshotsIngestRequest.SnapshotContent
-                        (s.getSnapshotName(), s.playerIds(), GsonConfig.toJson(s.data())))
-                .toList();
-        var participants = snapshots.stream().flatMap(s -> s.playerIds().stream()).collect(Collectors.toSet());
-
-        var request = new SnapshotsIngestRequest(worldName, participants, snapshotContent);
-
         var accessToken = AuthService.getAccessToken();
-
         if(accessToken.isEmpty()) {
-            log.debug("Mod credentials not found");
+            log.debug("Unable to emmit snapshots");
             return;
         }
 
         try {
+            var serverId = AuthService.getCurrentServerId();
+
+            var snapshotContent = snapshots.stream()
+                    .map(s -> new SnapshotsIngestRequest.SnapshotContent
+                            (s.getSnapshotName(), s.playerIds(), GsonConfig.toJson(s.data())))
+                    .toList();
+            var participants = snapshots.stream().flatMap(s -> s.playerIds().stream()).collect(Collectors.toSet());
+
+            var request = new SnapshotsIngestRequest(serverId, participants, snapshotContent);
+
             String jsonBody = GsonConfig.toJson(request);
             log.debug("Sending snapshots ingest request: {}", jsonBody);
 
