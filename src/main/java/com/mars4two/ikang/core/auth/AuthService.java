@@ -4,7 +4,6 @@ import com.mars4two.ikang.core.auth.dtos.*;
 import com.mars4two.ikang.core.config.GsonConfig;
 import com.mars4two.ikang.core.config.HttpConfig;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,6 +117,10 @@ public class AuthService {
         return CredentialStore.getServerId();
     }
 
+    public static UUID getAdminProfileId() {
+        return CredentialStore.getAdminProfileId();
+    }
+
     public static Optional<String> getAccessToken() {
         var modCredentials = CredentialStore.load();
         if(modCredentials.isEmpty()) {
@@ -211,7 +214,7 @@ public class AuthService {
         log.info("Refreshing access token...");
 
         try {
-            String jsonBody = GsonConfig.toJson(new RefreshModCredentialsRequest(modCredentials.refreshToken(), modCredentials.serverId()));
+            String jsonBody = GsonConfig.toJson(new RefreshModCredentialsRequest(modCredentials.refreshToken(), modCredentials.serverId(), modCredentials.adminProfileId()));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(HttpConfig.getRefreshAccessTokenUri())

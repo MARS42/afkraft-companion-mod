@@ -34,7 +34,8 @@ final class CredentialStore {
                 credentialsResponse.tokenData().refresh_token(),
                 credentialsResponse.tokenData().token_type(),
                 credentialsResponse.tokenData().scope(),
-                credentialsResponse.serverId()
+                credentialsResponse.serverId(),
+                credentialsResponse.adminProfileId()
         );
 
         accessToken = credentialsResponse.tokenData().access_token();
@@ -77,5 +78,9 @@ final class CredentialStore {
 
     public static UUID getServerId() {
         return load().map(ModCredentials::serverId).orElseThrow();
+    }
+
+    public static UUID getAdminProfileId() {
+        return load().map(ModCredentials::adminProfileId).orElseThrow();
     }
 }
