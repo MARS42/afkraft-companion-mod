@@ -67,6 +67,7 @@ public class SnapshotIngestManager implements AutoCloseable {
 
         try {
             var serverId = AuthService.getCurrentServerId();
+            var adminProfileId = AuthService.getAdminProfileId();
 
             var snapshotContent = snapshots.stream()
                     .map(s -> new SnapshotsIngestRequest.SnapshotContent
@@ -74,7 +75,7 @@ public class SnapshotIngestManager implements AutoCloseable {
                     .toList();
             var participants = snapshots.stream().flatMap(s -> s.playerIds().stream()).collect(Collectors.toSet());
 
-            var request = new SnapshotsIngestRequest(serverId, participants, snapshotContent);
+            var request = new SnapshotsIngestRequest(serverId, adminProfileId, participants, snapshotContent);
 
             String jsonBody = GsonConfig.toJson(request);
             log.debug("Sending snapshots ingest request: {}", jsonBody);
