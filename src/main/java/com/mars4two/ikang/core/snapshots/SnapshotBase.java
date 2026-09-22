@@ -6,7 +6,7 @@ import java.util.UUID;
 public interface SnapshotBase {
     String getSnapshotName();
     Set<UUID> playerIds();
-    Object data();
+    String data();
     String key();
     String changeToken();
 }

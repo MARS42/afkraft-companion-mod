@@ -17,12 +17,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.mars4two.ikang.core.util.PrimitiveJsonUtils.key;
 
 @Mixin(ServerPlayer.class)
 public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsContainer {
@@ -58,13 +55,9 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     }
 
     @Override
-    public String afkraft_companion$getMainHand() {
-        return buildPlayerStatsHand(InteractionHand.MAIN_HAND);
-    }
-
-    @Override
-    public String afkraft_companion$getOffHand() {
-        return buildPlayerStatsHand(InteractionHand.OFF_HAND);
+    public String afkraft_companion$getHandsStats() {
+        return "[\"main=" + buildPlayerStatsHand(InteractionHand.MAIN_HAND) + "\"" + "," +
+                "\"|off=" + buildPlayerStatsHand(InteractionHand.OFF_HAND) + "\"]";
     }
 
     @Inject(at = @At("TAIL"), method = "setExperienceLevels")
@@ -103,13 +96,13 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
 
     @Unique
     private String buildPlayerStatsEffects(){
-        return "[" + getActiveEffects().stream().map(effect -> "{" +
-                key("e", effect.getDescriptionId(), true) +
-                key("a", effect.getAmplifier(), true) +
-                key("d", effect.getDuration(), true) +
-                key("am", effect.isAmbient(), true) +
-                key("v", effect.isVisible(), false) +
-                "}").collect(Collectors.joining(", ")) + "]";
+        return "[" + getActiveEffects().stream().map(effect ->
+                        "\"e=" + effect.getDescriptionId() +
+                                "|a=" + effect.getAmplifier() +
+                                "|d=" + effect.getDuration() +
+                                "|am=" + effect.isAmbient() +
+                                "|v=" + effect.isVisible() + "\""
+                ).collect(Collectors.joining(",")) + "]";
     }
 
     @Unique
@@ -119,12 +112,10 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
             return null;
         }
 
-        return "{" +
-                key("i", stack.getItemName().getString(), true) +
-                key("c", stack.getCount(), true) +
-                key("e", stack.getEnchantments()
-                        .keySet().stream().map(Holder::getRegisteredName)
-                        .collect(Collectors.joining(", ")), false) +
-                "}";
+        return "i=" + stack.getItemName().getString() +
+                "|c=" + stack.getCount() +
+                "|e=" + stack.getEnchantments()
+                .keySet().stream().map(Holder::getRegisteredName)
+                .collect(Collectors.joining(", "));
     }
 }

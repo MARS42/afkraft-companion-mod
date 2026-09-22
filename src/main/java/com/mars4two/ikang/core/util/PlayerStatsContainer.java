@@ -7,6 +7,5 @@ public interface PlayerStatsContainer {
     String afkraft_companion$getStats();
 
     String afkraft_companion$getEffects();
-    String afkraft_companion$getMainHand();
-    String afkraft_companion$getOffHand();
+    String afkraft_companion$getHandsStats();
 }

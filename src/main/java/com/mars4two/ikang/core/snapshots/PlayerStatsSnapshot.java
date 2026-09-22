@@ -20,7 +20,7 @@ public record PlayerStatsSnapshot(Set<UUID> playerIds, String data) implements S
 
     @Override
     public String changeToken() {
-        return playerIds.stream().map(UUID::toString).collect(Collectors.joining()) + data;
+        return data;
     }
 
     public static PlayerStatsSnapshot of(PlayerStatsContainer player) {

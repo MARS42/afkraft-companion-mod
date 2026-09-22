@@ -3,19 +3,12 @@ package com.mars4two.ikang.core.snapshots;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Set;
 import java.util.UUID;
 
 
-public record ContainerSnapshot(Set<UUID> playerIds, String containerName, ContainerData data) implements SnapshotBase {
-    public record ContainerData(int containerSize, String content, BlockPos pos) {
-        @Override
-        public @NonNull String toString() {
-            return containerSize + ":" + content + ":" + pos.toString();
-        }
-    }
+public record ContainerSnapshot(Set<UUID> playerIds, BlockPos blockPos, String containerName, String data) implements SnapshotBase {
 
     @Override
     public String getSnapshotName() {
@@ -24,18 +17,18 @@ public record ContainerSnapshot(Set<UUID> playerIds, String containerName, Conta
 
     @Override
     public String key() {
-        return data.pos.toString();
+        return blockPos.toString();
     }
 
     @Override
     public String changeToken() {
-        return data.toString();
+        return data;
     }
 
     public static ContainerSnapshot of(Set<UUID> playerIds, BaseContainerBlockEntity containerBlockEntity) {
 
         var iterator = containerBlockEntity.iterator();
-        var content = new StringBuilder("{\"items\":[");
+        var content = new StringBuilder("[");
 
         int index = 0;
         boolean first = true;
@@ -52,20 +45,19 @@ public record ContainerSnapshot(Set<UUID> playerIds, String containerName, Conta
             }
             first = false;
 
-            content.append("{");
-            content.append("\"n\":").append(new JsonPrimitive(itemStack.getDisplayName().getString())).append(",");
-            content.append("\"c\":").append(itemStack.count()).append(",");
-            content.append("\"i\":").append(index).append(",");
-            content.append("}");
+            content.append("\"");
+            content.append("n=").append(new JsonPrimitive(itemStack.getDisplayName().getString()));
+            content.append("|c=").append(itemStack.count());
+            content.append("|i=").append(index);
+            content.append("\"");
             index++;
         }
 
-        content.append("]}");
+        content.append("]");
         return new ContainerSnapshot(
                 playerIds,
+                containerBlockEntity.getBlockPos(),
                 containerBlockEntity.getPlainTextName(),
-                new ContainerData(containerBlockEntity.getContainerSize(),
-                        content.toString(),
-                        containerBlockEntity.getBlockPos()));
+                content.toString());
     }
 }
