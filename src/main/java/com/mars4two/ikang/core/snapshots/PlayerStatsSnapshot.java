@@ -1,20 +1,12 @@
 package com.mars4two.ikang.core.snapshots;
 
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
-import org.jspecify.annotations.NonNull;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-public record PlayerStatsSnapshot(Set<UUID> playerIds, PlayerStatsData data) implements SnapshotBase {
-
-    public record PlayerStatsData(UUID playerId, Map<String, String> stats) {
-        @Override
-        public @NonNull String toString() {
-            return playerId.toString() + ":" + String.join(",", stats.values());
-        }
-    }
+public record PlayerStatsSnapshot(Set<UUID> playerIds, String data) implements SnapshotBase {
 
     @Override
     public String getSnapshotName() {
@@ -23,18 +15,15 @@ public record PlayerStatsSnapshot(Set<UUID> playerIds, PlayerStatsData data) imp
 
     @Override
     public String key() {
-        return data.playerId.toString() + getSnapshotName();
+        return playerIds.stream().map(UUID::toString).collect(Collectors.joining()) + getSnapshotName();
     }
 
     @Override
     public String changeToken() {
-        return data.toString();
+        return playerIds.stream().map(UUID::toString).collect(Collectors.joining()) + data;
     }
 
     public static PlayerStatsSnapshot of(PlayerStatsContainer player) {
-        return new PlayerStatsSnapshot(Set.of(player.afkraft_companion$getProfileId()), new PlayerStatsData(
-                player.afkraft_companion$getProfileId(),
-                player.afkraft_companion$getStats()
-        ));
+        return new PlayerStatsSnapshot(Set.of(player.afkraft_companion$getProfileId()), player.afkraft_companion$getStats());
     }
 }

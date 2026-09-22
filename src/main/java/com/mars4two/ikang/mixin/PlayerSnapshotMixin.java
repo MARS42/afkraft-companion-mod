@@ -30,9 +30,6 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     @Unique
     private static final SnapshotIngestManager ingestManager = SnapshotIngestManager.getInstance();
 
-    @Unique
-    private final Map<String, String> playerStatsMap = new HashMap<>();
-
     protected PlayerSnapshotMixin(Level level, GameProfile gameProfile) {
         super(level, gameProfile);
     }
@@ -43,18 +40,16 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     }
 
     @Override
-    public Map<String, String> afkraft_companion$getStats() {
-        playerStatsMap.put("gameMode", gameMode() != null ? gameMode().getName() : "");
-        playerStatsMap.put("health", String.valueOf(getHealth()));
-        playerStatsMap.put("maxHealth", String.valueOf(getMaxHealth()));
-        playerStatsMap.put("foodLevel", String.valueOf(getFoodData().getFoodLevel()));
-        playerStatsMap.put("experience", String.valueOf(experienceLevel));
-        playerStatsMap.put("experienceProgress", String.valueOf(experienceProgress));
-        playerStatsMap.put("xPos", String.valueOf(getX()));
-        playerStatsMap.put("yPos", String.valueOf(getY()));
-        playerStatsMap.put("zPos", String.valueOf(getZ()));
-
-        return playerStatsMap;
+    public String afkraft_companion$getStats() {
+        return "gm=" + (gameMode() != null ? gameMode().getName() : "") +
+                "|h=" + getHealth() +
+                "|mh=" + getMaxHealth() +
+                "|fl=" + getFoodData().getFoodLevel() +
+                "|exp=" + experienceLevel +
+                "|expP=" + experienceProgress +
+                "|x=" + getX() +
+                "|y=" + getY() +
+                "|z=" + getZ();
     }
 
     @Override
