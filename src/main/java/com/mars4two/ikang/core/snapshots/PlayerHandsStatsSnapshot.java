@@ -1,11 +1,12 @@
 package com.mars4two.ikang.core.snapshots;
 
+import com.mars4two.ikang.core.snapshots.model.RawPlayerHands;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 
 import java.util.Set;
 import java.util.UUID;
 
-public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, String data) implements SnapshotBase {
+public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, RawPlayerHands hands) implements SnapshotBase {
 
     @Override
     public String getSnapshotName() {
@@ -18,12 +19,16 @@ public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, String data) impleme
     }
 
     @Override
-    public String changeToken() {
-        return data;
+    public Object changeToken() {
+        return hands;
+    }
+
+    @Override
+    public String data() {
+        return hands != null ? hands.toPayloadString() : "[\"main=null\",\"|off=null\"]";
     }
 
     public static PlayerHandsStatsSnapshot of(PlayerStatsContainer player) {
-        return
-                new PlayerHandsStatsSnapshot(Set.of(player.afkraft_companion$getProfileId()), player.afkraft_companion$getHandsStats());
+        return new PlayerHandsStatsSnapshot(Set.of(player.afkraft_companion$getProfileId()), player.afkraft_companion$getHandsStats());
     }
 }

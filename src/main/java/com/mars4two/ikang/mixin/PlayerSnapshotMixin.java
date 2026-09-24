@@ -1,6 +1,11 @@
 package com.mars4two.ikang.mixin;
 
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
+import com.mars4two.ikang.core.snapshots.model.RawHandItem;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerEffect;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerEffects;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerHands;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.Holder;
@@ -17,9 +22,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
-
 
 @Mixin(ServerPlayer.class)
 public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsContainer {
@@ -37,56 +42,74 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     }
 
     @Override
-    public String afkraft_companion$getStats() {
-        return "gm=" + (gameMode() != null ? gameMode().getName() : "") +
-                "|h=" + getHealth() +
-                "|mh=" + getMaxHealth() +
-                "|fl=" + getFoodData().getFoodLevel() +
-                "|exp=" + experienceLevel +
-                "|expP=" + experienceProgress +
-                "|x=" + getX() +
-                "|y=" + getY() +
-                "|z=" + getZ();
+    public RawPlayerStats afkraft_companion$getStats() {
+        return new RawPlayerStats(
+                gameMode() != null ? gameMode().getName() : "",
+                getHealth(),
+                getMaxHealth(),
+                getFoodData().getFoodLevel(),
+                experienceLevel,
+                experienceProgress,
+                getX(),
+                getY(),
+                getZ()
+        );
     }
 
     @Override
-    public String afkraft_companion$getEffects() {
-        return buildPlayerStatsEffects();
+    public RawPlayerEffects afkraft_companion$getEffects() {
+        var active = getActiveEffects();
+        if (active.isEmpty()) {
+            return new RawPlayerEffects(List.of());
+        }
+        List<RawPlayerEffect> list = new ArrayList<>(active.size());
+        for (var effect : active) {
+            list.add(new RawPlayerEffect(
+                    effect.getDescriptionId(),
+                    effect.getAmplifier(),
+                    effect.getDuration(),
+                    effect.isAmbient(),
+                    effect.isVisible()
+            ));
+        }
+        return new RawPlayerEffects(list);
     }
 
     @Override
-    public String afkraft_companion$getHandsStats() {
-        return "[\"main=" + buildPlayerStatsHand(InteractionHand.MAIN_HAND) + "\"" + "," +
-                "\"|off=" + buildPlayerStatsHand(InteractionHand.OFF_HAND) + "\"]";
+    public RawPlayerHands afkraft_companion$getHandsStats() {
+        return new RawPlayerHands(
+                extractHandItem(InteractionHand.MAIN_HAND),
+                extractHandItem(InteractionHand.OFF_HAND)
+        );
     }
 
     @Inject(at = @At("TAIL"), method = "setExperienceLevels")
-    private void onSetExperienceLevels(int value, CallbackInfo ci){
+    private void onSetExperienceLevels(int value, CallbackInfo ci) {
         ingestManager.ingestPlayerStats(this);
     }
 
     @Inject(at = @At("TAIL"), method = "setExperiencePoints")
-    private void onSetExperiencePoints(int value, CallbackInfo ci){
+    private void onSetExperiencePoints(int value, CallbackInfo ci) {
         ingestManager.ingestPlayerStats(this);
     }
 
     @Inject(at = @At("TAIL"), method = "giveExperienceLevels")
-    private void onGiveExperienceLevels(int value, CallbackInfo ci){
+    private void onGiveExperienceLevels(int value, CallbackInfo ci) {
         ingestManager.ingestPlayerStats(this);
     }
 
     @Inject(at = @At("TAIL"), method = "giveExperiencePoints")
-    private void onGiveExperiencePoints(int value, CallbackInfo ci){
+    private void onGiveExperiencePoints(int value, CallbackInfo ci) {
         ingestManager.ingestPlayerStats(this);
     }
 
     @Inject(at = @At("TAIL"), method = "hurtServer")
-    private void onHurtServer(ServerLevel level, DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir){
+    private void onHurtServer(ServerLevel level, DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         ingestManager.ingestPlayerStats(this);
     }
 
     @Inject(at = @At("TAIL"), method = "tick")
-    private void onTick(CallbackInfo ci){
+    private void onTick(CallbackInfo ci) {
         if (this.tickCount % 20 != 0) {
             return;
         }
@@ -95,27 +118,22 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     }
 
     @Unique
-    private String buildPlayerStatsEffects(){
-        return "[" + getActiveEffects().stream().map(effect ->
-                        "\"e=" + effect.getDescriptionId() +
-                                "|a=" + effect.getAmplifier() +
-                                "|d=" + effect.getDuration() +
-                                "|am=" + effect.isAmbient() +
-                                "|v=" + effect.isVisible() + "\""
-                ).collect(Collectors.joining(",")) + "]";
-    }
-
-    @Unique
-    private String buildPlayerStatsHand(InteractionHand hand) {
+    private RawHandItem extractHandItem(InteractionHand hand) {
         var stack = getItemInHand(hand);
-        if(stack.isEmpty()){
+        if (stack.isEmpty()) {
             return null;
         }
 
-        return "i=" + stack.getItemName().getString() +
-                "|c=" + stack.getCount() +
-                "|e=" + stack.getEnchantments()
-                .keySet().stream().map(Holder::getRegisteredName)
-                .collect(Collectors.joining(", "));
+        var enchantmentHolders = stack.getEnchantments().keySet();
+        List<String> enchantments = new ArrayList<>(enchantmentHolders.size());
+        for (Holder<?> holder : enchantmentHolders) {
+            enchantments.add(holder.getRegisteredName());
+        }
+
+        return new RawHandItem(
+                stack.getItemName().getString(),
+                stack.getCount(),
+                enchantments
+        );
     }
 }

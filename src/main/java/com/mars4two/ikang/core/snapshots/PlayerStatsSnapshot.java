@@ -1,12 +1,13 @@
 package com.mars4two.ikang.core.snapshots;
 
+import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public record PlayerStatsSnapshot(Set<UUID> playerIds, String data) implements SnapshotBase {
+public record PlayerStatsSnapshot(Set<UUID> playerIds, RawPlayerStats stats) implements SnapshotBase {
 
     @Override
     public String getSnapshotName() {
@@ -19,8 +20,13 @@ public record PlayerStatsSnapshot(Set<UUID> playerIds, String data) implements S
     }
 
     @Override
-    public String changeToken() {
-        return data;
+    public Object changeToken() {
+        return stats;
+    }
+
+    @Override
+    public String data() {
+        return stats != null ? stats.toPayloadString() : "";
     }
 
     public static PlayerStatsSnapshot of(PlayerStatsContainer player) {

@@ -8,5 +8,5 @@ public interface SnapshotBase {
     Set<UUID> playerIds();
     String data();
     String key();
-    String changeToken();
+    Object changeToken();
 }

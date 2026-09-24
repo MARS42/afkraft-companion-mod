@@ -1,14 +1,20 @@
 package com.mars4two.ikang.core.snapshots;
 
-import com.google.gson.JsonPrimitive;
+import com.mars4two.ikang.core.snapshots.model.RawContainerItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-
-public record ContainerSnapshot(Set<UUID> playerIds, BlockPos blockPos, String containerName, String data) implements SnapshotBase {
+public record ContainerSnapshot(
+        Set<UUID> playerIds,
+        BlockPos blockPos,
+        String containerName,
+        List<RawContainerItem> items
+) implements SnapshotBase {
 
     @Override
     public String getSnapshotName() {
@@ -21,43 +27,48 @@ public record ContainerSnapshot(Set<UUID> playerIds, BlockPos blockPos, String c
     }
 
     @Override
-    public String changeToken() {
-        return data;
+    public Object changeToken() {
+        return items;
+    }
+
+    @Override
+    public String data() {
+        if (items == null || items.isEmpty()) {
+            return "[]";
+        }
+        StringBuilder content = new StringBuilder("[");
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) {
+                content.append(",");
+            }
+            content.append(items.get(i).toPayloadString());
+        }
+        content.append("]");
+        return content.toString();
     }
 
     public static ContainerSnapshot of(Set<UUID> playerIds, BaseContainerBlockEntity containerBlockEntity) {
-
         var iterator = containerBlockEntity.iterator();
-        var content = new StringBuilder("[");
+        List<RawContainerItem> items = new ArrayList<>();
 
         int index = 0;
-        boolean first = true;
         while (iterator.hasNext()) {
-
             var itemStack = iterator.next();
-            if (itemStack.isEmpty()){
-                index++;
-                continue;
+            if (!itemStack.isEmpty()) {
+                items.add(new RawContainerItem(
+                        itemStack.getDisplayName().getString(),
+                        itemStack.count(),
+                        index
+                ));
             }
-
-            if (!first) {
-                content.append(",");
-            }
-            first = false;
-
-            content.append("\"");
-            content.append("n=").append(new JsonPrimitive(itemStack.getDisplayName().getString()));
-            content.append("|c=").append(itemStack.count());
-            content.append("|i=").append(index);
-            content.append("\"");
             index++;
         }
 
-        content.append("]");
         return new ContainerSnapshot(
                 playerIds,
                 containerBlockEntity.getBlockPos(),
                 containerBlockEntity.getPlainTextName(),
-                content.toString());
+                items
+        );
     }
 }
