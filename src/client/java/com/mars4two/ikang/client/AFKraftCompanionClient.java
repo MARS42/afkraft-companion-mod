@@ -3,7 +3,6 @@ package com.mars4two.ikang.client;
 import com.mars4two.ikang.client.command.AFKraftClientConnectCommand;
 import com.mars4two.ikang.client.command.AFKraftClientEnableCommand;
 import com.mars4two.ikang.client.core.events.ClientEvents;
-import com.mars4two.ikang.client.core.worker.AFKraftWorker;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
@@ -13,7 +12,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 
 
-public class AFKraftCompanionClient extends AFKraftWorker implements ClientModInitializer {
+public class AFKraftCompanionClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
