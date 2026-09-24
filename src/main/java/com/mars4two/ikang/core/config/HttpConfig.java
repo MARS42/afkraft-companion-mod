@@ -43,6 +43,11 @@ public class HttpConfig {
         return URI.create(BACKEND_URL + "/mod-worker/ingest");
     }
 
+    public static URI getSnapshotsWebSocketUri() {
+        String wsBase = BACKEND_URL.replace("http://", "ws://").replace("https://", "wss://");
+        return URI.create(wsBase + "/mod-worker/snapshots/ws");
+    }
+
     public static URI getModCredentialsUri() {
         return URI.create(BACKEND_URL + "/mod-auth/get-credentials");
     }

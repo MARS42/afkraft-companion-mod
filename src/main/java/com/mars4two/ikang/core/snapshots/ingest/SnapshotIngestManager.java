@@ -25,6 +25,7 @@ public class SnapshotIngestManager implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(SnapshotIngestManager.class);
     private final HttpClient client = HttpConfig.getHttpClient();
+    private final SnapshotsWebSocketClient wsClient = new SnapshotsWebSocketClient(client);
 
     private Conflater<SnapshotBase> conflater;
     private String worldName;
@@ -35,6 +36,8 @@ public class SnapshotIngestManager implements AutoCloseable {
 
     public void start(MinecraftServer minecraftServer) {
         worldName = minecraftServer.getWorldData().getLevelName();
+
+        wsClient.connectAsync();
 
         conflater = new Conflater<>(1000,
                 SnapshotBase::key, SnapshotBase::changeToken,
@@ -53,15 +56,15 @@ public class SnapshotIngestManager implements AutoCloseable {
     }
 
     private void onEmit(List<SnapshotBase> snapshots) {
-        if(!AuthService.isAuthenticated()){
+        if (!AuthService.isAuthenticated()) {
             return;
         }
 
         log.debug("Emitting {} snapshots...", snapshots.size());
 
         var accessToken = AuthService.getAccessToken();
-        if(accessToken.isEmpty()) {
-            log.debug("Unable to emmit snapshots");
+        if (accessToken.isEmpty()) {
+            log.debug("Unable to emit snapshots");
             return;
         }
 
@@ -80,6 +83,15 @@ public class SnapshotIngestManager implements AutoCloseable {
             String jsonBody = GsonConfig.toJson(request);
             log.debug("Sending snapshots ingest request: {}", jsonBody);
 
+            // Attempt non-blocking delivery via persistent WebSocket
+            boolean sentViaWs = wsClient.send(jsonBody);
+            if (sentViaWs) {
+                log.debug("Snapshots emitted via WebSocket");
+                return;
+            }
+
+            // Fallback to HTTP POST if WebSocket is disconnected
+            log.debug("WebSocket not connected; falling back to HTTP POST");
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(HttpConfig.getSnapshotsIngestUri())
                     .header("Content-Type", "application/json")
@@ -88,12 +100,12 @@ public class SnapshotIngestManager implements AutoCloseable {
                     .build();
 
             HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            if(response.statusCode() >= 200 && response.statusCode() < 300) {
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return;
             }
 
             log.warn("Snapshots ingest response status: {}", response.statusCode());
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error ingesting snapshots: {}", e.getMessage());
         }
     }
@@ -105,8 +117,15 @@ public class SnapshotIngestManager implements AutoCloseable {
     @Override
     public void close() {
         try {
-            conflater.close();
-            conflater = null;
+            wsClient.close();
+        } catch (Exception e) {
+            log.error("Error closing SnapshotsWebSocketClient", e);
+        }
+        try {
+            if (conflater != null) {
+                conflater.close();
+                conflater = null;
+            }
         } catch (Exception e) {
             log.error("Error closing SnapshotIngestManager", e);
         }
