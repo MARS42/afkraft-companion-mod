@@ -8,8 +8,8 @@ public record RawPlayerHands(
         RawHandItem offHand
 ) {
     public String toPayloadString() {
-        String mainStr = mainHand != null ? mainHand.toPayloadString() : "null";
-        String offStr = offHand != null ? offHand.toPayloadString() : "null";
-        return "[\"main=" + mainStr + "\",\"|off=" + offStr + "\"]";
+        String mainStr = mainHand != null ? mainHand.toPayloadString() : "";
+        String offStr = offHand != null ? offHand.toPayloadString() : "";
+        return "[\"" + mainStr + "\",\"" + offStr + "\"]";
     }
 }

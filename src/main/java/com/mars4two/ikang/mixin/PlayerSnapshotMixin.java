@@ -9,6 +9,7 @@ import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -131,7 +132,8 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         }
 
         return new RawHandItem(
-                stack.getItemName().getString(),
+                BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(),
+                stack.getCustomName() != null ? stack.getCustomName().getString() : "",
                 stack.getCount(),
                 enchantments
         );

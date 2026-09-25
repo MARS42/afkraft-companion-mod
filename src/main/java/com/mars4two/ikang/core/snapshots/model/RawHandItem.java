@@ -6,13 +6,15 @@ import java.util.List;
  * Immutable raw data representing an item held in a hand.
  */
 public record RawHandItem(
+        String id,
         String itemName,
         int count,
         List<String> enchantments
 ) {
     public String toPayloadString() {
         String ench = (enchantments == null || enchantments.isEmpty()) ? "" : String.join(", ", enchantments);
-        return "i=" + itemName +
+        return "i=" + id +
+                "|n=" + itemName +
                 "|c=" + count +
                 "|e=" + ench;
     }
