@@ -65,10 +65,15 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         }
         List<RawPlayerEffect> list = new ArrayList<>(active.size());
         for (var effect : active) {
+
+            float tps = this.level().tickRateManager().tickrate();
+            int durationTicks = effect.getDuration();
+            int durationSeconds = (durationTicks > 0) ? (int) (durationTicks / tps) : durationTicks;
+
             list.add(new RawPlayerEffect(
                     effect.getDescriptionId(),
                     effect.getAmplifier(),
-                    effect.getDuration(),
+                    durationSeconds,
                     effect.isAmbient(),
                     effect.isVisible()
             ));
