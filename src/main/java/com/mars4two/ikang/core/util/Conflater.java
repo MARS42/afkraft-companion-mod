@@ -80,9 +80,14 @@ public final class Conflater<T> implements AutoCloseable {
     private final BatchConsumer<T> emitter;
     private final Consumer<Throwable> errorHandler;
     private final long periodMillis;
+    private final long heartbeatIntervalMillis;
+    private final long idleThresholdMillis;
+    private final Runnable onHeartbeat;
 
+    private volatile long lastActivityTime = System.currentTimeMillis();
     private final ScheduledExecutorService scheduler;
     private volatile ScheduledFuture<?> task;
+    private volatile ScheduledFuture<?> heartbeatTask;
 
     /**
      * @param periodMillis  intervalo de flush en milisegundos
@@ -97,12 +102,38 @@ public final class Conflater<T> implements AutoCloseable {
                      Function<? super T, ?> tokenFn,
                      BatchConsumer<T> emitter,
                      Consumer<Throwable> errorHandler) {
+        this(periodMillis, keyFn, tokenFn, emitter, errorHandler, 0, 0, null);
+    }
+
+    /**
+     * @param periodMillis             intervalo de flush en milisegundos
+     * @param keyFn                    extrae la clave de referencia (qué entidad es)
+     * @param tokenFn                  calcula el token de cambio (para comparar contra lo emitido)
+     * @param emitter                  recibe cada batch drenado (fuera de locks)
+     * @param errorHandler             recibe errores del flush/emitter (puede ser null)
+     * @param heartbeatIntervalMillis  cada cuánto tiempo disparar el heartbeat en milisegundos
+     * @param idleThresholdMillis      tiempo sin cambios requerido antes de enviar heartbeats en milisegundos
+     * @param onHeartbeat              callback a ejecutar en cada pulso de heartbeat
+     */
+    public Conflater(long periodMillis,
+                     Function<? super T, String> keyFn,
+                     Function<? super T, ?> tokenFn,
+                     BatchConsumer<T> emitter,
+                     Consumer<Throwable> errorHandler,
+                     long heartbeatIntervalMillis,
+                     long idleThresholdMillis,
+                     Runnable onHeartbeat) {
         if (periodMillis <= 0) throw new IllegalArgumentException("periodMillis debe ser > 0");
+        if (heartbeatIntervalMillis < 0) throw new IllegalArgumentException("heartbeatIntervalMillis debe ser >= 0");
+        if (idleThresholdMillis < 0) throw new IllegalArgumentException("idleThresholdMillis debe ser >= 0");
         this.periodMillis = periodMillis;
         this.keyFn = Objects.requireNonNull(keyFn, "keyFn");
         this.tokenFn = Objects.requireNonNull(tokenFn, "tokenFn");
         this.emitter = Objects.requireNonNull(emitter, "emitter");
         this.errorHandler = (errorHandler != null) ? errorHandler : t -> { };
+        this.heartbeatIntervalMillis = heartbeatIntervalMillis;
+        this.idleThresholdMillis = idleThresholdMillis;
+        this.onHeartbeat = onHeartbeat;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread th = new Thread(r, "AFKraft conflater");
             th.setDaemon(true);
@@ -127,6 +158,7 @@ public final class Conflater<T> implements AutoCloseable {
 
         if (result.dirty) {
             dirtyKeys.add(key);
+            lastActivityTime = System.currentTimeMillis();
         }
     }
 
@@ -136,8 +168,13 @@ public final class Conflater<T> implements AutoCloseable {
             log.error("Conflater already started");
             return;
         }
+        lastActivityTime = System.currentTimeMillis();
         task = scheduler.scheduleAtFixedRate(
                 this::safeFlush, periodMillis, periodMillis, TimeUnit.MILLISECONDS);
+        if (onHeartbeat != null && heartbeatIntervalMillis > 0) {
+            heartbeatTask = scheduler.scheduleAtFixedRate(
+                    this::safeHeartbeat, heartbeatIntervalMillis, heartbeatIntervalMillis, TimeUnit.MILLISECONDS);
+        }
         log.info("Conflater started");
     }
 
@@ -148,6 +185,20 @@ public final class Conflater<T> implements AutoCloseable {
             // Nunca dejar morir la tarea programada (scheduleAtFixedRate cancela
             // ejecuciones futuras si la tarea lanza).
             log.error("Error flushing conflater", t);
+            errorHandler.accept(t);
+        }
+    }
+
+    private void safeHeartbeat() {
+        try {
+            long now = System.currentTimeMillis();
+            if (now - lastActivityTime >= idleThresholdMillis) {
+                if (onHeartbeat != null) {
+                    onHeartbeat.run();
+                }
+            }
+        } catch (Throwable t) {
+            log.error("Error executing heartbeat in conflater", t);
             errorHandler.accept(t);
         }
     }
@@ -179,6 +230,7 @@ public final class Conflater<T> implements AutoCloseable {
         }
 
         if (!batch.isEmpty()) {
+            lastActivityTime = System.currentTimeMillis();
             emitter.accept(batch);
         }
     }
@@ -187,6 +239,7 @@ public final class Conflater<T> implements AutoCloseable {
     @Override
     public void close() {
         if (task != null) task.cancel(false);
+        if (heartbeatTask != null) heartbeatTask.cancel(false);
         scheduler.shutdown();
         try {
             scheduler.awaitTermination(periodMillis + 1000, TimeUnit.MILLISECONDS);

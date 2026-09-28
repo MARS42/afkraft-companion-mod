@@ -27,6 +27,10 @@ public class SnapshotIngestManager implements AutoCloseable {
     private final HttpClient client = HttpConfig.getHttpClient();
     private final SnapshotsWebSocketClient wsClient = new SnapshotsWebSocketClient(client);
 
+    private static final long FLUSH_PERIOD_MILLIS = 1000;
+    private static final long HEARTBEAT_INTERVAL_MILLIS = 30_000;
+    private static final long HEARTBEAT_IDLE_THRESHOLD_MILLIS = 30_000;
+
     private Conflater<SnapshotBase> conflater;
     private String worldName;
 
@@ -39,9 +43,16 @@ public class SnapshotIngestManager implements AutoCloseable {
 
         wsClient.connectAsync();
 
-        conflater = new Conflater<>(1000,
-                SnapshotBase::key, SnapshotBase::changeToken,
-                this::onEmit, this::onEmitError);
+        conflater = new Conflater<>(
+                FLUSH_PERIOD_MILLIS,
+                SnapshotBase::key,
+                SnapshotBase::changeToken,
+                this::onEmit,
+                this::onEmitError,
+                HEARTBEAT_INTERVAL_MILLIS,
+                HEARTBEAT_IDLE_THRESHOLD_MILLIS,
+                this::onHeartbeat
+        );
         conflater.start();
     }
 
@@ -112,6 +123,54 @@ public class SnapshotIngestManager implements AutoCloseable {
 
     private void onEmitError(Throwable error) {
         log.error("Error emitting snapshots", error);
+    }
+
+    private void onHeartbeat() {
+        if (!AuthService.isAuthenticated()) {
+            return;
+        }
+
+        log.debug("Emitting heartbeat...");
+
+        var accessToken = AuthService.getAccessToken();
+        if (accessToken.isEmpty()) {
+            log.debug("Unable to emit heartbeat: access token missing");
+            return;
+        }
+
+        try {
+            var serverId = AuthService.getCurrentServerId();
+            var adminProfileId = AuthService.getAdminProfileId();
+            if (serverId == null || adminProfileId == null) {
+                log.debug("Unable to emit heartbeat: serverId or adminProfileId is missing");
+                return;
+            }
+
+            var request = new HeartbeatRequest(serverId, adminProfileId);
+            String jsonBody = GsonConfig.toJson(request);
+
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(HttpConfig.getSnapshotsHeartbeatUri())
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + accessToken.get())
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            client.sendAsync(httpRequest, HttpResponse.BodyHandlers.discarding())
+                    .thenAccept(response -> {
+                        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                            log.debug("Heartbeat emitted successfully");
+                        } else {
+                            log.warn("Heartbeat response status: {}", response.statusCode());
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        log.error("Error emitting heartbeat: {}", ex.getMessage());
+                        return null;
+                    });
+        } catch (Exception e) {
+            log.error("Error preparing heartbeat request: {}", e.getMessage());
+        }
     }
 
     @Override

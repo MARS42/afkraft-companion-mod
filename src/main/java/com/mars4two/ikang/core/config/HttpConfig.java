@@ -48,6 +48,10 @@ public class HttpConfig {
         return URI.create(wsBase + "/mod-worker/snapshots/ws");
     }
 
+    public static URI getSnapshotsHeartbeatUri() {
+        return URI.create(BACKEND_URL + "/mod-worker/snapshots/ws/heartbeat");
+    }
+
     public static URI getModCredentialsUri() {
         return URI.create(BACKEND_URL + "/mod-auth/get-credentials");
     }
