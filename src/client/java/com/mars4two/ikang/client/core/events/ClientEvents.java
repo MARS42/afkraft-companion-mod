@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientEvents {
@@ -35,6 +36,17 @@ public class ClientEvents {
 
     private ClientEvents() {
         // Utility class, no instances allowed
+    }
+
+    public static void onClientHasConnected(UUID profileId, String otp) {
+        log.info("Client has connected, sending credentials request");
+        ClientAuthService.authenticate(
+                (serverId, joinOtp) -> Minecraft.getInstance().execute(
+                        () -> ClientPlayNetworking.send(new GetCredentialsRequestServerboundPayload(profileId.toString(), serverId, joinOtp))
+                ),
+                (e) -> log.error("Error while authenticating", e),
+                () -> log.info("Client is not connected")
+        );
     }
 
     public static void onGetCredentialsStatus(GetCredentialsStatusClientboundPayload payload) {

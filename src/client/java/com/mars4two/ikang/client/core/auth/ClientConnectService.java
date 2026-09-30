@@ -2,6 +2,7 @@ package com.mars4two.ikang.client.core.auth;
 
 import com.mars4two.ikang.client.core.auth.dtos.ConnectRequest;
 import com.mars4two.ikang.client.core.auth.dtos.ConnectResponse;
+import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.client.core.screens.QRModalScreen;
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.auth.AuthenticationException;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -68,7 +70,7 @@ public class ClientConnectService {
                 String connectUrl = connectData.verificationUrl();
 
                 var screen = new QRModalScreen(connectUrl);
-                validateHasConnected(connectData.deviceCode(), connectData.interval(), connectData.expiresIn(), screen);
+                validateHasConnected(profileId, connectData, screen);
 
                 minecraft.execute(() -> {
                     onFeedback.accept("Esperando aprobación de vinculación...");
@@ -122,10 +124,10 @@ public class ClientConnectService {
         }
     }
 
-    private static void validateHasConnected(String deviceCode, int intervalInSeconds, int expiresInSeconds, QRModalScreen screen) {
+    private static void validateHasConnected(UUID profileId, ConnectResponse connectResponse, QRModalScreen screen) {
         Minecraft minecraft = Minecraft.getInstance();
-        int interval = Math.max(1, intervalInSeconds);
-        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(expiresInSeconds);
+        int interval = Math.max(1, connectResponse.interval());
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(connectResponse.expiresIn());
 
         cancelActivePolling();
 
@@ -133,8 +135,8 @@ public class ClientConnectService {
         ACTIVE_POLL_CANCEL.set(cancelled);
         screen.setOnClosed(() -> cancelled.set(true));
 
-        LOGGER.info("[AFKraft] Iniciando polling de vinculación (cada {}s, expira en {}s)", interval, expiresInSeconds);
-        schedulePoll(deviceCode, interval, deadlineNanos, screen, minecraft, cancelled);
+        LOGGER.info("[AFKraft] Iniciando polling de vinculación (cada {}s, expira en {}s)", interval, connectResponse.expiresIn());
+        schedulePoll(profileId, connectResponse.deviceCode(), interval, deadlineNanos, screen, minecraft, cancelled);
     }
 
     private static void cancelActivePolling() {
@@ -144,7 +146,7 @@ public class ClientConnectService {
         }
     }
 
-    private static void schedulePoll(String deviceCode, int interval, long deadlineNanos,
+    private static void schedulePoll(UUID profileId, String deviceCode, int interval, long deadlineNanos,
                                      QRModalScreen screen, Minecraft minecraft, AtomicBoolean cancelled) {
         POLLING_EXECUTOR.schedule(() -> {
             if (cancelled.get()) {
@@ -161,18 +163,19 @@ public class ClientConnectService {
 
             var hasConnected = validateHasConnected(deviceCode);
 
-            if (hasConnected) {
-                LOGGER.info("[AFKraft] Vinculación completada, credenciales del mod guardadas");
+            if (hasConnected.isPresent()) {
+                LOGGER.info("[AFKraft] Vinculación completada");
                 notifyUser(minecraft, "Cuenta vinculada con AFKraft correctamente");
                 closeModal(minecraft, screen);
+                generateModCredentials(profileId, hasConnected.get());
                 return;
             }
 
-            schedulePoll(deviceCode, interval, deadlineNanos, screen, minecraft, cancelled);
+            schedulePoll(profileId, deviceCode, interval, deadlineNanos, screen, minecraft, cancelled);
         }, interval, TimeUnit.SECONDS);
     }
 
-    private static boolean validateHasConnected(String deviceCode) {
+    private static Optional<HasConnectedResponse> validateHasConnected(String deviceCode) {
         try {
             String jsonBody = GsonConfig.toJson(new HasConnectedRequest(deviceCode));
 
@@ -187,14 +190,15 @@ public class ClientConnectService {
 
             if (response.statusCode() != 200) {
                 LOGGER.warn("Has connected is not success (HTTP {}, Body: {}), retrying...", response.statusCode(), body);
-                return false;
+                return Optional.empty();
             }
 
-            return true;
+            HasConnectedResponse dto = GsonConfig.fromJson(response.body(), HasConnectedResponse.class);
+            return Optional.of(dto);
 
         }  catch (Exception e) {
             LOGGER.error("Unexpected error during hasConnected validation: ", e);
-            return false;
+            return Optional.empty();
         }
     }
 
@@ -208,5 +212,9 @@ public class ClientConnectService {
 
     private static void notifyUser(Minecraft minecraft, String message) {
         minecraft.execute(() -> minecraft.showDebugChat(Component.literal(message)));
+    }
+
+    private static void generateModCredentials(UUID profileId, HasConnectedResponse hasConnectedResponse) {
+        ClientEvents.onClientHasConnected(profileId, hasConnectedResponse.otp());
     }
 }
