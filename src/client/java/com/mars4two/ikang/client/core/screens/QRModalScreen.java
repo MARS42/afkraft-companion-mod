@@ -3,6 +3,7 @@ package com.mars4two.ikang.client.core.screens;
 import com.mars4two.ikang.client.core.util.QRGenerator;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -127,6 +128,15 @@ public class QRModalScreen extends Screen {
     private void onCancel() {
         this.onCancel.run();
         this.onClose();
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (event.isEscape() && this.shouldCloseOnEsc()) {
+            this.onCancel();
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     @Override
