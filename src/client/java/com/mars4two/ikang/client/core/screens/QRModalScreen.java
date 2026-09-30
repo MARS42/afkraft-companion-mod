@@ -23,6 +23,7 @@ public class QRModalScreen extends Screen {
     private DynamicTexture qrTexture;
     private Identifier qrTextureId;
     private volatile Runnable onClosed = () -> {};
+    private volatile Runnable onCancel = () -> {};
     private boolean showQr = false;
     private final Component allowShowQrMessage1;
     private final Component allowShowQrMessage2;
@@ -39,9 +40,15 @@ public class QRModalScreen extends Screen {
         this.onClosed = onClosed;
     }
 
+    public void setOnCancel(Runnable onCancel) {
+        this.onCancel = onCancel;
+    }
+
     @Override
     protected void init() {
         super.init();
+
+        showQr = false;
 
         Identifier obsidian = Identifier.withDefaultNamespace( "textures/block/obsidian.png");
         Identifier ironBlock = Identifier.withDefaultNamespace("textures/block/iron_block.png");
@@ -58,6 +65,13 @@ public class QRModalScreen extends Screen {
         int buttonHeight = 20;
         int buttonsY = this.height / 2 + 15;
 
+        Button cancelConnectButton = Button.builder(
+                        Component.literal("Cancelar"),
+                        button -> onCancel()
+                )
+                .bounds(this.width / 2 - (buttonWidth / 2), this.height - (buttonHeight + 4), buttonWidth, buttonHeight)
+                .build();
+
         Button cancelButton = Button.builder(
                         Component.literal("En otro momento"),
                         button -> onClose()
@@ -71,6 +85,7 @@ public class QRModalScreen extends Screen {
                             showQr = true;
                             this.removeWidget(button);
                             this.removeWidget(cancelButton);
+                            this.addRenderableWidget(cancelConnectButton);
                         }
                 )
                 .bounds(this.width / 2 - buttonWidth - 6, buttonsY, buttonWidth, buttonHeight)
@@ -107,6 +122,11 @@ public class QRModalScreen extends Screen {
             LOGGER.info("QR code image released successfully");
         }
         this.onClosed.run();
+    }
+
+    private void onCancel() {
+        this.onCancel.run();
+        this.onClose();
     }
 
     @Override

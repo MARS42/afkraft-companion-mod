@@ -32,6 +32,10 @@ public class HttpConfig {
         return URI.create(BACKEND_URL + "/mod-auth/connect");
     }
 
+    public static URI getCancelConnectUri() {
+        return URI.create(BACKEND_URL + "/mod-auth/cancel-connect");
+    }
+
     public static URI getHasConnectedUri() {
         return URI.create(BACKEND_URL + "/mod-auth/has-connected");
     }
