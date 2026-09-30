@@ -61,6 +61,13 @@ final class CredentialStore {
         }
     }
 
+    public static void clear() {
+        LOGGER.info("Clearing mod credentials...");
+        cachedCredentials = null;
+        accessToken = null;
+        LOGGER.info("Mod credentials cleared");
+    }
+
     public static Optional<String> getAccessToken() {
 
         if(accessToken == null) {

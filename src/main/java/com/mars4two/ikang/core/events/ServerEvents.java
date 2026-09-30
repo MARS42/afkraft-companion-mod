@@ -9,6 +9,7 @@ import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseSe
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedResponse;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
+import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
@@ -192,5 +193,14 @@ public class ServerEvents {
         }
 
         return List.of(blockPos);
+    }
+
+    public static void onServerStarted(MinecraftServer server) {
+        SnapshotIngestManager.getInstance().start(server);
+    }
+
+    public static void onServerClosed(MinecraftServer server) {
+        SnapshotIngestManager.getInstance().close();
+        AuthService.clearModCredentials();
     }
 }

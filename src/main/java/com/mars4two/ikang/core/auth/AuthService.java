@@ -124,7 +124,6 @@ public class AuthService {
     public static Optional<String> getAccessToken() {
         var modCredentials = CredentialStore.load();
         if(modCredentials.isEmpty()) {
-            log.info("No mod credentials found");
             return Optional.empty();
         }
 
@@ -271,6 +270,10 @@ public class AuthService {
                 errorCallback.run();
             }
         });
+    }
+
+    public static void clearModCredentials() {
+        CredentialStore.clear();
     }
 
     public static boolean isPlayerAuthorized(UUID profileId){
