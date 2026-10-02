@@ -124,6 +124,7 @@ public class SnapshotIngestManager implements AutoCloseable {
             log.warn("Snapshots ingest response status: {}", response.statusCode());
         } catch (Exception e) {
             log.error("Error ingesting snapshots: {}", e.getMessage());
+            log.debug("Error details:", e);
         }
     }
 

@@ -1,6 +1,5 @@
 package com.mars4two.ikang.core.snapshots.model;
 
-import com.google.gson.JsonPrimitive;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
@@ -9,7 +8,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public record RawItemStack(
-        String displayName,
+        String id,
+        String customName,
         int count,
         int index
 ) {
@@ -29,23 +29,23 @@ public record RawItemStack(
         }
         return entrada;
     }
-    public static RawItemStack EMPTY = new RawItemStack("", 0, 0);
+    public static RawItemStack EMPTY = new RawItemStack("", null,0, 0);
 
     public static RawItemStack from(int slot, ItemStack itemStack) {
-        var displayName = itemStack.getCustomName() != null ?
-                itemStack.getCustomName().getString()
-                : aplicarPrimerMatch(BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString(), NAMESPACES_ALIASES);
+        var customName = itemStack.getCustomName() != null ? itemStack.getCustomName().getString() : "";
 
         return new RawItemStack(
-                displayName,
+                aplicarPrimerMatch(BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString(), NAMESPACES_ALIASES),
+                customName,
                 itemStack.getCount(),
                 slot
         );
     }
 
     public String toPayloadString() {
-        return "\"n=" + new JsonPrimitive(displayName) +
+        return "\"i=" + id +
+                "|n=" + customName +
                 "|c=" + count +
-                "|i=" + index + "\"";
+                "|ix=" + index + "\"";
     }
 }
