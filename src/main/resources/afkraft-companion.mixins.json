@@ -6,7 +6,8 @@
 		"ExampleMixin",
 		"BlockItemMixin",
 		"BlockEntityMixin",
-		"PlayerSnapshotMixin"
+		"PlayerSnapshotMixin",
+		"PlayerInventoryMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
