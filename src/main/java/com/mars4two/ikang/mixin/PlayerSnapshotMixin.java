@@ -1,15 +1,9 @@
 package com.mars4two.ikang.mixin;
 
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
-import com.mars4two.ikang.core.snapshots.model.RawHandItem;
-import com.mars4two.ikang.core.snapshots.model.RawPlayerEffect;
-import com.mars4two.ikang.core.snapshots.model.RawPlayerEffects;
-import com.mars4two.ikang.core.snapshots.model.RawPlayerHands;
-import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
+import com.mars4two.ikang.core.snapshots.model.*;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -124,23 +118,11 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     }
 
     @Unique
-    private RawHandItem extractHandItem(InteractionHand hand) {
+    private RawItemStack extractHandItem(InteractionHand hand) {
         var stack = getItemInHand(hand);
         if (stack.isEmpty()) {
-            return null;
+            return RawItemStack.EMPTY;
         }
-
-        var enchantmentHolders = stack.getEnchantments().keySet();
-        List<String> enchantments = new ArrayList<>(enchantmentHolders.size());
-        for (Holder<?> holder : enchantmentHolders) {
-            enchantments.add(holder.getRegisteredName());
-        }
-
-        return new RawHandItem(
-                BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(),
-                stack.getCustomName() != null ? stack.getCustomName().getString() : "",
-                stack.getCount(),
-                enchantments
-        );
+        return RawItemStack.from(hand.asEquipmentSlot().getId(), stack);
     }
 }
