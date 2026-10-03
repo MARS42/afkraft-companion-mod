@@ -1,6 +1,6 @@
 package com.mars4two.ikang.core.snapshots;
 
-import com.mars4two.ikang.core.snapshots.model.RawContainerItem;
+import com.mars4two.ikang.core.snapshots.model.RawItemStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 
@@ -13,7 +13,7 @@ public record ContainerSnapshot(
         Set<UUID> playerIds,
         BlockPos blockPos,
         String containerName,
-        List<RawContainerItem> items
+        List<RawItemStack> items
 ) implements SnapshotBase {
 
     @Override
@@ -41,7 +41,7 @@ public record ContainerSnapshot(
             if (i > 0) {
                 content.append(",");
             }
-            content.append(items.get(i).toPayloadString());
+            content.append("\"").append(items.get(i).toPayloadString()).append("\"");
         }
         content.append("]");
         return content.toString();
@@ -49,17 +49,15 @@ public record ContainerSnapshot(
 
     public static ContainerSnapshot of(Set<UUID> playerIds, BaseContainerBlockEntity containerBlockEntity) {
         var iterator = containerBlockEntity.iterator();
-        List<RawContainerItem> items = new ArrayList<>();
+        List<RawItemStack> items = new ArrayList<>();
 
         int index = 0;
         while (iterator.hasNext()) {
             var itemStack = iterator.next();
-            if (!itemStack.isEmpty()) {
-                items.add(new RawContainerItem(
-                        itemStack.getDisplayName().getString(),
-                        itemStack.count(),
-                        index
-                ));
+            if (itemStack.isEmpty()) {
+                items.add(RawItemStack.EMPTY);
+            }else{
+                items.add(RawItemStack.from(index, itemStack));
             }
             index++;
         }

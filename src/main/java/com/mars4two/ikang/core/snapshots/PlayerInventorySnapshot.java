@@ -36,7 +36,7 @@ public record PlayerInventorySnapshot(
                 if (i > 0) {
                     content.append(",");
                 }
-                content.append(items.get(i).toPayloadString());
+                content.append("\"").append(items.get(i).toPayloadString()).append("\"");
             }
         }
         content.append("]");
