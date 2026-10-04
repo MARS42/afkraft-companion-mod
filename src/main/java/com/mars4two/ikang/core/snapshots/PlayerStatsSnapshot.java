@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public record PlayerStatsSnapshot(Set<UUID> playerIds, RawPlayerStats stats) implements SnapshotBase {
+public record PlayerStatsSnapshot(Set<UUID> playerIds, RawPlayerStats data) implements SnapshotBase {
 
     @Override
     public String getSnapshotName() {
@@ -17,16 +17,6 @@ public record PlayerStatsSnapshot(Set<UUID> playerIds, RawPlayerStats stats) imp
     @Override
     public String key() {
         return playerIds.stream().map(UUID::toString).collect(Collectors.joining()) + getSnapshotName();
-    }
-
-    @Override
-    public Object changeToken() {
-        return stats;
-    }
-
-    @Override
-    public String data() {
-        return stats != null ? stats.toPayloadString() : "";
     }
 
     public static PlayerStatsSnapshot of(PlayerStatsContainer player) {

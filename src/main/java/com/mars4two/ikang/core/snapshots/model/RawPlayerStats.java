@@ -13,16 +13,20 @@ public record RawPlayerStats(
         double x,
         double y,
         double z
-) {
-    public String toPayloadString() {
-        return "gm=" + (gameMode != null ? gameMode : "") +
-                "|h=" + health +
-                "|mh=" + maxHealth +
-                "|fl=" + foodLevel +
-                "|exp=" + expLevel +
-                "|expP=" + expProgress +
-                "|x=" + x +
-                "|y=" + y +
-                "|z=" + z;
+) implements RawObject {
+
+    @Override
+    public Object[] payloadValues() {
+        return new Object[]{
+                gameMode,
+                health,
+                maxHealth,
+                foodLevel,
+                expLevel,
+                expProgress,
+                x,
+                y,
+                z
+        };
     }
 }

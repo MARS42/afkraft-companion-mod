@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public record RawItemStack(
         String id,
@@ -19,7 +18,7 @@ public record RawItemStack(
         List<RawEnchantment> enchantments,
         int index,
         boolean isStackable
-) {
+) implements RawObject {
     private static final Map<Pattern, String> NAMESPACES_ALIASES = Map.of(
             Pattern.compile("minecraft"), "m"
     );
@@ -60,12 +59,15 @@ public record RawItemStack(
         );
     }
 
-    public String toPayloadString() {
-        return "i=" + id +
-                "|n=" + customName +
-                "|c=" + count +
-                "|e=" + "[" + enchantments.stream().map(e -> "'" + e.toPayloadString() + "'").collect(Collectors.joining(",")) + "]" +
-                "|s=" + isStackable +
-                "|ix=" + index;
+    @Override
+    public Object[] payloadValues() {
+        return new Object[]{
+                id,
+                customName,
+                count,
+                enchantments,
+                index,
+                isStackable
+        };
     }
 }

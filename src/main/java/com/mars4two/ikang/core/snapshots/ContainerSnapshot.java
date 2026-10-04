@@ -1,7 +1,7 @@
 package com.mars4two.ikang.core.snapshots;
 
+import com.mars4two.ikang.core.snapshots.model.RawContainer;
 import com.mars4two.ikang.core.snapshots.model.RawItemStack;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 
 import java.util.ArrayList;
@@ -11,9 +11,7 @@ import java.util.UUID;
 
 public record ContainerSnapshot(
         Set<UUID> playerIds,
-        BlockPos blockPos,
-        String containerName,
-        List<RawItemStack> items
+        RawContainer data
 ) implements SnapshotBase {
 
     @Override
@@ -23,28 +21,7 @@ public record ContainerSnapshot(
 
     @Override
     public String key() {
-        return blockPos.toString();
-    }
-
-    @Override
-    public Object changeToken() {
-        return items;
-    }
-
-    @Override
-    public String data() {
-        if (items == null || items.isEmpty()) {
-            return "[]";
-        }
-        StringBuilder content = new StringBuilder("[");
-        for (int i = 0; i < items.size(); i++) {
-            if (i > 0) {
-                content.append(",");
-            }
-            content.append("\"").append(items.get(i).toPayloadString()).append("\"");
-        }
-        content.append("]");
-        return content.toString();
+        return data.blockPos().toString();
     }
 
     public static ContainerSnapshot of(Set<UUID> playerIds, BaseContainerBlockEntity containerBlockEntity) {
@@ -55,7 +32,7 @@ public record ContainerSnapshot(
         while (iterator.hasNext()) {
             var itemStack = iterator.next();
             if (itemStack.isEmpty()) {
-                items.add(RawItemStack.EMPTY);
+                //items.add(RawItemStack.EMPTY);
             }else{
                 items.add(RawItemStack.from(index, itemStack));
             }
@@ -64,9 +41,9 @@ public record ContainerSnapshot(
 
         return new ContainerSnapshot(
                 playerIds,
-                containerBlockEntity.getBlockPos(),
-                containerBlockEntity.getPlainTextName(),
-                items
+                new RawContainer(containerBlockEntity.getBlockPos(),
+                        containerBlockEntity.getPlainTextName(),
+                        items)
         );
     }
 }

@@ -6,7 +6,7 @@ import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import java.util.Set;
 import java.util.UUID;
 
-public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, RawPlayerHands hands) implements SnapshotBase {
+public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, RawPlayerHands data) implements SnapshotBase {
 
     @Override
     public String getSnapshotName() {
@@ -16,16 +16,6 @@ public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, RawPlayerHands hands
     @Override
     public String key() {
         return playerIds.toString() + getSnapshotName();
-    }
-
-    @Override
-    public Object changeToken() {
-        return hands;
-    }
-
-    @Override
-    public String data() {
-        return hands != null ? hands.toPayloadString() : "[\"main=null\",\"|off=null\"]";
     }
 
     public static PlayerHandsStatsSnapshot of(PlayerStatsContainer player) {

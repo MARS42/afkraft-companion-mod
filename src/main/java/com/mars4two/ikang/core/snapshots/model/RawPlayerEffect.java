@@ -13,7 +13,7 @@ public record RawPlayerEffect(
         int duration, // duration in seconds
         boolean ambient,
         boolean visible
-) {
+) implements RawObject{
     private static final Map<Pattern, String> NAMESPACES_ALIASES = Map.of(
             Pattern.compile("effect\\.minecraft"), "m"
     );
@@ -31,11 +31,8 @@ public record RawPlayerEffect(
         return entrada;
     }
 
-    public String toPayloadString() {
-        return "\"e=" + aplicarPrimerMatch(descriptionId, NAMESPACES_ALIASES) +
-                "|a=" + amplifier +
-                "|d=" + duration +
-                "|am=" + ambient +
-                "|v=" + visible + "\"";
+    @Override
+    public Object[] payloadValues() {
+        return new Object[]{aplicarPrimerMatch(descriptionId, NAMESPACES_ALIASES), amplifier, duration, ambient, visible};
     }
 }

@@ -96,7 +96,7 @@ public class SnapshotIngestManager implements AutoCloseable {
 
             var snapshotContent = snapshots.stream()
                     .map(s -> new SnapshotsIngestRequest.SnapshotContent
-                            (s.getSnapshotName(), s.playerIds(), s.data()))
+                            (s.getSnapshotName(), s.playerIds(), s.data().toPayload()))
                     .toList();
             var participants = snapshots.stream().flatMap(s -> s.playerIds().stream()).collect(Collectors.toSet());
 

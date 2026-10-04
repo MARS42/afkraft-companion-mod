@@ -6,10 +6,13 @@ package com.mars4two.ikang.core.snapshots.model;
 public record RawPlayerHands(
         RawItemStack mainHand,
         RawItemStack offHand
-) {
-    public String toPayloadString() {
-        String mainStr = mainHand != null ? mainHand.toPayloadString() : "";
-        String offStr = offHand != null ? offHand.toPayloadString() : "";
-        return "[\"" + mainStr + "\",\"" + offStr + "\"]";
+) implements RawObject{
+
+    @Override
+    public Object[] payloadValues() {
+        return new Object[]{
+                mainHand,
+                offHand
+        };
     }
 }

@@ -1,12 +1,17 @@
 package com.mars4two.ikang.core.snapshots;
 
+import com.mars4two.ikang.core.snapshots.model.RawObject;
+
 import java.util.Set;
 import java.util.UUID;
 
 public interface SnapshotBase {
     String getSnapshotName();
     Set<UUID> playerIds();
-    String data();
+    <T extends RawObject> T data();
     String key();
-    Object changeToken();
+
+    default Object changeToken(){
+        return data();
+    }
 }
