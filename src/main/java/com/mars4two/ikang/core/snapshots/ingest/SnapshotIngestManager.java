@@ -72,6 +72,11 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
     }
 
+    public void ingestPlayerHotbarState(PlayerInventoryWrapper playerInventory) {
+        conflater.submit(PlayerHotbarSnapshot.of(playerInventory));
+        conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
+    }
+
     private void onEmit(List<SnapshotBase> snapshots) {
         if (!AuthService.isAuthenticated()) {
             return;

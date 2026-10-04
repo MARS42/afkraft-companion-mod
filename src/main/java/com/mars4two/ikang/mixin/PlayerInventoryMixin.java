@@ -4,6 +4,7 @@ import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;import com
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.EntityEquipment;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.UUID;
 
 @Mixin(net.minecraft.world.entity.player.Inventory.class)
-public class PlayerInventoryMixin implements PlayerInventoryWrapper {
+public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
 
     @Final
     @Shadow
@@ -31,6 +32,9 @@ public class PlayerInventoryMixin implements PlayerInventoryWrapper {
     @Shadow
     public Player player;
 
+    @Shadow
+    public abstract int getSelectedSlot();
+
     @Unique
     private static final SnapshotIngestManager ingestManager = SnapshotIngestManager.getInstance();
 
@@ -40,10 +44,19 @@ public class PlayerInventoryMixin implements PlayerInventoryWrapper {
     }
 
     @Override
-    public NonNullList<RawItemStack> afkraft_companion$getInventoryItems() {
-        NonNullList<RawItemStack> rawItems = NonNullList.withSize(items.size(), RawItemStack.EMPTY);
-        for (int i = 0; i < items.size(); i++) {
+    public NonNullList<RawItemStack> afkraft_companion$getHotbarItems() {
+        NonNullList<RawItemStack> rawItems = NonNullList.withSize(Inventory.SELECTION_SIZE, RawItemStack.EMPTY);
+        for (int i = 0; i < Inventory.SELECTION_SIZE; i++) {
             rawItems.set(i, RawItemStack.from(i, items.get(i)));
+        }
+        return rawItems;
+    }
+
+    @Override
+    public NonNullList<RawItemStack> afkraft_companion$getInventoryItems() {
+        NonNullList<RawItemStack> rawItems = NonNullList.withSize(Inventory.INVENTORY_SIZE - Inventory.SELECTION_SIZE, RawItemStack.EMPTY);
+        for (int i = Inventory.SELECTION_SIZE; i < items.size(); i++) {
+            rawItems.set(i - Inventory.SELECTION_SIZE, RawItemStack.from(i, items.get(i)));
         }
         return rawItems;
     }
@@ -58,14 +71,19 @@ public class PlayerInventoryMixin implements PlayerInventoryWrapper {
         return equipmentItems;
     }
 
+    @Override
+    public int afkraft_companion$selectedSlot() {
+        return getSelectedSlot();
+    }
+
     @Inject(method = "setItem", at = @At("TAIL"))
     private void onSetItem(int slot, ItemStack itemStack, CallbackInfo ci) {
-        ingestManager.ingestPlayerInventoryState(this);
+        ingestSlotedItems(slot);
     }
 
     @Inject(method = "add(ILnet/minecraft/world/item/ItemStack;)Z", at = @At("TAIL"))
     private void onAdd(int slot, ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
-        ingestManager.ingestPlayerInventoryState(this);
+        ingestSlotedItems(slot);
     }
 
     @Inject(method = "add(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("TAIL"))
@@ -75,7 +93,7 @@ public class PlayerInventoryMixin implements PlayerInventoryWrapper {
 
     @Inject(method = "removeItem(II)Lnet/minecraft/world/item/ItemStack;", at = @At("RETURN"))
     private void onRemove(int slot, int count, CallbackInfoReturnable<ItemStack> cir) {
-        ingestManager.ingestPlayerInventoryState(this);
+        ingestSlotedItems(slot);
     }
 
     @Inject(method = "removeItem(Lnet/minecraft/world/item/ItemStack;)V", at = @At("TAIL"))
@@ -85,6 +103,25 @@ public class PlayerInventoryMixin implements PlayerInventoryWrapper {
 
     @Inject(method = "dropAll", at = @At("TAIL"))
     private void onDropAll(CallbackInfo ci) {
+        ingestManager.ingestPlayerInventoryState(this);
+    }
+
+    @Inject(method = "setSelectedSlot", at = @At("TAIL"))
+    private void onSetSelectedSlot(int slot, CallbackInfo ci) {
+        ingestSlotedItems(slot);
+    }
+
+    @Inject(method = "setSelectedItem", at = @At("TAIL"))
+    private void onSetSelectedItem(ItemStack itemStack, CallbackInfoReturnable<ItemStack> cir) {
+        ingestManager.ingestPlayerHotbarState(this);
+    }
+
+    @Unique
+    private void ingestSlotedItems(int slot) {
+        if(Inventory.isHotbarSlot(slot)){
+            ingestManager.ingestPlayerHotbarState(this);
+            return;
+        }
         ingestManager.ingestPlayerInventoryState(this);
     }
 }

@@ -7,6 +7,9 @@ import java.util.UUID;
 
 public interface PlayerInventoryWrapper {
     UUID afkraft_companion$getPlayerId();
+    NonNullList<RawItemStack> afkraft_companion$getHotbarItems();
     NonNullList<RawItemStack> afkraft_companion$getInventoryItems();
     NonNullList<RawItemStack> afkraft_companion$getPlayerEquipment();
+
+    int afkraft_companion$selectedSlot();
 }
