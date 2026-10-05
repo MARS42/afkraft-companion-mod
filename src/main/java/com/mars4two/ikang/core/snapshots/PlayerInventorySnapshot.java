@@ -25,7 +25,7 @@ public record PlayerInventorySnapshot(
 
         return new PlayerInventorySnapshot(
                 Set.of(inventory.afkraft_companion$getPlayerId()),
-                new RawInventory(inventory.afkraft_companion$getInventoryItems())
+                new RawInventory("p", inventory.afkraft_companion$getInventoryItems())
         );
     }
 }
