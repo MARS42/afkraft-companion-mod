@@ -32,7 +32,7 @@ public class ClientEvents {
     private static AtomicBoolean afkContainerEnabled = new AtomicBoolean(false);
     private static AtomicBoolean afkraftEnabled = new AtomicBoolean(false);
 
-    private static final List<Class<? extends AbstractContainerMenu>> AFKeablesMenues = List.of(BlastFurnaceMenu.class, ChestMenu.class, CrafterMenu.class, DispenserMenu.class, FurnaceMenu.class, HopperMenu.class, InventoryMenu.class, ShulkerBoxMenu.class, SmokerMenu.class);
+    private static final List<Class<? extends AbstractContainerMenu>> AFKeablesMenues = List.of(BlastFurnaceMenu.class, ChestMenu.class, CrafterMenu.class, DispenserMenu.class, FurnaceMenu.class, HopperMenu.class, ShulkerBoxMenu.class, SmokerMenu.class);
 
     private ClientEvents() {
         // Utility class, no instances allowed
