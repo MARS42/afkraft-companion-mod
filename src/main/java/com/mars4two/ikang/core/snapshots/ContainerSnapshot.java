@@ -1,11 +1,8 @@
 package com.mars4two.ikang.core.snapshots;
 
 import com.mars4two.ikang.core.snapshots.model.RawContainer;
-import com.mars4two.ikang.core.snapshots.model.RawItemStack;
-import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
+import com.mars4two.ikang.core.util.BlockEntityWrapper;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -24,26 +21,13 @@ public record ContainerSnapshot(
         return data.blockPos().toString();
     }
 
-    public static ContainerSnapshot of(Set<UUID> playerIds, BaseContainerBlockEntity containerBlockEntity) {
-        var iterator = containerBlockEntity.iterator();
-        List<RawItemStack> items = new ArrayList<>();
-
-        int index = 0;
-        while (iterator.hasNext()) {
-            var itemStack = iterator.next();
-            if (itemStack.isEmpty()) {
-                //items.add(RawItemStack.EMPTY);
-            }else{
-                items.add(RawItemStack.from(index, itemStack));
-            }
-            index++;
-        }
-
+    public static ContainerSnapshot of(Set<UUID> playerIds, BlockEntityWrapper containerBlockEntity) {
         return new ContainerSnapshot(
                 playerIds,
-                new RawContainer(containerBlockEntity.getBlockPos(),
-                        containerBlockEntity.getPlainTextName(),
-                        items)
+                new RawContainer(containerBlockEntity.afkraft_companion$type(),
+                        containerBlockEntity.afkraft_companion$blockPos(),
+                        containerBlockEntity.afkraft_companion$containerName(),
+                        containerBlockEntity.afkraft_companion$getItems())
         );
     }
 }
