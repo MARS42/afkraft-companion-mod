@@ -29,14 +29,12 @@ public interface BlockEntityWrapper {
         if (!(this instanceof BaseContainerBlockEntity container)) return List.of();
 
         var iterator = container.iterator();
-        List<RawItemStack> items = new ArrayList<>(container.getContainerSize());
+        List<RawItemStack> items = new ArrayList<>();
 
         int index = 0;
         while (iterator.hasNext()) {
             var itemStack = iterator.next();
-            if (itemStack.isEmpty()) {
-                //items.add(RawItemStack.EMPTY);
-            }else{
+            if (!itemStack.isEmpty()) {
                 items.add(RawItemStack.from(index, itemStack));
             }
             index++;
