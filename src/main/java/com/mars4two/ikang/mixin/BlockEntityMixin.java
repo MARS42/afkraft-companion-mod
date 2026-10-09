@@ -54,9 +54,4 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
         }
         return "c";
     }
-
-    @Override
-    public String afkraft_companion$defaultName() {
-        return "Nombre default";
-    }
 }
