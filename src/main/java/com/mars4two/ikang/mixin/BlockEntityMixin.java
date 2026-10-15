@@ -1,6 +1,7 @@
 package com.mars4two.ikang.mixin;
 
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
+import com.mars4two.ikang.core.snapshots.model.RawContainerType;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import com.mars4two.ikang.core.util.BlockEntityWrapper;
 import net.minecraft.world.level.Level;
@@ -40,18 +41,23 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
     }
 
     @Override
-    public String afkraft_companion$type() {
+    public RawContainerType afkraft_companion$type() {
+        var blockPos = afkraft_companion$blockPos();
+
         if((Object) this instanceof ChestBlockEntity chestBlockEntity){
             var chestType = chestBlockEntity.getBlockState().getValue(ChestBlock.TYPE);
+            var connectedPos = ChestBlock.getConnectedBlockPos(chestBlockEntity.getBlockPos(), chestBlockEntity.getBlockState());
+
             switch (chestType) {
                 case LEFT:
-                    return "lc";
+                    return RawContainerType.doubleChest(connectedPos, blockPos);
                 case RIGHT:
-                    return "rc";
+                    return RawContainerType.doubleChest(blockPos, connectedPos);
                 case SINGLE:
-                    return "c";
+                    return RawContainerType.singleChest();
             }
         }
-        return "c";
+        var type = afkraft_companion$blockId();
+        return RawContainerType.ofType(type);
     }
 }

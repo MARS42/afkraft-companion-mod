@@ -1,5 +1,6 @@
 package com.mars4two.ikang.core.util;
 
+import com.mars4two.ikang.core.snapshots.model.RawContainerType;
 import com.mars4two.ikang.core.snapshots.model.RawItemStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -11,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface BlockEntityWrapper {
-    String afkraft_companion$type();
+    RawContainerType afkraft_companion$type();
 
     default BlockPos afkraft_companion$blockPos() {
         if(!(this instanceof BlockEntity blockEntity))
@@ -19,16 +20,17 @@ public interface BlockEntityWrapper {
         return blockEntity.getBlockPos();
     }
 
-    default String afkraft_companion$containerName() {
+    default String afkraft_companion$blockId() {
         if(!(this instanceof BlockEntity blockEntity))
             return null;
+        return BuiltInRegistries.BLOCK.getKey(blockEntity.getBlockState().getBlock()).toString();
+    }
 
-        var key = BuiltInRegistries.BLOCK.getKey(blockEntity.getBlockState().getBlock());
-
+    default String afkraft_companion$containerName() {
         if(!(this instanceof Nameable nameable))
-            return key.toString();
+            return null;
 
-        return nameable.hasCustomName() ? nameable.getPlainTextName() : key.toString();
+        return nameable.hasCustomName() ? nameable.getPlainTextName() : null;
     }
     default List<RawItemStack> afkraft_companion$getItems(){
         if (!(this instanceof BaseContainerBlockEntity container)) return List.of();
