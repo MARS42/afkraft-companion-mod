@@ -21,6 +21,11 @@ public record ContainerSnapshot(
         return data.blockPos().toString();
     }
 
+    @Override
+    public Object changeToken() {
+        return data.items();
+    }
+
     public static ContainerSnapshot of(Set<UUID> playerIds, BlockEntityWrapper containerBlockEntity) {
         return new ContainerSnapshot(
                 playerIds,
