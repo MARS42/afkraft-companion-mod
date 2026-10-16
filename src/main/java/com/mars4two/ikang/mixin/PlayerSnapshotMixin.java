@@ -2,12 +2,17 @@ package com.mars4two.ikang.mixin;
 
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.snapshots.model.*;
+import com.mars4two.ikang.core.util.AttackCadenceTracker;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,6 +31,12 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
 
     @Unique
     private static final SnapshotIngestManager ingestManager = SnapshotIngestManager.getInstance();
+
+    @Unique
+    private final AttackCadenceTracker afkraft_companion$cadenceTracker = new AttackCadenceTracker();
+
+    @Unique
+    private int afkraft_companion$lastEntityAttackTick = -1;
 
     protected PlayerSnapshotMixin(Level level, GameProfile gameProfile) {
         super(level, gameProfile);
@@ -83,6 +94,67 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         );
     }
 
+    @Override
+    public RawPlayerAttackCadence afkraft_companion$getAttackCadence() {
+        boolean holdingSword = this.getItemInHand(InteractionHand.MAIN_HAND).is(ItemTags.SWORDS);
+        return afkraft_companion$cadenceTracker.snapshot(
+                this.tickCount,
+                this.getCurrentItemAttackStrengthDelay(),
+                holdingSword
+        );
+    }
+
+    @Override
+    public void attack(Entity target) {
+        if (!afkraft_companion$cannotAttack(target)) {
+            int elapsedTicks = this.attackStrengthTicker;
+            float requiredDelayTicks = this.getCurrentItemAttackStrengthDelay();
+            float chargeScale = this.getAttackStrengthScale(0.5F);
+            boolean fullCharge = chargeScale > 0.9F;
+            boolean holdingSword = this.getItemInHand(InteractionHand.MAIN_HAND).is(ItemTags.SWORDS);
+            boolean sweepTriggered = afkraft_companion$willSweep(target, fullCharge, holdingSword);
+
+            this.afkraft_companion$lastEntityAttackTick = this.tickCount;
+            this.afkraft_companion$cadenceTracker.recordAttack(
+                    this.tickCount,
+                    elapsedTicks,
+                    requiredDelayTicks,
+                    chargeScale,
+                    fullCharge,
+                    true,
+                    sweepTriggered,
+                    holdingSword
+            );
+            ingestManager.ingestPlayerAttackCadence(this);
+        }
+        super.attack(target);
+    }
+
+    @Inject(at = @At("HEAD"), method = "swing")
+    private void onSwing(InteractionHand hand, CallbackInfo ci) {
+        if (hand != InteractionHand.MAIN_HAND || this.tickCount == this.afkraft_companion$lastEntityAttackTick) {
+            return;
+        }
+
+        int elapsedTicks = this.attackStrengthTicker;
+        float requiredDelayTicks = this.getCurrentItemAttackStrengthDelay();
+        float chargeScale = this.getAttackStrengthScale(0.5F);
+        boolean fullCharge = chargeScale > 0.9F;
+        boolean holdingSword = this.getItemInHand(InteractionHand.MAIN_HAND).is(ItemTags.SWORDS);
+
+        this.afkraft_companion$cadenceTracker.recordAttack(
+                this.tickCount,
+                elapsedTicks,
+                requiredDelayTicks,
+                chargeScale,
+                fullCharge,
+                false,
+                false,
+                holdingSword
+        );
+        ingestManager.ingestPlayerAttackCadence(this);
+    }
+
     @Inject(at = @At("TAIL"), method = "setExperienceLevels")
     private void onSetExperienceLevels(int value, CallbackInfo ci) {
         ingestManager.ingestPlayerStats(this);
@@ -115,6 +187,38 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         }
 
         ingestManager.ingestPlayerStats(this);
+    }
+
+    @Unique
+    private boolean afkraft_companion$cannotAttack(Entity entity) {
+        return !entity.isAttackable() || entity.skipAttackInteraction(this);
+    }
+
+    @Unique
+    private boolean afkraft_companion$canCriticalAttack(Entity entity) {
+        return this.fallDistance > 0.0
+                && !this.onGround()
+                && !this.onClimbable()
+                && !this.isInWater()
+                && !this.isMobilityRestricted()
+                && !this.isPassenger()
+                && entity instanceof LivingEntity
+                && !this.isSprinting();
+    }
+
+    @Unique
+    private boolean afkraft_companion$willSweep(Entity entity, boolean fullStrengthAttack, boolean holdingSword) {
+        if (!holdingSword) {
+            return false;
+        }
+        boolean knockbackAttack = this.isSprinting() && fullStrengthAttack;
+        boolean criticalAttack = fullStrengthAttack && afkraft_companion$canCriticalAttack(entity);
+        if (fullStrengthAttack && !criticalAttack && !knockbackAttack && this.onGround()) {
+            double approximateSpeedSq = this.getKnownMovement().horizontalDistanceSqr();
+            double maxSpeedForSweepAttack = this.getSpeed() * 2.5;
+            return approximateSpeedSq < Mth.square(maxSpeedForSweepAttack);
+        }
+        return false;
     }
 
     @Unique

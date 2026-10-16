@@ -1,5 +1,6 @@
 package com.mars4two.ikang.core.util;
 
+import com.mars4two.ikang.core.snapshots.model.RawPlayerAttackCadence;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerEffects;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerHands;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
@@ -11,4 +12,5 @@ public interface PlayerStatsContainer {
     RawPlayerStats afkraft_companion$getStats();
     RawPlayerEffects afkraft_companion$getEffects();
     RawPlayerHands afkraft_companion$getHandsStats();
+    RawPlayerAttackCadence afkraft_companion$getAttackCadence();
 }
