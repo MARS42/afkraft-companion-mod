@@ -3,6 +3,7 @@ package com.mars4two.ikang.mixin;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.snapshots.model.*;
 import com.mars4two.ikang.core.util.AttackCadenceTracker;
+import com.mars4two.ikang.core.util.MobSphereCalculator;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.level.ServerLevel;
@@ -105,6 +106,11 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     }
 
     @Override
+    public RawMobSphere afkraft_companion$getMobSphere() {
+        return MobSphereCalculator.calculate((ServerPlayer) (Object) this);
+    }
+
+    @Override
     public void attack(Entity target) {
         if (!afkraft_companion$cannotAttack(target)) {
             int elapsedTicks = this.attackStrengthTicker;
@@ -187,6 +193,7 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         }
 
         ingestManager.ingestPlayerStats(this);
+        ingestManager.ingestPlayerMobSphere(this);
     }
 
     @Unique

@@ -72,6 +72,10 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.submit(PlayerAttackCadenceSnapshot.of(player));
     }
 
+    public void ingestPlayerMobSphere(PlayerStatsContainer player) {
+        conflater.submit(PlayerMobSphereSnapshot.of(player));
+    }
+
     public void ingestPlayerInventoryState(PlayerInventoryWrapper playerInventory) {
         conflater.submit(PlayerInventorySnapshot.of(playerInventory));
         conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
