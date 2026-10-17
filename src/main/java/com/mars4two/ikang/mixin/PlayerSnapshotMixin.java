@@ -188,7 +188,7 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
 
     @Inject(at = @At("TAIL"), method = "tick")
     private void onTick(CallbackInfo ci) {
-        if (this.tickCount % 20 != 0) {
+        if ((this.tickCount + this.getId()) % 20 != 0) {
             return;
         }
 
