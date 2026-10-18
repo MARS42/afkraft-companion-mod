@@ -12,7 +12,9 @@ public record RawPlayerStats(
         float expProgress,
         double x,
         double y,
-        double z
+        double z,
+        float yaw,
+        float pitch
 ) implements RawObject {
 
     @Override
@@ -26,7 +28,9 @@ public record RawPlayerStats(
                 expProgress,
                 x,
                 y,
-                z
+                z,
+                yaw,
+                pitch
         };
     }
 }

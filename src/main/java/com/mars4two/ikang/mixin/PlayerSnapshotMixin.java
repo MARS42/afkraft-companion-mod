@@ -59,7 +59,9 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
                 experienceProgress,
                 getX(),
                 getY(),
-                getZ()
+                getZ(),
+                getYRot(),
+                getXRot()
         );
     }
 
