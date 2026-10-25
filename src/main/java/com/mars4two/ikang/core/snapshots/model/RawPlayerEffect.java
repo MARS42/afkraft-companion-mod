@@ -1,8 +1,6 @@
 package com.mars4two.ikang.core.snapshots.model;
 
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.mars4two.ikang.core.util.MinecraftIdsUtils;
 
 /**
  * Immutable raw effect data for an active mob effect.
@@ -14,25 +12,8 @@ public record RawPlayerEffect(
         boolean ambient,
         boolean visible
 ) implements RawObject{
-    private static final Map<Pattern, String> NAMESPACES_ALIASES = Map.of(
-            Pattern.compile("effect\\.minecraft"), "m"
-    );
-
-    private static String aplicarPrimerMatch(String entrada, Map<Pattern, String> reglas) {
-        if (entrada == null || reglas == null) {
-            return entrada;
-        }
-        for (Map.Entry<Pattern, String> regla : reglas.entrySet()) {
-            Matcher matcher = regla.getKey().matcher(entrada);
-            if (matcher.find()) {
-                return matcher.replaceAll(regla.getValue());
-            }
-        }
-        return entrada;
-    }
-
     @Override
     public Object[] payloadValues() {
-        return new Object[]{aplicarPrimerMatch(descriptionId, NAMESPACES_ALIASES), amplifier, duration, ambient, visible};
+        return new Object[]{MinecraftIdsUtils.effectAlias(descriptionId), amplifier, duration, ambient, visible};
     }
 }
