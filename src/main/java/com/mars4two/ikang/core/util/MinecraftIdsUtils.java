@@ -8,11 +8,16 @@ import java.util.regex.Pattern;
 
 public final class MinecraftIdsUtils {
     private static final Map<Pattern, String> EFFECT_NAMESPACES_ALIASES = Map.of(
-            Pattern.compile("effect\\.minecraft"), "m"
+            Pattern.compile("effect\\.minecraft"), "e.m"
     );
     private static final Map<Pattern, String> ITEM_NAMESPACES_ALIASES = Map.of(
-            Pattern.compile("minecraft"), "m"
+            Pattern.compile("minecraft"), "i.m"
     );
+
+    private static final Map<Pattern, String> BLOCK_NAMESPACES_ALIASES = Map.of(
+            Pattern.compile("minecraft"), "b.m"
+    );
+
 
     private MinecraftIdsUtils() {
         // Utility class, no instances allowed
@@ -41,5 +46,9 @@ public final class MinecraftIdsUtils {
 
     public static String itemAlias(String itemId) {
         return applyFirstMatch(itemId, ITEM_NAMESPACES_ALIASES);
+    }
+
+    public static String blockAlias(String blockId) {
+        return applyFirstMatch(blockId, BLOCK_NAMESPACES_ALIASES);
     }
 }

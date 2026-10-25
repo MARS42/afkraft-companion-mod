@@ -13,11 +13,11 @@ public record RawContainerType(String type, RawContainerExtraData extraData, Raw
     }
 
     public static RawContainerType singleChest() {
-        return new RawContainerType(MinecraftIdsUtils.itemAlias("minecraft:chest"), RawContainerExtraData.EMPTY, RawContainerGridLayout.DEFAULT);
+        return new RawContainerType(MinecraftIdsUtils.blockAlias("minecraft:chest"), RawContainerExtraData.EMPTY, RawContainerGridLayout.DEFAULT);
     }
 
     public static RawContainerType doubleChest(BlockPos first, BlockPos last) {
-        return new RawContainerType(MinecraftIdsUtils.itemAlias("minecraft:chest"),
+        return new RawContainerType(MinecraftIdsUtils.blockAlias("minecraft:chest"),
                 new RawContainerExtraData(Map.of("bicombiner", Map.of("first", first, "last", last))),
                 RawContainerGridLayout.DEFAULT);
     }
@@ -25,7 +25,7 @@ public record RawContainerType(String type, RawContainerExtraData extraData, Raw
     @Override
     public Object[] payloadValues() {
         return new Object[] {
-                MinecraftIdsUtils.itemAlias(type),
+                MinecraftIdsUtils.blockAlias(type),
                 extraData,
                 layout
         };

@@ -3,6 +3,7 @@ package com.mars4two.ikang.core.snapshots.model;
 import com.mars4two.ikang.core.util.MinecraftIdsUtils;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 
@@ -31,8 +32,13 @@ public record RawItemStack(
             ));
         }
 
+        var item = itemStack.getItem();
+        String id = (item instanceof BlockItem bi)
+                ? MinecraftIdsUtils.blockAlias(BuiltInRegistries.BLOCK.getKey(bi.getBlock()).toString())
+                : MinecraftIdsUtils.itemAlias(BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString());
+
         return new RawItemStack(
-                MinecraftIdsUtils.itemAlias(BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString()),
+                id,
                 customName,
                 itemStack.getCount(),
                 enchantments,
