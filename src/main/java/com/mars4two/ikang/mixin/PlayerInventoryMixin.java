@@ -71,6 +71,19 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
         return equipmentItems;
     }
 
+    @Unique
+    private boolean afkraft_companion$isServerSide() {
+        return player != null && player.level() != null && !player.level().isClientSide();
+    }
+
+    @Override
+    public int afkraft_companion$getArmorValue() {
+        if (afkraft_companion$isServerSide() && player instanceof LivingEntityInvoker invoker) {
+            invoker.afkraft_companion$detectEquipmentUpdates();
+        }
+        return player != null ? player.getArmorValue() : 0;
+    }
+
     @Override
     public int afkraft_companion$selectedSlot() {
         return getSelectedSlot();
@@ -78,46 +91,57 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
 
     @Inject(method = "setItem", at = @At("TAIL"))
     private void onSetItem(int slot, ItemStack itemStack, CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestSlotedItems(slot);
     }
 
     @Inject(method = "add(ILnet/minecraft/world/item/ItemStack;)Z", at = @At("TAIL"))
     private void onAdd(int slot, ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestSlotedItems(slot);
     }
 
     @Inject(method = "add(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("TAIL"))
     private void onAdd(ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestManager.ingestPlayerInventoryState(this);
     }
 
     @Inject(method = "removeItem(II)Lnet/minecraft/world/item/ItemStack;", at = @At("RETURN"))
     private void onRemove(int slot, int count, CallbackInfoReturnable<ItemStack> cir) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestSlotedItems(slot);
     }
 
     @Inject(method = "removeItem(Lnet/minecraft/world/item/ItemStack;)V", at = @At("TAIL"))
     private void onRemove(ItemStack itemStack, CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestManager.ingestPlayerInventoryState(this);
     }
 
     @Inject(method = "dropAll", at = @At("TAIL"))
     private void onDropAll(CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestManager.ingestPlayerInventoryState(this);
     }
 
     @Inject(method = "setSelectedSlot", at = @At("TAIL"))
     private void onSetSelectedSlot(int slot, CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestSlotedItems(slot);
     }
 
     @Inject(method = "setSelectedItem", at = @At("TAIL"))
     private void onSetSelectedItem(ItemStack itemStack, CallbackInfoReturnable<ItemStack> cir) {
+        if (!afkraft_companion$isServerSide()) return;
         ingestManager.ingestPlayerHotbarState(this);
     }
 
     @Unique
     private void ingestSlotedItems(int slot) {
+        if (!afkraft_companion$isServerSide()) {
+            return;
+        }
         if(Inventory.isHotbarSlot(slot)){
             ingestManager.ingestPlayerHotbarState(this);
             return;

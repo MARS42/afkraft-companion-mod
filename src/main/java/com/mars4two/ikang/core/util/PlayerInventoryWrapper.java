@@ -10,6 +10,7 @@ public interface PlayerInventoryWrapper {
     NonNullList<RawItemStack> afkraft_companion$getHotbarItems();
     NonNullList<RawItemStack> afkraft_companion$getInventoryItems();
     NonNullList<RawItemStack> afkraft_companion$getPlayerEquipment();
+    int afkraft_companion$getArmorValue();
 
     int afkraft_companion$selectedSlot();
 }

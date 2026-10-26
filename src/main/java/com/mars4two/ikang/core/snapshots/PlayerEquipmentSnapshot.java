@@ -22,10 +22,12 @@ public record PlayerEquipmentSnapshot(
     }
 
     public static PlayerEquipmentSnapshot of(PlayerInventoryWrapper inventory) {
-
         return new PlayerEquipmentSnapshot(
                 Set.of(inventory.afkraft_companion$getPlayerId()),
-                new RawEquipment(inventory.afkraft_companion$getPlayerEquipment())
+                new RawEquipment(
+                        inventory.afkraft_companion$getPlayerEquipment(),
+                        inventory.afkraft_companion$getArmorValue()
+                )
         );
     }
 }
