@@ -9,6 +9,7 @@ import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClien
 import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
+import com.mars4two.ikang.core.storage.ContainerTrackingMode;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.Minecraft;
@@ -24,15 +25,29 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientEvents {
 
     private static final Logger log = LoggerFactory.getLogger(ClientEvents.class);
 
-    private static AtomicBoolean afkContainerEnabled = new AtomicBoolean(false);
-    private static AtomicBoolean afkraftEnabled = new AtomicBoolean(false);
+    private static final AtomicReference<ContainerTrackingMode> afkContainerMode = new AtomicReference<>(ContainerTrackingMode.OFF);
+    private static final AtomicBoolean afkraftEnabled = new AtomicBoolean(false);
 
-    private static final List<Class<? extends AbstractContainerMenu>> AFKeablesMenues = List.of(BlastFurnaceMenu.class, ChestMenu.class, CrafterMenu.class, DispenserMenu.class, FurnaceMenu.class, HopperMenu.class, ShulkerBoxMenu.class, SmokerMenu.class);
+    private static final List<Class<? extends AbstractContainerMenu>> AFKeablesMenues = List.of(
+            BlastFurnaceMenu.class,
+            ChestMenu.class,
+            CrafterMenu.class,
+            DispenserMenu.class,
+            FurnaceMenu.class,
+            HopperMenu.class,
+            ShulkerBoxMenu.class,
+            SmokerMenu.class
+    );
+
+    private static final List<Class<? extends AbstractContainerMenu>> PORTABLE_CONTAINER_MENUS = List.of(
+            ShulkerBoxMenu.class
+    );
 
     private ClientEvents() {
         // Utility class, no instances allowed
@@ -62,14 +77,6 @@ public class ClientEvents {
                     () -> log.info("Client is not connected")
             );
         }
-//        }else {
-//            log.info("Client does not need credentials");
-//            AuthService.checkIfIsConnected(UUID.fromString(payload.profileId()), isConnected -> {
-//                Minecraft.getInstance().execute(
-//                        () -> ClientPlayNetworking.send(new GetCredentialsStatusServerboundPayload(isConnected))
-//                );
-//            });
-//        }
     }
 
     public static void onAuthorizeServerRequest(AuthorizeServerRequestClientboundPayload payload, Player player) {
@@ -82,40 +89,76 @@ public class ClientEvents {
     public static void onGetAfkraftStatus(AFKraftStatusClientBoundPayload afkraftStatus) {
         log.info("Received AFKraftStatus payload {}", afkraftStatus);
 
-        afkContainerEnabled.set(afkraftStatus.containerData() != null && afkraftStatus.containerData().enabled());
+        ContainerTrackingMode mode = (afkraftStatus.containerData() != null && afkraftStatus.containerData().enabled())
+                ? afkraftStatus.containerData().mode()
+                : ContainerTrackingMode.OFF;
+
+        afkContainerMode.set(mode);
         afkraftEnabled.set(afkraftStatus.enabled() && afkraftStatus.authenticated());
 
         log.info("AFKraft enabled: {}", afkraftEnabled.get());
-        log.info("AFK container enabled: {}", afkContainerEnabled.get());
+        log.info("AFK container mode: {}", afkContainerMode.get());
     }
 
     public static void onAfterScreenInit(Screen screen) {
         log.info("Screen initialized: {}", screen.getClass().getSimpleName());
         if (screen instanceof AbstractContainerScreen<?> handledScreen) {
+            Class<? extends AbstractContainerMenu> menuClass = handledScreen.getMenu().getClass();
 
-            if (AFKeablesMenues.contains(handledScreen.getMenu().getClass())) {
+            if (AFKeablesMenues.contains(menuClass)) {
                 AbstractContainerMenu menu = handledScreen.getMenu();
 
                 var accessor = (AbstractContainerScreenAccessor) handledScreen;
                 int guiLeft = accessor.leftPos();
                 int guiTop = accessor.topPos();
                 int bgWidth = handledScreen.width;
+                int buttonX = bgWidth - guiLeft + 4;
+                int buttonY = guiTop + 4;
 
+                if (PORTABLE_CONTAINER_MENUS.contains(menuClass)) {
+                    ContainerTrackingMode initialMode = afkContainerMode.get();
+                    if (initialMode == ContainerTrackingMode.CONTAINER) {
+                        initialMode = ContainerTrackingMode.PORTABLE_CONTAINER;
+                    }
 
-                var containerButton = CycleButton.onOffBuilder(afkContainerEnabled.get())
-                        .create(bgWidth - guiLeft + 4, guiTop + 4, 48, 16, Component.literal("AFK"),(b, c) -> onClickButton(screen, menu, c));
-                containerButton.active = afkraftEnabled.get();
-                Screens.getWidgets(screen).add(containerButton);
+                    var portableButton = CycleButton.<ContainerTrackingMode>builder(
+                                    ClientEvents::formatPortableModeLabel,
+                                    initialMode
+                            )
+                            .withValues(
+                                    ContainerTrackingMode.OFF,
+                                    ContainerTrackingMode.PORTABLE_CONTAINER,
+                                    ContainerTrackingMode.LOAD_STATION
+                            )
+                            .create(buttonX, buttonY, 84, 16, Component.literal("AFK"),
+                                    (b, mode) -> onClickButton(screen, menu, mode));
+                    portableButton.active = afkraftEnabled.get();
+                    Screens.getWidgets(screen).add(portableButton);
+                } else {
+                    var containerButton = CycleButton.onOffBuilder(afkContainerMode.get().isEnabled())
+                            .create(buttonX, buttonY, 48, 16, Component.literal("AFK"),
+                                    (b, enabled) -> onClickButton(screen, menu, enabled ? ContainerTrackingMode.CONTAINER : ContainerTrackingMode.OFF));
+                    containerButton.active = afkraftEnabled.get();
+                    Screens.getWidgets(screen).add(containerButton);
+                }
             }
         }
     }
 
-    private static void onClickButton(Screen screen, AbstractContainerMenu menu, boolean enabled) {
+    private static Component formatPortableModeLabel(ContainerTrackingMode mode) {
+        return switch (mode) {
+            case PORTABLE_CONTAINER -> Component.literal("Shulker");
+            case LOAD_STATION -> Component.literal("Posición");
+            default -> Component.literal("Off");
+        };
+    }
+
+    private static void onClickButton(Screen screen, AbstractContainerMenu menu, ContainerTrackingMode mode) {
         var screenClass = screen.getClass().getCanonicalName();
-        log.info("Botón pulsado en {}", screen.getClass().getSimpleName());
+        log.info("Botón pulsado en {} con modo {}", screen.getClass().getSimpleName(), mode);
         log.info("Menu: {}", menu.containerId);
 
-        var registerAFKContainerPayload = new RegisterAFKContainerServerPayload(screenClass, enabled);
+        var registerAFKContainerPayload = new RegisterAFKContainerServerPayload(screenClass, mode);
         ClientPlayNetworking.send(registerAFKContainerPayload);
     }
 }
