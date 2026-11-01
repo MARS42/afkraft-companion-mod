@@ -11,6 +11,8 @@ import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedResp
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
+import com.mars4two.ikang.core.storage.ContainerTrackingMode;
+import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -24,6 +26,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.phys.BlockHitResult;
@@ -134,43 +137,63 @@ public class ServerEvents {
             return null;
         }
 
-        var playerId = player.getGameProfile().id();
+        var serverPlayer = (ServerPlayer) player;
+        var playerId = serverPlayer.getGameProfile().id();
 
         lastUsedItemsByPlayers.put(playerId, resolveAfkBlockPositions(blockPos, state));
 
         log.debug("Current used item for player {} at pos {}", playerId, blockPos);
 
         var containerConfig = AFKContainerConfigData.getConfig(level.getServer());
+        BlockEntity blockEntity = level.getBlockEntity(blockPos);
 
-        var payload = containerConfig.getContainerData((ServerPlayer) player, blockPos);
-        if(payload.isPresent()){
-            log.info("Container data found, sending configuration to player {} for block pos {}", playerId, blockPos);
-            var afkraftStatus = new AFKraftStatusClientBoundPayload(true, AuthService.isAuthenticated(), payload.get());
-            ServerPlayNetworking.send((ServerPlayer) player, afkraftStatus);
-        } else {
-            // Send empty configuration for not configured blocks.
-            var afkraftStatus = new AFKraftStatusClientBoundPayload(true, AuthService.isAuthenticated(), new AFKContainerConfigData.ContainerData(false));
-            ServerPlayNetworking.send((ServerPlayer) player, afkraftStatus);
-        }
+        var effectiveData = containerConfig.resolveEffectiveData(serverPlayer, blockPos, blockEntity);
+        var afkraftStatus = new AFKraftStatusClientBoundPayload(true, AuthService.isAuthenticated(), effectiveData);
+        ServerPlayNetworking.send(serverPlayer, afkraftStatus);
 
         return null;
     }
 
     public static void onRegisterAfkContainer(MinecraftServer server, ServerPlayer player, RegisterAFKContainerServerPayload payload) {
         var playerId = player.getGameProfile().id();
-        var containerEnabled = payload.enabled();
+        var mode = payload.mode();
 
         var positions = lastUsedItemsByPlayers.get(playerId);
 
-        if(positions.isEmpty()){
+        if(positions == null || positions.isEmpty()){
             log.error("Last used item for player with id {} hasn't been found!", playerId);
             return;
         }
 
         var containerConfig = AFKContainerConfigData.getConfig(server);
+        var level = player.level();
 
-        positions.forEach(pos -> containerConfig.set(player, pos, containerEnabled));
-        log.info("Item with class {}, has been updated in saved data with value {}", payload.containerType(), containerEnabled);
+        positions.forEach(pos -> {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+
+            if (mode == ContainerTrackingMode.PORTABLE_CONTAINER && PortableContainerIdentityHelper.isPortableContainer(blockEntity)) {
+                containerConfig.setPositionalMode(player, pos, ContainerTrackingMode.OFF);
+                UUID containerId = PortableContainerIdentityHelper.getOrCreateContainerId(blockEntity);
+                containerConfig.setPortableContainer(player, containerId, true);
+                blockEntity.setChanged();
+                return;
+            }
+
+            if (blockEntity != null) {
+                PortableContainerIdentityHelper.getContainerId(blockEntity).ifPresent(containerId -> {
+                    containerConfig.setPortableContainer(player, containerId, false);
+                    if (!containerConfig.isPortableContainerEnabled(containerId)) {
+                        PortableContainerIdentityHelper.removeContainerId(blockEntity);
+                    }
+                });
+            }
+
+            containerConfig.setPositionalMode(player, pos, mode);
+            if (mode != null && mode.isEnabled() && blockEntity != null) {
+                blockEntity.setChanged();
+            }
+        });
+        log.info("Item with class {}, has been updated in saved data with mode {}", payload.containerType(), mode);
     }
 
     public static void onPlayerBlockBreak(ServerPlayer player, BlockPos blockPos, BlockState blockState) {
@@ -180,7 +203,11 @@ public class ServerEvents {
         }
 
         var containerConfig = AFKContainerConfigData.getConfig(level.getServer());
-        containerConfig.deleteContainerData(player, blockPos);
+        var existing = containerConfig.getContainerData(player, blockPos);
+        if (existing.isPresent() && existing.get().mode() == ContainerTrackingMode.LOAD_STATION) {
+            return;
+        }
+        containerConfig.deleteFixedContainersAt(level.dimension().identifier(), blockPos);
     }
 
     public static List<BlockPos> resolveAfkBlockPositions(BlockPos blockPos, BlockState blockState) {

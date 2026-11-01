@@ -1,15 +1,21 @@
 package com.mars4two.ikang.core.snapshots.model;
 
-
 import com.mars4two.ikang.core.util.MinecraftIdsUtils;
 import net.minecraft.core.BlockPos;
 
 import java.util.Map;
+import java.util.UUID;
 
 public record RawContainerType(String type, RawContainerExtraData extraData, RawContainerLayout layout) implements RawObject {
 
     public static RawContainerType ofType(String type) {
         return new RawContainerType(type, RawContainerExtraData.EMPTY, RawContainerGridLayout.DEFAULT);
+    }
+
+    public static RawContainerType portableContainer(String type, UUID containerId) {
+        return new RawContainerType(type,
+                new RawContainerExtraData(Map.of("containerId", containerId.toString())),
+                RawContainerGridLayout.DEFAULT);
     }
 
     public static RawContainerType singleChest() {

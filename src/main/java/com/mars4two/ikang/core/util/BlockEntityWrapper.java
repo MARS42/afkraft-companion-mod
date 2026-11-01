@@ -10,9 +10,18 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface BlockEntityWrapper {
     RawContainerType afkraft_companion$type();
+
+    default Optional<UUID> afkraft_companion$containerId() {
+        if (!(this instanceof BlockEntity blockEntity)) {
+            return Optional.empty();
+        }
+        return PortableContainerIdentityHelper.getContainerId(blockEntity);
+    }
 
     default BlockPos afkraft_companion$blockPos() {
         if(!(this instanceof BlockEntity blockEntity))
@@ -32,6 +41,7 @@ public interface BlockEntityWrapper {
 
         return nameable.hasCustomName() ? nameable.getPlainTextName() : null;
     }
+
     default List<RawItemStack> afkraft_companion$getItems(){
         if (!(this instanceof BaseContainerBlockEntity container)) return List.of();
 

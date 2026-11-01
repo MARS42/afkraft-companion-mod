@@ -6,6 +6,7 @@
 		"ExampleMixin",
 		"BlockItemMixin",
 		"BlockEntityMixin",
+		"ShulkerBoxBlockMixin",
 		"PlayerSnapshotMixin",
 		"PlayerInventoryMixin",
 		"LivingEntityInvoker"
