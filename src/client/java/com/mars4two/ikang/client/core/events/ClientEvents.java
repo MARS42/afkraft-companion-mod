@@ -74,14 +74,9 @@ public class ClientEvents {
 
     public static void onAuthorizeServerRequest(AuthorizeServerRequestClientboundPayload payload, Player player) {
         log.info("Server wants to authorize server join, payload");
-        var authorizeService = new ClientAuthorizeServerService(player, ClientEvents::sendAuthorizeServerRequest);
+        var authorizeService = new ClientAuthorizeServerService(UUID.fromString(payload.currentServerId()),player,
+                () -> ClientPlayNetworking.send(new AuthorizeServerResponseServerboundPayload()));
         authorizeService.showAuthorizationScreen();
-    }
-
-    private static void sendAuthorizeServerRequest(ClientAuthorizeServerService.AuthorizeServerResult result) {
-        var hasJoinedResult = result.hasJoinedResult();
-        var serverName = result.serverName();
-        ClientPlayNetworking.send(new AuthorizeServerResponseServerboundPayload(serverName, hasJoinedResult.serverId(), hasJoinedResult.hasJoinedResponse().joinOtp()));
     }
 
     public static void onGetAfkraftStatus(AFKraftStatusClientBoundPayload afkraftStatus) {

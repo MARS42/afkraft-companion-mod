@@ -240,42 +240,15 @@ public class AuthService {
         }
     }
 
-    public static void sendPlayerAuthorization(UUID profileId, String serverName, String serverId, String joinOtp, Runnable successCallback, Runnable errorCallback) {
-        CompletableFuture.runAsync(() -> {
-            log.info("Sending player authorization request...");
-
-            try {
-                String jsonBody = GsonConfig.toJson(new AuthorizeServerRequest(profileId, serverId, joinOtp, serverName));
-
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(HttpConfig.getSendPlayerAuthorizationUri())
-                        .header("Content-Type", "application/json")
-                        .header("Authorization", "Bearer " + getAccessToken().orElseThrow())
-                        .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                        .build();
-
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                if (response.statusCode() != 200) {
-                    log.error("Error sending player authorization request (HTTP {})", response.statusCode());
-                    errorCallback.run();
-                    return;
-                }
-                log.info("Player authorization request sent successfully, adding player to authorized players list");
-                authorizedPlayers.add(profileId);
-                successCallback.run();
-            }  catch (Exception e) {
-                Thread.currentThread().interrupt();
-                log.error("Unexpected error during refreshing mod credentials: ", e);
-                errorCallback.run();
-            }
-        });
-    }
-
     public static void clearModCredentials() {
         CredentialStore.clear();
     }
 
+    public static void authorizePlayer(UUID profileId) {
+        log.info("Adding player to authorized players list");
+        authorizedPlayers.add(profileId);
+        log.info("Player added to authorized players list");
+    }
     public static boolean isPlayerAuthorized(UUID profileId){
         return authorizedPlayers.contains(profileId);
     }

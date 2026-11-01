@@ -78,9 +78,7 @@ public class ServerEvents {
     public static void onServerAuthorizedByPlayer(MinecraftServer server, ServerPlayer player, AuthorizeServerResponseServerboundPayload payload) {
         var profileId = player.getGameProfile().id();
         log.info("Server has been authorized by player {}", player.getGameProfile().id());
-        AuthService.sendPlayerAuthorization(profileId,  payload.serverName(), payload.serverId(), payload.joinOtp(),
-                () -> server.execute(() -> player.sendSystemMessage(Component.literal("Servidor autorizado correctamente"))),
-                () -> server.execute(() -> player.sendSystemMessage(Component.literal("Error al autorizar el servidor"))));
+        AuthService.authorizePlayer(profileId);
     }
 
     public static void onIsServerAuthenticatedRequest(ServerPlayer player, IsServerAuthenticatedRequest payload) {
@@ -127,7 +125,7 @@ public class ServerEvents {
             }
 
             log.info("Sending authorize server request to player {}", profileId);
-            player.level().getServer().execute(() -> ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload()));
+            player.level().getServer().execute(() -> ServerPlayNetworking.send(player, new AuthorizeServerRequestClientboundPayload(AuthService.getCurrentServerId().toString())));
         });
     }
 

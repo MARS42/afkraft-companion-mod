@@ -7,18 +7,23 @@ import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Consumer;
+import java.util.UUID;
 
 public class ClientAuthorizeServerService {
 
+    private final UUID currentServerId;
     private final Player player;
     private final String serverName;
-    private final Consumer<AuthorizeServerResult> hasJoinedResultConsumer;
+    private final Runnable hasAuthorizedCallback;
+
+    private final Minecraft minecraft;
+
     private static final Logger log = LoggerFactory.getLogger("afkraft-auth-server-service");
 
-    public ClientAuthorizeServerService(Player player, Consumer<AuthorizeServerResult> hasJoinedResultConsumer) {
+    public ClientAuthorizeServerService(UUID currentServerId, Player player, Runnable hasAuthorizedCallback) {
+        this.currentServerId = currentServerId;
         this.player = player;
-        this.hasJoinedResultConsumer = hasJoinedResultConsumer;
+        this.hasAuthorizedCallback = hasAuthorizedCallback;
 
         var serverData = Minecraft.getInstance().getCurrentServer();
         if(serverData == null) {
@@ -26,11 +31,11 @@ public class ClientAuthorizeServerService {
         }
 
         this.serverName = serverData.name;
+        this.minecraft = Minecraft.getInstance();
     }
 
     public void showAuthorizationScreen() {
-        var client = Minecraft.getInstance();
-        client.execute(() -> client.setScreenAndShow(new AuthorizeServerRequestScreen(
+        minecraft.execute(() -> minecraft.setScreenAndShow(new AuthorizeServerRequestScreen(
                 null,
                 serverName,
                 authorized -> {
@@ -45,11 +50,16 @@ public class ClientAuthorizeServerService {
         )));
     }
 
-
-
     private void successAuthorizeServer(ClientAuthService.HasJoinedResult hasJoinedResult) {
-        log.info("Server authorized successfully");
-        hasJoinedResultConsumer.accept(new AuthorizeServerResult(serverName, hasJoinedResult));
+        ClientAuthService.sendPlayerAuthorization(currentServerId, player.getGameProfile().id(), hasJoinedResult,
+                () -> {
+                    log.info("Server authorized by player successfully");
+                    minecraft.execute(() -> {
+                        hasAuthorizedCallback.run();
+                        player.sendSystemMessage(Component.literal("Servidor autorizado correctamente"));
+                    });
+                },
+                () -> minecraft.execute(() -> player.sendSystemMessage(Component.literal("Error al autorizar el servidor"))));
     }
 
     private void failAuthorizeServer(Exception e) {
@@ -60,8 +70,5 @@ public class ClientAuthorizeServerService {
     private void notConnectedCallback() {
         log.info("User is not connected");
         player.sendSystemMessage(Component.literal("Debes estar conectado para autorizar un servidor"));
-    }
-
-    public record AuthorizeServerResult(String serverName, ClientAuthService.HasJoinedResult hasJoinedResult) {
     }
 }
