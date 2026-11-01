@@ -12,6 +12,7 @@ import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServe
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import com.mars4two.ikang.core.storage.ContainerTrackingMode;
+import com.mars4two.ikang.core.util.BlockEntityWrapper;
 import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -167,9 +169,27 @@ public class ServerEvents {
 
         var containerConfig = AFKContainerConfigData.getConfig(server);
         var level = player.level();
+        var ingestManager = SnapshotIngestManager.getInstance();
 
         positions.forEach(pos -> {
             BlockEntity blockEntity = level.getBlockEntity(pos);
+            BlockEntityWrapper wrapper = (blockEntity instanceof BlockEntityWrapper bew) ? bew : null;
+
+            var previousData = containerConfig.resolveEffectiveData(player, pos, blockEntity);
+            var previousMode = previousData.enabled() ? previousData.mode() : ContainerTrackingMode.OFF;
+
+            if (previousMode != mode && previousMode.isEnabled() && wrapper != null) {
+                switch (previousMode) {
+                    case PORTABLE_CONTAINER -> {
+                        PortableContainerIdentityHelper.getContainerId(blockEntity).ifPresent(containerId -> {
+                            ingestManager.ingestPortableContainerDeleted(Set.of(playerId), containerId, wrapper);
+                        });
+                    }
+                    case LOAD_STATION -> ingestManager.ingestLoadStationDeleted(Set.of(playerId), wrapper);
+                    case CONTAINER -> ingestManager.ingestContainerDeleted(Set.of(playerId), wrapper);
+                    default -> {}
+                }
+            }
 
             if (mode == ContainerTrackingMode.PORTABLE_CONTAINER && PortableContainerIdentityHelper.isPortableContainer(blockEntity)) {
                 containerConfig.setPositionalMode(player, pos, ContainerTrackingMode.OFF);

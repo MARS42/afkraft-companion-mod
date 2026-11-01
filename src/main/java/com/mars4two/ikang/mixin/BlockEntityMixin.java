@@ -79,6 +79,10 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
         if (config == null) return;
 
         var dimensionId = level.dimension().identifier();
+        var owners = config.getEnabledOwnersAt(dimensionId, pos);
+        if (!owners.isEmpty()) {
+            ingestManager.ingestContainerDeleted(owners, this);
+        }
         config.deleteFixedContainersAt(dimensionId, pos);
     }
 

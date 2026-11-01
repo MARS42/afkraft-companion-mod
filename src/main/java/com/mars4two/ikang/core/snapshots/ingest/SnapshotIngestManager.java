@@ -61,12 +61,24 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.submit(ContainerSnapshot.of(playerIds, blockEntityWrapper));
     }
 
+    public void ingestContainerDeleted(Set<UUID> playerIds, BlockEntityWrapper blockEntityWrapper) {
+        conflater.submit(ContainerSnapshot.ofDeleted(playerIds, blockEntityWrapper));
+    }
+
     public void ingestPortableContainerBlockEntity(Set<UUID> playerIds, UUID containerId, BlockEntityWrapper blockEntityWrapper) {
         conflater.submit(ContainerSnapshot.ofPortable(playerIds, containerId, blockEntityWrapper));
     }
 
+    public void ingestPortableContainerDeleted(Set<UUID> playerIds, UUID containerId, BlockEntityWrapper blockEntityWrapper) {
+        conflater.submit(ContainerSnapshot.ofPortableDeleted(playerIds, containerId, blockEntityWrapper));
+    }
+
     public void ingestLoadStationBlockEntity(Set<UUID> playerIds, BlockEntityWrapper blockEntityWrapper) {
         conflater.submit(LoadStationSnapshot.of(playerIds, blockEntityWrapper));
+    }
+
+    public void ingestLoadStationDeleted(Set<UUID> playerIds, BlockEntityWrapper blockEntityWrapper) {
+        conflater.submit(LoadStationSnapshot.ofDeleted(playerIds, blockEntityWrapper));
     }
 
     public void ingestPlayerStats(PlayerStatsContainer player) {

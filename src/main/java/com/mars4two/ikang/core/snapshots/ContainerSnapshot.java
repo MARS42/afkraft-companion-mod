@@ -30,7 +30,7 @@ public record ContainerSnapshot(
 
     @Override
     public Object changeToken() {
-        return List.of(data.blockPos(), data.items());
+        return List.of(data.blockPos(), data.items(), data.deleted());
     }
 
     public static ContainerSnapshot of(Set<UUID> playerIds, BlockEntityWrapper containerBlockEntity) {
@@ -39,7 +39,19 @@ public record ContainerSnapshot(
                 new RawContainer(containerBlockEntity.afkraft_companion$type(),
                         containerBlockEntity.afkraft_companion$blockPos(),
                         containerBlockEntity.afkraft_companion$containerName(),
-                        containerBlockEntity.afkraft_companion$getItems())
+                        containerBlockEntity.afkraft_companion$getItems(),
+                        false)
+        );
+    }
+
+    public static ContainerSnapshot ofDeleted(Set<UUID> playerIds, BlockEntityWrapper containerBlockEntity) {
+        return new ContainerSnapshot(
+                playerIds,
+                new RawContainer(containerBlockEntity.afkraft_companion$type(),
+                        containerBlockEntity.afkraft_companion$blockPos(),
+                        containerBlockEntity.afkraft_companion$containerName(),
+                        containerBlockEntity.afkraft_companion$getItems(),
+                        true)
         );
     }
 
@@ -50,7 +62,22 @@ public record ContainerSnapshot(
                         RawContainerType.portableContainer(containerBlockEntity.afkraft_companion$blockId(), containerId),
                         containerBlockEntity.afkraft_companion$blockPos(),
                         containerBlockEntity.afkraft_companion$containerName(),
-                        containerBlockEntity.afkraft_companion$getItems()
+                        containerBlockEntity.afkraft_companion$getItems(),
+                        false
+                ),
+                "portable:" + containerId
+        );
+    }
+
+    public static ContainerSnapshot ofPortableDeleted(Set<UUID> playerIds, UUID containerId, BlockEntityWrapper containerBlockEntity) {
+        return new ContainerSnapshot(
+                playerIds,
+                new RawContainer(
+                        RawContainerType.portableContainer(containerBlockEntity.afkraft_companion$blockId(), containerId),
+                        containerBlockEntity.afkraft_companion$blockPos(),
+                        containerBlockEntity.afkraft_companion$containerName(),
+                        containerBlockEntity.afkraft_companion$getItems(),
+                        true
                 ),
                 "portable:" + containerId
         );

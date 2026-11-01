@@ -7,7 +7,8 @@ import java.util.List;
 public record RawContainer(RawContainerType typeData,
                            BlockPos blockPos,
                            String containerName,
-                           List<RawItemStack> items) implements RawObject {
+                           List<RawItemStack> items,
+                           boolean deleted) implements RawObject {
     @Override
     public Object[] payloadValues() {
         return new Object[]{
@@ -16,7 +17,8 @@ public record RawContainer(RawContainerType typeData,
                 blockPos.getY(),
                 blockPos.getZ(),
                 containerName,
-                items
+                items,
+                deleted
         };
     }
 }

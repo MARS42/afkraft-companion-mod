@@ -3,6 +3,7 @@ package com.mars4two.ikang.core.snapshots;
 import com.mars4two.ikang.core.snapshots.model.RawContainer;
 import com.mars4two.ikang.core.util.BlockEntityWrapper;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,7 +24,7 @@ public record LoadStationSnapshot(
 
     @Override
     public Object changeToken() {
-        return data.items();
+        return List.of(data.blockPos(), data.items(), data.deleted());
     }
 
     public static LoadStationSnapshot of(Set<UUID> playerIds, BlockEntityWrapper containerBlockEntity) {
@@ -32,7 +33,19 @@ public record LoadStationSnapshot(
                 new RawContainer(containerBlockEntity.afkraft_companion$type(),
                         containerBlockEntity.afkraft_companion$blockPos(),
                         containerBlockEntity.afkraft_companion$containerName(),
-                        containerBlockEntity.afkraft_companion$getItems())
+                        containerBlockEntity.afkraft_companion$getItems(),
+                        false)
+        );
+    }
+
+    public static LoadStationSnapshot ofDeleted(Set<UUID> playerIds, BlockEntityWrapper containerBlockEntity) {
+        return new LoadStationSnapshot(
+                playerIds,
+                new RawContainer(containerBlockEntity.afkraft_companion$type(),
+                        containerBlockEntity.afkraft_companion$blockPos(),
+                        containerBlockEntity.afkraft_companion$containerName(),
+                        containerBlockEntity.afkraft_companion$getItems(),
+                        true)
         );
     }
 }
