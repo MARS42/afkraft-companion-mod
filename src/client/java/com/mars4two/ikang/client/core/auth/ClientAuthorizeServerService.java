@@ -1,5 +1,6 @@
 package com.mars4two.ikang.client.core.auth;
 
+import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.client.core.screens.AuthorizeServerRequestScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -13,7 +14,6 @@ public class ClientAuthorizeServerService {
 
     private final UUID currentServerId;
     private final Player player;
-    private final String serverName;
     private final Runnable hasAuthorizedCallback;
 
     private final Minecraft minecraft;
@@ -25,19 +25,13 @@ public class ClientAuthorizeServerService {
         this.player = player;
         this.hasAuthorizedCallback = hasAuthorizedCallback;
 
-        var serverData = Minecraft.getInstance().getCurrentServer();
-        if(serverData == null) {
-            throw new IllegalStateException("No server selected");
-        }
-
-        this.serverName = serverData.name;
         this.minecraft = Minecraft.getInstance();
     }
 
     public void showAuthorizationScreen() {
         minecraft.execute(() -> minecraft.setScreenAndShow(new AuthorizeServerRequestScreen(
                 null,
-                serverName,
+                ClientEvents.getWorldName(),
                 authorized -> {
                     if (!Boolean.TRUE.equals(authorized)) {
                         log.info("User doesn't want authorize the server");
@@ -52,6 +46,7 @@ public class ClientAuthorizeServerService {
 
     private void successAuthorizeServer(ClientAuthService.HasJoinedResult hasJoinedResult) {
         ClientAuthService.sendPlayerAuthorization(currentServerId, player.getGameProfile().id(), hasJoinedResult,
+                ClientEvents.getWorldName(),
                 () -> {
                     log.info("Server authorized by player successfully");
                     minecraft.execute(() -> {

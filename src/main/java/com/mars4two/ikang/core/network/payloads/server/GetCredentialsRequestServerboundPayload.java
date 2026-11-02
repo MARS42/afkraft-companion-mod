@@ -6,7 +6,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record GetCredentialsRequestServerboundPayload(String profileId, String serverId, String joinOtp) implements CustomPacketPayload {
+public record GetCredentialsRequestServerboundPayload(String profileId, String serverId, String joinOtp, String serverName) implements CustomPacketPayload {
 
     public static final Type<GetCredentialsRequestServerboundPayload> TYPE =
             new Type<>(AFKraftCompanion.id("get_credentials_request_server_payload"));
@@ -15,6 +15,7 @@ public record GetCredentialsRequestServerboundPayload(String profileId, String s
             ByteBufCodecs.STRING_UTF8, GetCredentialsRequestServerboundPayload::profileId,
             ByteBufCodecs.STRING_UTF8, GetCredentialsRequestServerboundPayload::serverId,
             ByteBufCodecs.STRING_UTF8, GetCredentialsRequestServerboundPayload::joinOtp,
+            ByteBufCodecs.STRING_UTF8, GetCredentialsRequestServerboundPayload::serverName,
             GetCredentialsRequestServerboundPayload::new
     );
 

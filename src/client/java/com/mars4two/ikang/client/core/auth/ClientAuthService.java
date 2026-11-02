@@ -2,7 +2,7 @@ package com.mars4two.ikang.client.core.auth;
 
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.auth.AuthenticationException;
-import com.mars4two.ikang.core.auth.dtos.AuthorizeServerRequest;
+import com.mars4two.ikang.client.core.auth.dtos.AuthorizeServerRequest;
 import com.mars4two.ikang.core.auth.dtos.HasJoinedResponse;
 import com.mars4two.ikang.core.config.GsonConfig;
 import com.mars4two.ikang.core.config.HttpConfig;
@@ -103,12 +103,16 @@ public class ClientAuthService {
 
     public record HasJoinedResult(String serverId, HasJoinedResponse hasJoinedResponse) { }
 
-    public static void sendPlayerAuthorization(UUID currentServerId, UUID profileId, HasJoinedResult joinedResult, Runnable successCallback, Runnable errorCallback) {
+    public static void sendPlayerAuthorization(UUID currentServerId, UUID profileId, HasJoinedResult joinedResult, String serverName, Runnable successCallback, Runnable errorCallback) {
         CompletableFuture.runAsync(() -> {
             log.info("Sending player authorization request...");
 
             try {
-                String jsonBody = GsonConfig.toJson(new AuthorizeServerRequest(profileId, currentServerId.toString(), joinedResult.serverId(), joinedResult.hasJoinedResponse().joinOtp()));
+                String jsonBody = GsonConfig.toJson(new AuthorizeServerRequest(profileId,
+                        currentServerId.toString(),
+                        joinedResult.serverId(),
+                        joinedResult.hasJoinedResponse().joinOtp(),
+                        serverName));
 
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(HttpConfig.getSendPlayerAuthorizationUri())

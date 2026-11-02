@@ -1,6 +1,7 @@
 package com.mars4two.ikang.client.command;
 
 import com.mars4two.ikang.client.core.auth.ClientAuthService;
+import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedResponse;
@@ -48,7 +49,9 @@ public class AFKraftClientEnableCommand {
         player.sendSystemMessage(Component.literal("Generando credenciales AFKraft..."));
         ClientAuthService.authenticate(
                 (serverId, joinOtp) -> Minecraft.getInstance().execute(
-                        () -> ClientPlayNetworking.send(new GetCredentialsRequestServerboundPayload(player.getGameProfile().id().toString(), serverId, joinOtp))
+                        () -> ClientPlayNetworking.send(new GetCredentialsRequestServerboundPayload(
+                                player.getGameProfile().id().toString(), serverId, joinOtp,
+                                ClientEvents.getWorldName()))
                 ),
                 e -> player.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft")),
                 () -> player.sendSystemMessage(Component.literal("Aún no has enlazado tu cuenta con AFKraft"))

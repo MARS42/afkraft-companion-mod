@@ -57,7 +57,8 @@ public class ClientEvents {
         log.info("Client has connected, sending credentials request");
         ClientAuthService.authenticate(
                 (serverId, joinOtp) -> Minecraft.getInstance().execute(
-                        () -> ClientPlayNetworking.send(new GetCredentialsRequestServerboundPayload(profileId.toString(), serverId, joinOtp))
+                        () ->
+                            ClientPlayNetworking.send(new GetCredentialsRequestServerboundPayload(profileId.toString(), serverId, joinOtp, getWorldName()))
                 ),
                 (e) -> log.error("Error while authenticating", e),
                 () -> log.info("Client is not connected")
@@ -71,7 +72,7 @@ public class ClientEvents {
             log.info("Client needs credentials");
             ClientAuthService.authenticate(
                     (serverId, joinOtp) -> Minecraft.getInstance().execute(
-                            () -> ClientPlayNetworking.send(new GetCredentialsRequestServerboundPayload(payload.profileId(), serverId, joinOtp))
+                            () -> ClientPlayNetworking.send(new GetCredentialsRequestServerboundPayload(payload.profileId(), serverId, joinOtp, getWorldName()))
                     ),
                     (e) -> log.error("Error while authenticating", e),
                     () -> log.info("Client is not connected")
@@ -160,5 +161,32 @@ public class ClientEvents {
 
         var registerAFKContainerPayload = new RegisterAFKContainerServerPayload(screenClass, mode);
         ClientPlayNetworking.send(registerAFKContainerPayload);
+    }
+
+    public static String getWorldName() {
+        Minecraft minecraft = Minecraft.getInstance();
+
+        if (minecraft.hasSingleplayerServer()) {
+            var singleplayerServer = minecraft.getSingleplayerServer();
+            if (singleplayerServer != null && singleplayerServer.getWorldData() != null) {
+                return singleplayerServer.getWorldData().getLevelName();
+            }
+        }
+
+        var serverData = minecraft.getCurrentServer();
+        if (serverData == null && minecraft.getConnection() != null) {
+            serverData = minecraft.getConnection().getServerData();
+        }
+
+        if (serverData != null) {
+            if (serverData.name != null && !serverData.name.isBlank()) {
+                return serverData.name;
+            }
+            if (serverData.ip != null && !serverData.ip.isBlank()) {
+                return serverData.ip;
+            }
+        }
+
+        throw new IllegalStateException("No world or server selected");
     }
 }

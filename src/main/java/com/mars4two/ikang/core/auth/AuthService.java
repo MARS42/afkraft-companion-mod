@@ -92,7 +92,7 @@ public class AuthService {
         log.info("Authenticating mod by user {}...", player.getGameProfile().name());
         CompletableFuture.runAsync(() -> {
 
-            var modCredentials = getModCredentials(payload.profileId(), payload.serverId(), payload.joinOtp());
+            var modCredentials = getModCredentials(payload.profileId(), payload.serverId(), payload.joinOtp(), payload.serverName());
 
             if(modCredentials.isEmpty()) {
                 log.warn("Unable to authenticate user");
@@ -182,11 +182,11 @@ public class AuthService {
     }
 
 
-    private static Optional<ModCredentialsResponse> getModCredentials(String profileId, String serverId, String joinOtp) {
+    private static Optional<ModCredentialsResponse> getModCredentials(String profileId, String serverId, String joinOtp, String serverName) {
         log.info("Getting mod credentials...");
 
         try {
-            String jsonBody = GsonConfig.toJson(new GetModCredentialsRequest(profileId, serverId, joinOtp));
+            String jsonBody = GsonConfig.toJson(new GetModCredentialsRequest(profileId, serverId, joinOtp, serverName));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(HttpConfig.getModCredentialsUri())
