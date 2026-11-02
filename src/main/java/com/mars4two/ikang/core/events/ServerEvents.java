@@ -71,11 +71,13 @@ public class ServerEvents {
 
         if(isDedicated && AuthService.isAuthenticated()) {
             log.info("Dedicated server detected and authenticated, sending authorize server request to player {}", playerId);
-            if(AuthService.isPlayerAuthorized(playerId)){
-                log.info("Player {} already authorized the server", playerId);
-                player.sendSystemMessage(Component.literal("Bienvenido de nuevo, ya has autorizado este servidor para AFKraft"));
-                return;
-            }
+
+            // TODO Implement "Remember server" feature
+//            if(AuthService.isPlayerAuthorized(playerId)){
+//                log.info("Player {} already authorized the server", playerId);
+//                player.sendSystemMessage(Component.literal("Bienvenido de nuevo, ya has autorizado este servidor para AFKraft"));
+//                return;
+//            }
             sendAuthorizeServerRequestToPlayer(player);
         }
     }
