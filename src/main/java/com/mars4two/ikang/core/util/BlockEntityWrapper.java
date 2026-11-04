@@ -1,5 +1,6 @@
 package com.mars4two.ikang.core.util;
 
+import com.mars4two.ikang.core.model.BlockCoord;
 import com.mars4two.ikang.core.snapshots.model.RawContainerType;
 import com.mars4two.ikang.core.snapshots.model.RawItemStack;
 import net.minecraft.core.BlockPos;
@@ -16,6 +17,8 @@ import java.util.UUID;
 public interface BlockEntityWrapper {
     RawContainerType afkraft_companion$type();
 
+    ContainerView afkraft_companion$asContainerView();
+
     default Optional<UUID> afkraft_companion$containerId() {
         if (!(this instanceof BlockEntity blockEntity)) {
             return Optional.empty();
@@ -24,25 +27,30 @@ public interface BlockEntityWrapper {
     }
 
     default BlockPos afkraft_companion$blockPos() {
-        if(!(this instanceof BlockEntity blockEntity))
+        if (!(this instanceof BlockEntity blockEntity))
             return null;
         return blockEntity.getBlockPos();
     }
 
+    default BlockCoord afkraft_companion$blockCoord() {
+        BlockPos pos = afkraft_companion$blockPos();
+        return pos != null ? new BlockCoord(pos.getX(), pos.getY(), pos.getZ()) : null;
+    }
+
     default String afkraft_companion$blockId() {
-        if(!(this instanceof BlockEntity blockEntity))
+        if (!(this instanceof BlockEntity blockEntity))
             return null;
         return BuiltInRegistries.BLOCK.getKey(blockEntity.getBlockState().getBlock()).toString();
     }
 
     default String afkraft_companion$containerName() {
-        if(!(this instanceof Nameable nameable))
+        if (!(this instanceof Nameable nameable))
             return null;
 
         return nameable.hasCustomName() ? nameable.getPlainTextName() : null;
     }
 
-    default List<RawItemStack> afkraft_companion$getItems(){
+    default List<RawItemStack> afkraft_companion$getItems() {
         if (!(this instanceof BaseContainerBlockEntity container)) return List.of();
 
         var iterator = container.iterator();
@@ -52,7 +60,7 @@ public interface BlockEntityWrapper {
         while (iterator.hasNext()) {
             var itemStack = iterator.next();
             if (!itemStack.isEmpty()) {
-                items.add(RawItemStack.from(index, itemStack));
+                items.add(ItemStackMapper.from(index, itemStack));
             }
             index++;
         }

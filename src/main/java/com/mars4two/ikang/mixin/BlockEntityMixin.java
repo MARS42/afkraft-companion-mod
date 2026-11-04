@@ -1,9 +1,12 @@
 package com.mars4two.ikang.mixin;
 
+import com.mars4two.ikang.core.model.BlockCoord;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.snapshots.model.RawContainerType;
+import com.mars4two.ikang.core.snapshots.model.RawItemStack;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import com.mars4two.ikang.core.util.BlockEntityWrapper;
+import com.mars4two.ikang.core.util.ContainerView;
 import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -18,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(BlockEntity.class)
@@ -25,6 +30,47 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
 
     @Unique
     private static final SnapshotIngestManager ingestManager = SnapshotIngestManager.getInstance();
+
+    @Unique
+    private ContainerView afkraft_companion$cachedView;
+
+    @Override
+    public ContainerView afkraft_companion$asContainerView() {
+        if (afkraft_companion$cachedView == null) {
+            afkraft_companion$cachedView = new ContainerView() {
+                @Override
+                public RawContainerType type() {
+                    return BlockEntityMixin.this.afkraft_companion$type();
+                }
+
+                @Override
+                public Optional<UUID> containerId() {
+                    return BlockEntityMixin.this.afkraft_companion$containerId();
+                }
+
+                @Override
+                public BlockCoord blockCoord() {
+                    return BlockEntityMixin.this.afkraft_companion$blockCoord();
+                }
+
+                @Override
+                public String blockId() {
+                    return BlockEntityMixin.this.afkraft_companion$blockId();
+                }
+
+                @Override
+                public String containerName() {
+                    return BlockEntityMixin.this.afkraft_companion$containerName();
+                }
+
+                @Override
+                public List<RawItemStack> items() {
+                    return BlockEntityMixin.this.afkraft_companion$getItems();
+                }
+            };
+        }
+        return afkraft_companion$cachedView;
+    }
 
     @Inject(at = @At("TAIL"), method = "setChanged()V")
     private void onSetChanged(CallbackInfo ci) {
@@ -40,6 +86,7 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
 
         var dimensionId = level.dimension().identifier();
         var blockPos = self.getBlockPos();
+        var view = afkraft_companion$asContainerView();
 
         var containerIdOpt = PortableContainerIdentityHelper.getContainerId(self);
         if (containerIdOpt.isPresent()) {
@@ -48,7 +95,7 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
                 ingestManager.ingestPortableContainerBlockEntity(
                         config.getPortableContainerOwners(containerId),
                         containerId,
-                        this
+                        view
                 );
             }
         }
@@ -56,14 +103,14 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
         if (config.isLoadStationEnabledAt(dimensionId, blockPos)) {
             ingestManager.ingestLoadStationBlockEntity(
                     config.getLoadStationOwnersAt(dimensionId, blockPos),
-                    this
+                    view
             );
         }
 
         if (config.isContainerEnabledAt(dimensionId, blockPos)) {
             ingestManager.ingestContainerBlockEntity(
                     config.getEnabledOwnersAt(dimensionId, blockPos),
-                    this
+                    view
             );
         }
     }
@@ -81,24 +128,25 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
         var dimensionId = level.dimension().identifier();
         var owners = config.getEnabledOwnersAt(dimensionId, pos);
         if (!owners.isEmpty()) {
-            ingestManager.ingestContainerDeleted(owners, this);
+            ingestManager.ingestContainerDeleted(owners, afkraft_companion$asContainerView());
         }
         config.deleteFixedContainersAt(dimensionId, pos);
     }
 
     @Override
     public RawContainerType afkraft_companion$type() {
-        var blockPos = afkraft_companion$blockPos();
+        var blockCoord = afkraft_companion$blockCoord();
 
         if ((Object) this instanceof ChestBlockEntity chestBlockEntity) {
             var chestType = chestBlockEntity.getBlockState().getValue(ChestBlock.TYPE);
             var connectedPos = ChestBlock.getConnectedBlockPos(chestBlockEntity.getBlockPos(), chestBlockEntity.getBlockState());
+            var connectedCoord = new BlockCoord(connectedPos.getX(), connectedPos.getY(), connectedPos.getZ());
 
             switch (chestType) {
                 case LEFT:
-                    return RawContainerType.doubleChest(connectedPos, blockPos);
+                    return RawContainerType.doubleChest(connectedCoord, blockCoord);
                 case RIGHT:
-                    return RawContainerType.doubleChest(blockPos, connectedPos);
+                    return RawContainerType.doubleChest(blockCoord, connectedCoord);
                 case SINGLE:
                     return RawContainerType.singleChest();
             }

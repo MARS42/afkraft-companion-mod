@@ -3,6 +3,7 @@ package com.mars4two.ikang.mixin;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.snapshots.model.*;
 import com.mars4two.ikang.core.util.AttackCadenceTracker;
+import com.mars4two.ikang.core.util.ItemStackMapper;
 import com.mars4two.ikang.core.util.MobSphereCalculator;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mojang.authlib.GameProfile;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Mixin(ServerPlayer.class)
-public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsContainer {
+public abstract class PlayerSnapshotMixin extends Player {
 
     @Unique
     private static final SnapshotIngestManager ingestManager = SnapshotIngestManager.getInstance();
@@ -39,77 +40,79 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
     @Unique
     private int afkraft_companion$lastEntityAttackTick = -1;
 
+    @Unique
+    private final PlayerStatsContainer afkraft_companion$statsView = new PlayerStatsContainer() {
+        @Override
+        public UUID profileId() {
+            return getGameProfile().id();
+        }
+
+        @Override
+        public RawPlayerStats stats() {
+            return new RawPlayerStats(
+                    gameMode() != null ? gameMode().getName() : "",
+                    getHealth(),
+                    getMaxHealth(),
+                    getFoodData().getFoodLevel(),
+                    experienceLevel,
+                    experienceProgress,
+                    getX(),
+                    getY(),
+                    getZ(),
+                    getYRot(),
+                    getXRot()
+            );
+        }
+
+        @Override
+        public RawPlayerEffects effects() {
+            var active = getActiveEffects();
+            if (active.isEmpty()) {
+                return new RawPlayerEffects(List.of());
+            }
+            List<RawPlayerEffect> list = new ArrayList<>(active.size());
+            for (var effect : active) {
+                float tps = PlayerSnapshotMixin.this.level().tickRateManager().tickrate();
+                int durationTicks = effect.getDuration();
+                int durationSeconds = (durationTicks > 0) ? (int) (durationTicks / tps) : durationTicks;
+
+                list.add(new RawPlayerEffect(
+                        effect.getDescriptionId(),
+                        effect.getAmplifier(),
+                        durationSeconds,
+                        effect.isAmbient(),
+                        effect.isVisible()
+                ));
+            }
+            return new RawPlayerEffects(list);
+        }
+
+        @Override
+        public RawPlayerHands handsStats() {
+            return new RawPlayerHands(
+                    extractHandItem(InteractionHand.MAIN_HAND),
+                    extractHandItem(InteractionHand.OFF_HAND)
+            );
+        }
+
+        @Override
+        public RawPlayerAttackCadence attackCadence() {
+            boolean holdingSword = PlayerSnapshotMixin.this.getItemInHand(InteractionHand.MAIN_HAND).is(ItemTags.SWORDS);
+            return afkraft_companion$cadenceTracker.snapshot(
+                    PlayerSnapshotMixin.this.tickCount,
+                    PlayerSnapshotMixin.this.getCurrentItemAttackStrengthDelay(),
+                    holdingSword
+            );
+        }
+
+        @Override
+        public RawMobSphere mobSphere() {
+            return MobSphereCalculator.calculate((ServerPlayer) (Object) PlayerSnapshotMixin.this);
+        }
+    };
+
     protected PlayerSnapshotMixin(Level level, GameProfile gameProfile) {
         super(level, gameProfile);
-    }
-
-    @Override
-    public UUID afkraft_companion$getProfileId() {
-        return getGameProfile().id();
-    }
-
-    @Override
-    public RawPlayerStats afkraft_companion$getStats() {
-        return new RawPlayerStats(
-                gameMode() != null ? gameMode().getName() : "",
-                getHealth(),
-                getMaxHealth(),
-                getFoodData().getFoodLevel(),
-                experienceLevel,
-                experienceProgress,
-                getX(),
-                getY(),
-                getZ(),
-                getYRot(),
-                getXRot()
-        );
-    }
-
-    @Override
-    public RawPlayerEffects afkraft_companion$getEffects() {
-        var active = getActiveEffects();
-        if (active.isEmpty()) {
-            return new RawPlayerEffects(List.of());
-        }
-        List<RawPlayerEffect> list = new ArrayList<>(active.size());
-        for (var effect : active) {
-
-            float tps = this.level().tickRateManager().tickrate();
-            int durationTicks = effect.getDuration();
-            int durationSeconds = (durationTicks > 0) ? (int) (durationTicks / tps) : durationTicks;
-
-            list.add(new RawPlayerEffect(
-                    effect.getDescriptionId(),
-                    effect.getAmplifier(),
-                    durationSeconds,
-                    effect.isAmbient(),
-                    effect.isVisible()
-            ));
-        }
-        return new RawPlayerEffects(list);
-    }
-
-    @Override
-    public RawPlayerHands afkraft_companion$getHandsStats() {
-        return new RawPlayerHands(
-                extractHandItem(InteractionHand.MAIN_HAND),
-                extractHandItem(InteractionHand.OFF_HAND)
-        );
-    }
-
-    @Override
-    public RawPlayerAttackCadence afkraft_companion$getAttackCadence() {
-        boolean holdingSword = this.getItemInHand(InteractionHand.MAIN_HAND).is(ItemTags.SWORDS);
-        return afkraft_companion$cadenceTracker.snapshot(
-                this.tickCount,
-                this.getCurrentItemAttackStrengthDelay(),
-                holdingSword
-        );
-    }
-
-    @Override
-    public RawMobSphere afkraft_companion$getMobSphere() {
-        return MobSphereCalculator.calculate((ServerPlayer) (Object) this);
     }
 
     @Override
@@ -133,7 +136,7 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
                     sweepTriggered,
                     holdingSword
             );
-            ingestManager.ingestPlayerAttackCadence(this);
+            ingestManager.ingestPlayerAttackCadence(afkraft_companion$statsView);
         }
         super.attack(target);
     }
@@ -160,32 +163,32 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
                 false,
                 holdingSword
         );
-        ingestManager.ingestPlayerAttackCadence(this);
+        ingestManager.ingestPlayerAttackCadence(afkraft_companion$statsView);
     }
 
     @Inject(at = @At("TAIL"), method = "setExperienceLevels")
     private void onSetExperienceLevels(int value, CallbackInfo ci) {
-        ingestManager.ingestPlayerStats(this);
+        ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
     @Inject(at = @At("TAIL"), method = "setExperiencePoints")
     private void onSetExperiencePoints(int value, CallbackInfo ci) {
-        ingestManager.ingestPlayerStats(this);
+        ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
     @Inject(at = @At("TAIL"), method = "giveExperienceLevels")
     private void onGiveExperienceLevels(int value, CallbackInfo ci) {
-        ingestManager.ingestPlayerStats(this);
+        ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
     @Inject(at = @At("TAIL"), method = "giveExperiencePoints")
     private void onGiveExperiencePoints(int value, CallbackInfo ci) {
-        ingestManager.ingestPlayerStats(this);
+        ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
     @Inject(at = @At("TAIL"), method = "hurtServer")
     private void onHurtServer(ServerLevel level, DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
-        ingestManager.ingestPlayerStats(this);
+        ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
     @Inject(at = @At("TAIL"), method = "tick")
@@ -194,8 +197,8 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
             return;
         }
 
-        ingestManager.ingestPlayerStats(this);
-        ingestManager.ingestPlayerMobSphere(this);
+        ingestManager.ingestPlayerStats(afkraft_companion$statsView);
+        ingestManager.ingestPlayerMobSphere(afkraft_companion$statsView);
     }
 
     @Unique
@@ -236,6 +239,6 @@ public abstract class PlayerSnapshotMixin extends Player implements PlayerStatsC
         if (stack.isEmpty()) {
             return RawItemStack.EMPTY;
         }
-        return RawItemStack.from(hand.asEquipmentSlot().getId(), stack);
+        return ItemStackMapper.from(hand.asEquipmentSlot().getId(), stack);
     }
 }

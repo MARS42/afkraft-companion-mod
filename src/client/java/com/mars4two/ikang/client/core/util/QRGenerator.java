@@ -1,9 +1,5 @@
 package com.mars4two.ikang.client.core.util;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.EncodeHintType;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -12,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 public class QRGenerator {
@@ -27,14 +21,8 @@ public class QRGenerator {
     public static NativeImage generateBlockyQR(String url, Identifier blackBlockPath, Identifier whiteBlockPath) {
         try {
             LOGGER.info("Generating QR code...");
-            QRCodeWriter writer = new QRCodeWriter();
-
-            Map<EncodeHintType, Object> hints = new HashMap<>();
-            hints.put(EncodeHintType.MARGIN, 1);
-
-            BitMatrix matrix = writer.encode(url, BarcodeFormat.QR_CODE, 1, 1, hints);
-
-            int modules = matrix.getWidth();
+            QRMatrixGenerator.QrBitGrid matrix = QRMatrixGenerator.encode(url);
+            int modules = matrix.size();
 
             var resourceManager = Minecraft.getInstance().getResourceManager();
 
@@ -61,7 +49,7 @@ public class QRGenerator {
                 // 3. Iterar sobre la matriz del QR y estampar las texturas bloque por bloque
                 for (int row = 0; row < modules; row++) {
                     for (int col = 0; col < modules; col++) {
-                        boolean isBlack = matrix.get(col, row);
+                        boolean isBlack = matrix.isDark(col, row);
                         NativeImage sourceTexture = isBlack ? blackImg : whiteImg;
 
                         // Copiamos la sub-matriz de 16x16 píxeles del bloque al lienzo del QR

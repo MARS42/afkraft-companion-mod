@@ -181,14 +181,15 @@ public class ServerEvents {
             var previousMode = previousData.enabled() ? previousData.mode() : ContainerTrackingMode.OFF;
 
             if (previousMode != mode && previousMode.isEnabled() && wrapper != null) {
+                var containerView = wrapper.afkraft_companion$asContainerView();
                 switch (previousMode) {
                     case PORTABLE_CONTAINER -> {
                         PortableContainerIdentityHelper.getContainerId(blockEntity).ifPresent(containerId -> {
-                            ingestManager.ingestPortableContainerDeleted(Set.of(playerId), containerId, wrapper);
+                            ingestManager.ingestPortableContainerDeleted(Set.of(playerId), containerId, containerView);
                         });
                     }
-                    case LOAD_STATION -> ingestManager.ingestLoadStationDeleted(Set.of(playerId), wrapper);
-                    case CONTAINER -> ingestManager.ingestContainerDeleted(Set.of(playerId), wrapper);
+                    case LOAD_STATION -> ingestManager.ingestLoadStationDeleted(Set.of(playerId), containerView);
+                    case CONTAINER -> ingestManager.ingestContainerDeleted(Set.of(playerId), containerView);
                     default -> {}
                 }
             }

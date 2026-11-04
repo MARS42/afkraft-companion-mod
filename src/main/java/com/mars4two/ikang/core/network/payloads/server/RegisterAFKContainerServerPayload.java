@@ -2,6 +2,7 @@ package com.mars4two.ikang.core.network.payloads.server;
 
 import com.mars4two.ikang.AFKraftCompanion;
 import com.mars4two.ikang.core.storage.ContainerTrackingMode;
+import com.mars4two.ikang.core.util.Codecs;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -25,7 +26,7 @@ public record RegisterAFKContainerServerPayload(String containerType, boolean en
                     RegisterAFKContainerServerPayload::containerType,
                     ByteBufCodecs.BOOL,
                     RegisterAFKContainerServerPayload::enabled,
-                    ContainerTrackingMode.STREAM_CODEC,
+                    Codecs.CONTAINER_TRACKING_MODE_STREAM_CODEC,
                     RegisterAFKContainerServerPayload::mode,
                     RegisterAFKContainerServerPayload::new
             );

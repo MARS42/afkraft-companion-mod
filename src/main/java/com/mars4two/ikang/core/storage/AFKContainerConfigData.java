@@ -1,6 +1,8 @@
 package com.mars4two.ikang.core.storage;
 
 import com.mars4two.ikang.AFKraftCompanion;
+import com.mars4two.ikang.core.model.BlockCoord;
+import com.mars4two.ikang.core.model.DimensionKey;
 import com.mars4two.ikang.core.util.Codecs;
 import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
 import com.mojang.serialization.Codec;
@@ -19,7 +21,12 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 public class AFKContainerConfigData extends SavedData {
 
@@ -28,13 +35,7 @@ public class AFKContainerConfigData extends SavedData {
     private static final Identifier ID = AFKraftCompanion.id("afk_container_config_data");
     private static final Identifier LEGACY_ID = Identifier.fromNamespaceAndPath(AFKraftCompanion.LEGACY_MOD_ID, "afk_container_config_data");
 
-    private final HashMap<UUID, Map<Identifier, Map<BlockPos, ContainerData>>> config;
-    private final HashMap<UUID, Set<UUID>> portableContainers;
-
-    // Índices inversos derivados (NO se serializan)
-    private final transient Map<Identifier, Map<BlockPos, Set<UUID>>> enabledIndex = new HashMap<>();
-    private final transient Map<Identifier, Map<BlockPos, Set<UUID>>> loadStationIndex = new HashMap<>();
-    private final transient Map<UUID, Set<UUID>> portableIndex = new HashMap<>();
+    private final ContainerTrackingService trackingService;
 
     public record ContainerData(boolean enabled, ContainerTrackingMode mode) implements CustomPacketPayload {
 
@@ -50,9 +51,17 @@ public class AFKContainerConfigData extends SavedData {
             this(mode != null && mode.isEnabled(), mode != null ? mode : ContainerTrackingMode.OFF);
         }
 
+        public static ContainerData fromDomain(ContainerTrackingEntry entry) {
+            return new ContainerData(entry.enabled(), entry.mode());
+        }
+
+        public ContainerTrackingEntry toDomain() {
+            return new ContainerTrackingEntry(enabled, mode);
+        }
+
         public static final Codec<ContainerData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                         Codec.BOOL.fieldOf("enabled").forGetter(ContainerData::enabled),
-                        ContainerTrackingMode.CODEC.optionalFieldOf("mode").forGetter(data -> Optional.of(data.mode()))
+                        Codecs.CONTAINER_TRACKING_MODE_CODEC.optionalFieldOf("mode").forGetter(data -> Optional.of(data.mode()))
                 )
                 .apply(instance, (enabled, modeOpt) -> {
                     ContainerTrackingMode resolvedMode = modeOpt.orElse(enabled ? ContainerTrackingMode.CONTAINER : ContainerTrackingMode.OFF);
@@ -65,7 +74,7 @@ public class AFKContainerConfigData extends SavedData {
         public static final StreamCodec<RegistryFriendlyByteBuf, ContainerData> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.BOOL,
                 ContainerData::enabled,
-                ContainerTrackingMode.STREAM_CODEC,
+                Codecs.CONTAINER_TRACKING_MODE_STREAM_CODEC,
                 ContainerData::mode,
                 ContainerData::new
         );
@@ -77,80 +86,26 @@ public class AFKContainerConfigData extends SavedData {
     }
 
     public AFKContainerConfigData() {
-        this.config = new HashMap<>();
-        this.portableContainers = new HashMap<>();
+        this.trackingService = new ContainerTrackingService();
     }
 
     public AFKContainerConfigData(
             Map<UUID, Map<Identifier, Map<BlockPos, ContainerData>>> afkContainerConfigData,
             Map<UUID, List<UUID>> portableContainersData
     ) {
-        var deepMutableCopy = new HashMap<UUID, Map<Identifier, Map<BlockPos, ContainerData>>>();
-        afkContainerConfigData.forEach((k, v) -> {
-            deepMutableCopy.put(k, new HashMap<>(v));
-            v.forEach((k1, v1) -> {
-                deepMutableCopy.get(k).put(k1, new HashMap<>(v1));
-                v1.forEach((k2, v2) -> deepMutableCopy.get(k).get(k1).put(k2, v2));
+        var domainState = new HashMap<UUID, Map<DimensionKey, Map<BlockCoord, ContainerTrackingEntry>>>();
+        if (afkContainerConfigData != null) {
+            afkContainerConfigData.forEach((playerId, byDim) -> {
+                var dimMap = new HashMap<DimensionKey, Map<BlockCoord, ContainerTrackingEntry>>();
+                byDim.forEach((dimId, byPos) -> {
+                    var posMap = new HashMap<BlockCoord, ContainerTrackingEntry>();
+                    byPos.forEach((pos, data) -> posMap.put(toCoord(pos), data.toDomain()));
+                    dimMap.put(toDimKey(dimId), posMap);
+                });
+                domainState.put(playerId, dimMap);
             });
-        });
-
-        var portableMutableCopy = new HashMap<UUID, Set<UUID>>();
-        if (portableContainersData != null) {
-            portableContainersData.forEach((playerId, ids) -> portableMutableCopy.put(playerId, new HashSet<>(ids)));
         }
-
-        this.config = deepMutableCopy;
-        this.portableContainers = portableMutableCopy;
-        rebuildIndex();
-    }
-
-    private void rebuildIndex() {
-        enabledIndex.clear();
-        loadStationIndex.clear();
-        portableIndex.clear();
-
-        config.forEach((playerId, byDim) ->
-                byDim.forEach((dimId, byPos) ->
-                        byPos.forEach((pos, data) -> {
-                            if (data.enabled()) {
-                                if (data.mode() == ContainerTrackingMode.LOAD_STATION) {
-                                    indexAdd(loadStationIndex, playerId, dimId, pos);
-                                } else if (data.mode() == ContainerTrackingMode.CONTAINER) {
-                                    indexAdd(enabledIndex, playerId, dimId, pos);
-                                }
-                            }
-                        })));
-
-        portableContainers.forEach((playerId, containerIds) ->
-                containerIds.forEach(containerId -> portableIndexAdd(playerId, containerId)));
-    }
-
-    private void indexAdd(Map<Identifier, Map<BlockPos, Set<UUID>>> targetIndex, UUID playerId, Identifier dimId, BlockPos pos) {
-        targetIndex
-                .computeIfAbsent(dimId, k -> new HashMap<>())
-                .computeIfAbsent(pos, k -> new HashSet<>())
-                .add(playerId);
-    }
-
-    private void indexRemove(Map<Identifier, Map<BlockPos, Set<UUID>>> targetIndex, UUID playerId, Identifier dimId, BlockPos pos) {
-        var byPos = targetIndex.get(dimId);
-        if (byPos == null) return;
-        var owners = byPos.get(pos);
-        if (owners == null) return;
-        owners.remove(playerId);
-        if (owners.isEmpty()) byPos.remove(pos);
-        if (byPos.isEmpty()) targetIndex.remove(dimId);
-    }
-
-    private void portableIndexAdd(UUID playerId, UUID containerId) {
-        portableIndex.computeIfAbsent(containerId, k -> new HashSet<>()).add(playerId);
-    }
-
-    private void portableIndexRemove(UUID playerId, UUID containerId) {
-        var owners = portableIndex.get(containerId);
-        if (owners == null) return;
-        owners.remove(playerId);
-        if (owners.isEmpty()) portableIndex.remove(containerId);
+        this.trackingService = new ContainerTrackingService(domainState, portableContainersData);
     }
 
     public static final Codec<AFKContainerConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -193,174 +148,121 @@ public class AFKContainerConfigData extends SavedData {
     }
 
     public void setPositionalMode(ServerPlayer player, BlockPos pos, ContainerTrackingMode mode) {
-        var playerId = player.getGameProfile().id();
-        var dimensionId = player.level().dimension().identifier();
-
-        this.config.computeIfAbsent(playerId, k -> new HashMap<>())
-                .computeIfAbsent(dimensionId, k -> new HashMap<>());
-
-        indexRemove(enabledIndex, playerId, dimensionId, pos);
-        indexRemove(loadStationIndex, playerId, dimensionId, pos);
-
-        if (mode == null || mode == ContainerTrackingMode.OFF) {
-            this.config.get(playerId).get(dimensionId).remove(pos);
-        } else {
-            this.config.get(playerId).get(dimensionId).put(pos, new ContainerData(true, mode));
-            if (mode == ContainerTrackingMode.LOAD_STATION) {
-                indexAdd(loadStationIndex, playerId, dimensionId, pos);
-            } else if (mode == ContainerTrackingMode.CONTAINER) {
-                indexAdd(enabledIndex, playerId, dimensionId, pos);
-            }
-        }
+        trackingService.setPositionalMode(
+                player.getGameProfile().id(),
+                toDimKey(player.level().dimension().identifier()),
+                toCoord(pos),
+                mode
+        );
         setDirty();
     }
 
     public void setPortableContainer(ServerPlayer player, UUID containerId, boolean active) {
-        var playerId = player.getGameProfile().id();
-        if (active) {
-            this.portableContainers.computeIfAbsent(playerId, k -> new HashSet<>()).add(containerId);
-            portableIndexAdd(playerId, containerId);
-        } else {
-            var set = this.portableContainers.get(playerId);
-            if (set != null) {
-                set.remove(containerId);
-                if (set.isEmpty()) {
-                    this.portableContainers.remove(playerId);
-                }
-            }
-            portableIndexRemove(playerId, containerId);
-        }
+        trackingService.setPortableContainer(player.getGameProfile().id(), containerId, active);
         setDirty();
     }
 
     public boolean isPortableContainerEnabled(UUID containerId) {
-        var owners = portableIndex.get(containerId);
-        return owners != null && !owners.isEmpty();
+        return trackingService.isPortableContainerEnabled(containerId);
     }
 
     public boolean isPortableContainerEnabledFor(UUID playerId, UUID containerId) {
-        var owners = portableIndex.get(containerId);
-        return owners != null && owners.contains(playerId);
+        return trackingService.isPortableContainerEnabledFor(playerId, containerId);
     }
 
     public Set<UUID> getPortableContainerOwners(UUID containerId) {
-        return Set.copyOf(portableIndex.getOrDefault(containerId, Set.of()));
+        return trackingService.getPortableContainerOwners(containerId);
     }
 
     public ContainerData resolveEffectiveData(ServerPlayer player, BlockPos pos, BlockEntity blockEntity) {
-        var playerId = player.getGameProfile().id();
-        if (blockEntity != null) {
-            Optional<UUID> containerId = PortableContainerIdentityHelper.getContainerId(blockEntity);
-            if (containerId.isPresent() && isPortableContainerEnabledFor(playerId, containerId.get())) {
-                return new ContainerData(ContainerTrackingMode.PORTABLE_CONTAINER);
-            }
-        }
-        return getContainerData(player, pos)
-                .filter(ContainerData::enabled)
-                .orElseGet(() -> new ContainerData(ContainerTrackingMode.OFF));
+        Optional<UUID> containerId = blockEntity != null
+                ? PortableContainerIdentityHelper.getContainerId(blockEntity)
+                : Optional.empty();
+        ContainerTrackingEntry entry = trackingService.resolveEffectiveEntry(
+                player.getGameProfile().id(),
+                toDimKey(player.level().dimension().identifier()),
+                toCoord(pos),
+                containerId
+        );
+        return ContainerData.fromDomain(entry);
     }
 
     public Optional<ContainerData> getContainerData(ServerPlayer serverPlayer, BlockPos pos) {
-        var playerId = serverPlayer.getGameProfile().id();
-        var dimensionId = serverPlayer.level().dimension().identifier();
-
-        if (!this.config.containsKey(playerId)) {
-            return Optional.empty();
-        }
-
-        if (!this.config.get(playerId).containsKey(dimensionId)) {
-            return Optional.empty();
-        }
-
-        return Optional.ofNullable(this.config.get(playerId).get(dimensionId).get(pos));
+        return trackingService.getContainerEntry(
+                serverPlayer.getGameProfile().id(),
+                toDimKey(serverPlayer.level().dimension().identifier()),
+                toCoord(pos)
+        ).map(ContainerData::fromDomain);
     }
 
     public void deleteContainerData(ServerPlayer player, BlockPos pos) {
         var playerId = player.getGameProfile().id();
-        var dimensionId = player.level().dimension().identifier();
-        if (!this.config.containsKey(playerId)) {
-            return;
+        var dimKey = toDimKey(player.level().dimension().identifier());
+        if (trackingService.deleteContainerData(playerId, dimKey, toCoord(pos))) {
+            log.info("Container data has been deleted from the server for player {}", playerId);
+            setDirty();
         }
-
-        if (!this.config.get(playerId).containsKey(dimensionId)) {
-            return;
-        }
-
-        this.config.get(playerId).get(dimensionId).remove(pos);
-        indexRemove(enabledIndex, playerId, dimensionId, pos);
-        indexRemove(loadStationIndex, playerId, dimensionId, pos);
-        log.info("Container data has been deleted from the server for player {}", playerId);
-
-        setDirty();
     }
 
     public void deleteFixedContainersAt(Identifier dimensionId, BlockPos pos) {
-        var owners = getEnabledOwnersAt(dimensionId, pos);
-        if (owners.isEmpty()) {
-            return;
+        if (trackingService.deleteFixedContainersAt(toDimKey(dimensionId), toCoord(pos))) {
+            log.info("Fixed container data at {} in {} has been deleted for all owners", pos, dimensionId);
+            setDirty();
         }
-
-        for (UUID playerId : owners) {
-            var byDim = this.config.get(playerId);
-            if (byDim != null) {
-                var byPos = byDim.get(dimensionId);
-                if (byPos != null) {
-                    var current = byPos.get(pos);
-                    if (current == null || current.mode() == ContainerTrackingMode.CONTAINER) {
-                        byPos.remove(pos);
-                    }
-                }
-            }
-            indexRemove(enabledIndex, playerId, dimensionId, pos);
-        }
-        log.info("Fixed container data at {} in {} has been deleted for all owners", pos, dimensionId);
-        setDirty();
     }
 
     public boolean isContainerEnabledIn(ServerPlayer player, List<BlockPos> positions) {
-        return positions.stream()
-                .anyMatch(pos -> getContainerData(player, pos).isPresent()
-                        && getContainerData(player, pos).get().enabled()
-                        && getContainerData(player, pos).get().mode() == ContainerTrackingMode.CONTAINER);
+        List<BlockCoord> coords = positions.stream().map(AFKContainerConfigData::toCoord).toList();
+        return trackingService.isContainerEnabledIn(
+                player.getGameProfile().id(),
+                toDimKey(player.level().dimension().identifier()),
+                coords
+        );
     }
 
     public boolean isContainerEnabledAt(Identifier dimensionId, BlockPos pos) {
-        var byPos = enabledIndex.get(dimensionId);
-        if (byPos == null) return false;
-        var owners = byPos.get(pos);
-        return owners != null && !owners.isEmpty();
+        return trackingService.isContainerEnabledAt(toDimKey(dimensionId), toCoord(pos));
     }
 
     public Set<UUID> getEnabledOwnersAt(Identifier dimensionId, BlockPos pos) {
-        var byPos = enabledIndex.get(dimensionId);
-        if (byPos == null) return Set.of();
-        return Set.copyOf(byPos.getOrDefault(pos, Set.of()));
+        return trackingService.getEnabledOwnersAt(toDimKey(dimensionId), toCoord(pos));
     }
 
     public boolean isLoadStationEnabledAt(Identifier dimensionId, BlockPos pos) {
-        var byPos = loadStationIndex.get(dimensionId);
-        if (byPos == null) return false;
-        var owners = byPos.get(pos);
-        return owners != null && !owners.isEmpty();
+        return trackingService.isLoadStationEnabledAt(toDimKey(dimensionId), toCoord(pos));
     }
 
     public Set<UUID> getLoadStationOwnersAt(Identifier dimensionId, BlockPos pos) {
-        var byPos = loadStationIndex.get(dimensionId);
-        if (byPos == null) return Set.of();
-        return Set.copyOf(byPos.getOrDefault(pos, Set.of()));
+        return trackingService.getLoadStationOwnersAt(toDimKey(dimensionId), toCoord(pos));
     }
 
     public Map<UUID, Map<Identifier, Map<BlockPos, ContainerData>>> getConfig() {
-        return config;
+        var result = new HashMap<UUID, Map<Identifier, Map<BlockPos, ContainerData>>>();
+        trackingService.exportPositionalState().forEach((playerId, byDim) -> {
+            var dimMap = new HashMap<Identifier, Map<BlockPos, ContainerData>>();
+            byDim.forEach((dimKey, byPos) -> {
+                var posMap = new HashMap<BlockPos, ContainerData>();
+                byPos.forEach((coord, entry) -> posMap.put(toBlockPos(coord), ContainerData.fromDomain(entry)));
+                dimMap.put(Identifier.parse(dimKey.value()), posMap);
+            });
+            result.put(playerId, dimMap);
+        });
+        return result;
     }
 
     private Map<UUID, List<UUID>> getPortableContainersForCodec() {
-        var result = new HashMap<UUID, List<UUID>>();
-        this.portableContainers.forEach((playerId, ids) -> {
-            if (ids != null && !ids.isEmpty()) {
-                result.put(playerId, new ArrayList<>(ids));
-            }
-        });
-        return result;
+        return trackingService.exportPortableContainers();
+    }
+
+    private static DimensionKey toDimKey(Identifier id) {
+        return new DimensionKey(id.toString());
+    }
+
+    private static BlockCoord toCoord(BlockPos pos) {
+        return new BlockCoord(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    private static BlockPos toBlockPos(BlockCoord coord) {
+        return new BlockPos(coord.x(), coord.y(), coord.z());
     }
 }

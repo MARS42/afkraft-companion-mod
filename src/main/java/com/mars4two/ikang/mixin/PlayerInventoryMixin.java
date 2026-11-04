@@ -1,11 +1,15 @@
 package com.mars4two.ikang.mixin;
 
-import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;import com.mars4two.ikang.core.snapshots.model.RawItemStack;import com.mars4two.ikang.core.util.PlayerInventoryWrapper;
+import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
+import com.mars4two.ikang.core.snapshots.model.RawItemStack;
+import com.mars4two.ikang.core.util.InventoryView;
+import com.mars4two.ikang.core.util.ItemStackMapper;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.EntityEquipment;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,10 +19,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Mixin(net.minecraft.world.entity.player.Inventory.class)
-public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
+public abstract class PlayerInventoryMixin {
 
     @Final
     @Shadow
@@ -38,55 +44,59 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
     @Unique
     private static final SnapshotIngestManager ingestManager = SnapshotIngestManager.getInstance();
 
-    @Override
-    public UUID afkraft_companion$getPlayerId() {
-        return player.getGameProfile().id();
-    }
-
-    @Override
-    public NonNullList<RawItemStack> afkraft_companion$getHotbarItems() {
-        NonNullList<RawItemStack> rawItems = NonNullList.withSize(Inventory.SELECTION_SIZE, RawItemStack.EMPTY);
-        for (int i = 0; i < Inventory.SELECTION_SIZE; i++) {
-            rawItems.set(i, RawItemStack.from(i, items.get(i)));
+    @Unique
+    private final InventoryView afkraft_companion$inventoryView = new InventoryView() {
+        @Override
+        public UUID playerId() {
+            return player.getGameProfile().id();
         }
-        return rawItems;
-    }
 
-    @Override
-    public NonNullList<RawItemStack> afkraft_companion$getInventoryItems() {
-        NonNullList<RawItemStack> rawItems = NonNullList.withSize(Inventory.INVENTORY_SIZE - Inventory.SELECTION_SIZE, RawItemStack.EMPTY);
-        for (int i = Inventory.SELECTION_SIZE; i < items.size(); i++) {
-            rawItems.set(i - Inventory.SELECTION_SIZE, RawItemStack.from(i, items.get(i)));
+        @Override
+        public List<RawItemStack> hotbarItems() {
+            List<RawItemStack> rawItems = new ArrayList<>(Inventory.SELECTION_SIZE);
+            for (int i = 0; i < Inventory.SELECTION_SIZE; i++) {
+                rawItems.add(ItemStackMapper.from(i, items.get(i)));
+            }
+            return rawItems;
         }
-        return rawItems;
-    }
 
-    @Override
-    public NonNullList<RawItemStack> afkraft_companion$getPlayerEquipment() {
-        NonNullList<RawItemStack> equipmentItems = NonNullList.withSize(4, RawItemStack.EMPTY);
-        equipmentItems.set(0, RawItemStack.from(0, equipment.get(EquipmentSlot.CHEST)));
-        equipmentItems.set(1, RawItemStack.from(1, equipment.get(EquipmentSlot.HEAD)));
-        equipmentItems.set(2, RawItemStack.from(2, equipment.get(EquipmentSlot.LEGS)));
-        equipmentItems.set(3, RawItemStack.from(3, equipment.get(EquipmentSlot.FEET)));
-        return equipmentItems;
-    }
+        @Override
+        public List<RawItemStack> inventoryItems() {
+            int size = Math.max(0, items.size() - Inventory.SELECTION_SIZE);
+            List<RawItemStack> rawItems = new ArrayList<>(size);
+            for (int i = Inventory.SELECTION_SIZE; i < items.size(); i++) {
+                rawItems.add(ItemStackMapper.from(i, items.get(i)));
+            }
+            return rawItems;
+        }
+
+        @Override
+        public List<RawItemStack> playerEquipment() {
+            return List.of(
+                    ItemStackMapper.from(0, equipment.get(EquipmentSlot.CHEST)),
+                    ItemStackMapper.from(1, equipment.get(EquipmentSlot.HEAD)),
+                    ItemStackMapper.from(2, equipment.get(EquipmentSlot.LEGS)),
+                    ItemStackMapper.from(3, equipment.get(EquipmentSlot.FEET))
+            );
+        }
+
+        @Override
+        public int armorValue() {
+            if (afkraft_companion$isServerSide() && player instanceof LivingEntityInvoker invoker) {
+                invoker.afkraft_companion$detectEquipmentUpdates();
+            }
+            return player != null ? player.getArmorValue() : 0;
+        }
+
+        @Override
+        public int selectedSlot() {
+            return getSelectedSlot();
+        }
+    };
 
     @Unique
     private boolean afkraft_companion$isServerSide() {
         return player != null && player.level() != null && !player.level().isClientSide();
-    }
-
-    @Override
-    public int afkraft_companion$getArmorValue() {
-        if (afkraft_companion$isServerSide() && player instanceof LivingEntityInvoker invoker) {
-            invoker.afkraft_companion$detectEquipmentUpdates();
-        }
-        return player != null ? player.getArmorValue() : 0;
-    }
-
-    @Override
-    public int afkraft_companion$selectedSlot() {
-        return getSelectedSlot();
     }
 
     @Inject(method = "setItem", at = @At("TAIL"))
@@ -104,7 +114,7 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
     @Inject(method = "add(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("TAIL"))
     private void onAdd(ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
         if (!afkraft_companion$isServerSide()) return;
-        ingestManager.ingestPlayerInventoryState(this);
+        ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
     }
 
     @Inject(method = "removeItem(II)Lnet/minecraft/world/item/ItemStack;", at = @At("RETURN"))
@@ -116,13 +126,13 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
     @Inject(method = "removeItem(Lnet/minecraft/world/item/ItemStack;)V", at = @At("TAIL"))
     private void onRemove(ItemStack itemStack, CallbackInfo ci) {
         if (!afkraft_companion$isServerSide()) return;
-        ingestManager.ingestPlayerInventoryState(this);
+        ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
     }
 
     @Inject(method = "dropAll", at = @At("TAIL"))
     private void onDropAll(CallbackInfo ci) {
         if (!afkraft_companion$isServerSide()) return;
-        ingestManager.ingestPlayerInventoryState(this);
+        ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
     }
 
     @Inject(method = "setSelectedSlot", at = @At("TAIL"))
@@ -134,7 +144,7 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
     @Inject(method = "setSelectedItem", at = @At("TAIL"))
     private void onSetSelectedItem(ItemStack itemStack, CallbackInfoReturnable<ItemStack> cir) {
         if (!afkraft_companion$isServerSide()) return;
-        ingestManager.ingestPlayerHotbarState(this);
+        ingestManager.ingestPlayerHotbarState(afkraft_companion$inventoryView);
     }
 
     @Unique
@@ -142,10 +152,10 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryWrapper {
         if (!afkraft_companion$isServerSide()) {
             return;
         }
-        if(Inventory.isHotbarSlot(slot)){
-            ingestManager.ingestPlayerHotbarState(this);
+        if (Inventory.isHotbarSlot(slot)) {
+            ingestManager.ingestPlayerHotbarState(afkraft_companion$inventoryView);
             return;
         }
-        ingestManager.ingestPlayerInventoryState(this);
+        ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
     }
 }

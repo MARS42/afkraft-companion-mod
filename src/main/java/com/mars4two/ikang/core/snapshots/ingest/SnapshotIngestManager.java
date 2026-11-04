@@ -4,9 +4,9 @@ import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.config.GsonConfig;
 import com.mars4two.ikang.core.config.HttpConfig;
 import com.mars4two.ikang.core.snapshots.*;
-import com.mars4two.ikang.core.util.BlockEntityWrapper;
 import com.mars4two.ikang.core.util.Conflater;
-import com.mars4two.ikang.core.util.PlayerInventoryWrapper;
+import com.mars4two.ikang.core.util.ContainerView;
+import com.mars4two.ikang.core.util.InventoryView;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
@@ -57,28 +57,28 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.start();
     }
 
-    public void ingestContainerBlockEntity(Set<UUID> playerIds, BlockEntityWrapper blockEntityWrapper) {
-        conflater.submit(ContainerSnapshot.of(playerIds, blockEntityWrapper));
+    public void ingestContainerBlockEntity(Set<UUID> playerIds, ContainerView containerView) {
+        conflater.submit(ContainerSnapshot.of(playerIds, containerView));
     }
 
-    public void ingestContainerDeleted(Set<UUID> playerIds, BlockEntityWrapper blockEntityWrapper) {
-        conflater.submit(ContainerSnapshot.ofDeleted(playerIds, blockEntityWrapper));
+    public void ingestContainerDeleted(Set<UUID> playerIds, ContainerView containerView) {
+        conflater.submit(ContainerSnapshot.ofDeleted(playerIds, containerView));
     }
 
-    public void ingestPortableContainerBlockEntity(Set<UUID> playerIds, UUID containerId, BlockEntityWrapper blockEntityWrapper) {
-        conflater.submit(ContainerSnapshot.ofPortable(playerIds, containerId, blockEntityWrapper));
+    public void ingestPortableContainerBlockEntity(Set<UUID> playerIds, UUID containerId, ContainerView containerView) {
+        conflater.submit(ContainerSnapshot.ofPortable(playerIds, containerId, containerView));
     }
 
-    public void ingestPortableContainerDeleted(Set<UUID> playerIds, UUID containerId, BlockEntityWrapper blockEntityWrapper) {
-        conflater.submit(ContainerSnapshot.ofPortableDeleted(playerIds, containerId, blockEntityWrapper));
+    public void ingestPortableContainerDeleted(Set<UUID> playerIds, UUID containerId, ContainerView containerView) {
+        conflater.submit(ContainerSnapshot.ofPortableDeleted(playerIds, containerId, containerView));
     }
 
-    public void ingestLoadStationBlockEntity(Set<UUID> playerIds, BlockEntityWrapper blockEntityWrapper) {
-        conflater.submit(LoadStationSnapshot.of(playerIds, blockEntityWrapper));
+    public void ingestLoadStationBlockEntity(Set<UUID> playerIds, ContainerView containerView) {
+        conflater.submit(LoadStationSnapshot.of(playerIds, containerView));
     }
 
-    public void ingestLoadStationDeleted(Set<UUID> playerIds, BlockEntityWrapper blockEntityWrapper) {
-        conflater.submit(LoadStationSnapshot.ofDeleted(playerIds, blockEntityWrapper));
+    public void ingestLoadStationDeleted(Set<UUID> playerIds, ContainerView containerView) {
+        conflater.submit(LoadStationSnapshot.ofDeleted(playerIds, containerView));
     }
 
     public void ingestPlayerStats(PlayerStatsContainer player) {
@@ -96,12 +96,12 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.submit(PlayerMobSphereSnapshot.of(player));
     }
 
-    public void ingestPlayerInventoryState(PlayerInventoryWrapper playerInventory) {
+    public void ingestPlayerInventoryState(InventoryView playerInventory) {
         conflater.submit(PlayerInventorySnapshot.of(playerInventory));
         conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
     }
 
-    public void ingestPlayerHotbarState(PlayerInventoryWrapper playerInventory) {
+    public void ingestPlayerHotbarState(InventoryView playerInventory) {
         conflater.submit(PlayerHotbarSnapshot.of(playerInventory));
         conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
     }
