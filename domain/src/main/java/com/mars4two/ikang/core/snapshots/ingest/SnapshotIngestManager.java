@@ -8,7 +8,6 @@ import com.mars4two.ikang.core.util.Conflater;
 import com.mars4two.ikang.core.util.ContainerView;
 import com.mars4two.ikang.core.util.InventoryView;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
-import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +38,8 @@ public class SnapshotIngestManager implements AutoCloseable {
         return INSTANCE;
     }
 
-    public void start(MinecraftServer minecraftServer) {
-        worldName = minecraftServer.getWorldData().getLevelName();
+    public void start(String worldName) {
+        this.worldName = worldName;
 
         wsClient.connectAsync();
 
@@ -55,6 +54,10 @@ public class SnapshotIngestManager implements AutoCloseable {
                 this::onHeartbeat
         );
         conflater.start();
+    }
+
+    public String getWorldName() {
+        return worldName;
     }
 
     public void ingestContainerBlockEntity(Set<UUID> playerIds, ContainerView containerView) {
@@ -106,6 +109,24 @@ public class SnapshotIngestManager implements AutoCloseable {
         conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
     }
 
+    public static SnapshotsIngestRequest buildIngestRequest(
+            UUID serverId,
+            UUID adminProfileId,
+            List<SnapshotBase> snapshots
+    ) {
+        var snapshotContent = snapshots.stream()
+                .map(s -> new SnapshotsIngestRequest.SnapshotContent(
+                        s.getSnapshotName(),
+                        s.playerIds(),
+                        s.data().toPayload()
+                ))
+                .toList();
+        var participants = snapshots.stream()
+                .flatMap(s -> s.playerIds().stream())
+                .collect(Collectors.toSet());
+        return new SnapshotsIngestRequest(serverId, adminProfileId, participants, snapshotContent);
+    }
+
     private void onEmit(List<SnapshotBase> snapshots) {
         if (!AuthService.isAuthenticated()) {
             return;
@@ -123,13 +144,7 @@ public class SnapshotIngestManager implements AutoCloseable {
             var serverId = AuthService.getCurrentServerId();
             var adminProfileId = AuthService.getAdminProfileId();
 
-            var snapshotContent = snapshots.stream()
-                    .map(s -> new SnapshotsIngestRequest.SnapshotContent
-                            (s.getSnapshotName(), s.playerIds(), s.data().toPayload()))
-                    .toList();
-            var participants = snapshots.stream().flatMap(s -> s.playerIds().stream()).collect(Collectors.toSet());
-
-            var request = new SnapshotsIngestRequest(serverId, adminProfileId, participants, snapshotContent);
+            var request = buildIngestRequest(serverId, adminProfileId, snapshots);
 
             String jsonBody = GsonConfig.toJson(request);
             log.debug("Sending snapshots ingest request: {}", jsonBody);

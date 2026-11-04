@@ -39,7 +39,8 @@ final class CredentialStore {
         );
 
         accessToken = credentialsResponse.tokenData().access_token();
-        accessTokenExpiresAt = System.currentTimeMillis() + ((credentialsResponse.tokenData().expires_in() * 1000) - (ACCESS_TOKEN_EXPIRATION_THRESHOLD_SECONDS * 1000));
+        accessTokenExpiresAt = System.currentTimeMillis()
+                + ((credentialsResponse.tokenData().expires_in() * 1000L) - (ACCESS_TOKEN_EXPIRATION_THRESHOLD_SECONDS * 1000L));
 
         cachedCredentials = credentials;
         LOGGER.info("Mod credentials stored in memory");
@@ -69,12 +70,11 @@ final class CredentialStore {
     }
 
     public static Optional<String> getAccessToken() {
-
-        if(accessToken == null) {
+        if (accessToken == null) {
             return Optional.empty();
         }
 
-        if(System.currentTimeMillis() > accessTokenExpiresAt) {
+        if (System.currentTimeMillis() > accessTokenExpiresAt) {
             LOGGER.info("Access token expired");
             accessToken = null;
             return Optional.empty();

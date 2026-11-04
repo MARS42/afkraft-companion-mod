@@ -94,17 +94,25 @@ public class ServerEvents {
 
     public static void onGetCredentialsRequest(ServerPlayer admin, GetCredentialsRequestServerboundPayload payload) {
         log.info("Server received credentials request payload for user {}: {}", admin.getGameProfile().id(), payload);
-        AuthService.authenticate(payload, admin, () -> {
-            admin.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
-            var level = admin.level().getServer();
-            var isDedicated = level.isDedicatedServer();
-            if(!isDedicated) {
-                log.info("Server is not dedicated, no need to send authorize server request to players");
-                return;
-            }
+        AuthService.authenticate(
+                payload.profileId(),
+                payload.serverId(),
+                payload.joinOtp(),
+                payload.serverName(),
+                admin.getGameProfile().name(),
+                () -> {
+                    admin.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
+                    var level = admin.level().getServer();
+                    var isDedicated = level.isDedicatedServer();
+                    if (!isDedicated) {
+                        log.info("Server is not dedicated, no need to send authorize server request to players");
+                        return;
+                    }
 
-            level.getPlayerList().getPlayers().forEach(ServerEvents::sendAuthorizeServerRequestToPlayer);
-        }, () -> admin.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft")));
+                    level.getPlayerList().getPlayers().forEach(ServerEvents::sendAuthorizeServerRequestToPlayer);
+                },
+                () -> admin.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft"))
+        );
     }
 
     private static void sendAuthorizeServerRequestToPlayer(ServerPlayer player)
@@ -244,7 +252,7 @@ public class ServerEvents {
     }
 
     public static void onServerStarted(MinecraftServer server) {
-        SnapshotIngestManager.getInstance().start(server);
+        SnapshotIngestManager.getInstance().start(server.getWorldData().getLevelName());
     }
 
     public static void onServerClosed(MinecraftServer server) {

@@ -44,7 +44,7 @@ public class ClientAuthorizeServerService {
         )));
     }
 
-    private void successAuthorizeServer(ClientAuthService.HasJoinedResult hasJoinedResult) {
+    private void successAuthorizeServer(ClientAuthDomainService.HasJoinedResult hasJoinedResult) {
         ClientAuthService.sendPlayerAuthorization(currentServerId, player.getGameProfile().id(), hasJoinedResult,
                 ClientEvents.getWorldName(),
                 () -> {

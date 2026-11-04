@@ -1,45 +1,27 @@
 package com.mars4two.ikang.client.core.auth;
 
-import com.mars4two.ikang.client.core.auth.dtos.CancelConnectRequest;
-import com.mars4two.ikang.client.core.auth.dtos.ConnectRequest;
 import com.mars4two.ikang.client.core.auth.dtos.ConnectResponse;
 import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.client.core.screens.QRModalScreen;
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.auth.AuthenticationException;
-import com.mars4two.ikang.core.auth.dtos.*;
-import com.mars4two.ikang.core.config.GsonConfig;
-import com.mars4two.ikang.core.config.HttpConfig;
+import com.mars4two.ikang.core.auth.dtos.HasConnectedResponse;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-public class ClientConnectService {
+/**
+ * Minecraft client UI adapter orchestrating {@link QRModalScreen} and main-thread notifications
+ * around {@link ClientConnectDomainService}.
+ */
+public final class ClientConnectService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("afkraft-connect-service");
-
-    private static final HttpClient client = HttpConfig.getHttpClient();
-
-    private static final AtomicReference<AtomicBoolean> ACTIVE_POLL_CANCEL = new AtomicReference<>();
-    private static final ScheduledExecutorService POLLING_EXECUTOR = Executors.newSingleThreadScheduledExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "afkraft-auth-polling");
-        thread.setDaemon(true);
-        return thread;
-    });
 
     private ClientConnectService() {
         // Utility class, no instances allowed
@@ -53,7 +35,7 @@ public class ClientConnectService {
                 UUID profileId = Minecraft.getInstance().getUser().getProfileId();
 
                 var isConnected = AuthService.getIsConnected(profileId);
-                if(isConnected) {
+                if (isConnected) {
                     minecraft.execute(() -> onFeedback.accept("Ya te encuentras conectado a AFKraft Companion"));
                     return;
                 }
@@ -65,16 +47,35 @@ public class ClientConnectService {
                 var joinServerResult = ClientAuthService.joinServer();
 
                 LOGGER.debug("[AFKraft] Paso 4: Realizando connect con AFKraft...");
-                ConnectResponse connectData = connect(joinServerResult.serverId(), profileId, joinServerResult.hasJoinedResponse());
+                ConnectResponse connectData = ClientConnectDomainService.connect(
+                        joinServerResult.serverId(),
+                        profileId,
+                        joinServerResult.hasJoinedResponse()
+                );
                 LOGGER.info("[AFKraft] connect completado exitosamente");
 
                 String connectUrl = connectData.verificationUrl();
 
                 var screen = new QRModalScreen(connectUrl);
-                validateHasConnected(profileId, connectData, screen);
-                screen.setOnCancel(() -> cancelConnect(connectData.verificationUrl(), () ->
-                        minecraft.execute(() -> onFeedback.accept("Vinculación cancelada")),
-                        () -> minecraft.execute(() -> onFeedbackError.accept("Ocurrió un error al cancelar la vinculación"))));
+                Runnable cancelPollHandle = ClientConnectDomainService.startPolling(
+                        connectData,
+                        () -> {
+                            notifyUser(minecraft, "El código de vinculación expiró. Ejecuta /afkraft connect de nuevo.");
+                            closeModal(minecraft, screen);
+                        },
+                        (HasConnectedResponse hasConnected) -> {
+                            notifyUser(minecraft, "Cuenta vinculada con AFKraft correctamente");
+                            closeModal(minecraft, screen);
+                            ClientEvents.onClientHasConnected(profileId, hasConnected.otp());
+                        }
+                );
+
+                screen.setOnClosed(cancelPollHandle);
+                screen.setOnCancel(() -> ClientConnectDomainService.cancelConnect(
+                        connectData.verificationUrl(),
+                        () -> minecraft.execute(() -> onFeedback.accept("Vinculación cancelada")),
+                        () -> minecraft.execute(() -> onFeedbackError.accept("Ocurrió un error al cancelar la vinculación"))
+                ));
 
                 minecraft.execute(() -> {
                     onFeedback.accept("Esperando aprobación de vinculación...");
@@ -93,150 +94,6 @@ public class ClientConnectService {
         return 1;
     }
 
-    private static ConnectResponse connect(String serverId, UUID profileId, HasJoinedResponse hasJoinedResponse)
-            throws AuthenticationException {
-        try {
-            String jsonBody = GsonConfig.toJson(new ConnectRequest(serverId, profileId, hasJoinedResponse.joinOtp()));
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getConnectUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 401) {
-                throw new AuthenticationException("Validación fallida: credenciales inválidas");
-            }
-
-            if (response.statusCode() != 200) {
-                throw new AuthenticationException("Error en validación (HTTP " + response.statusCode() + ")");
-            }
-
-            ConnectResponse dto = GsonConfig.fromJson(response.body(), ConnectResponse.class);
-
-            if (dto == null || dto.verificationUrl() == null || dto.deviceCode() == null) {
-                throw new AuthenticationException("Invalid server response");
-            }
-
-            return dto;
-
-        }  catch (Exception e) {
-            LOGGER.error("Unexpected error during connect request: ", e);
-            throw new AuthenticationException(e.getMessage());
-        }
-    }
-
-    private static void cancelConnect(String verificationUrl, Runnable successCallback, Runnable errorCallback) {
-        cancelActivePolling();
-        try {
-            String jsonBody = GsonConfig.toJson(new CancelConnectRequest(verificationUrl));
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getCancelConnectUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            client.sendAsync(request, HttpResponse.BodyHandlers.discarding())
-                    .thenAccept(response -> {
-                        if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                            LOGGER.info("[AFKraft] Connection cancelled successfully on backend");
-                            successCallback.run();
-                        } else {
-                            LOGGER.warn("[AFKraft] Failed to cancel connection on backend (HTTP {})", response.statusCode());
-                            errorCallback.run();
-                        }
-                    })
-                    .exceptionally(ex -> {
-                        LOGGER.error("[AFKraft] Error sending cancel connect request: {}", ex.getMessage());
-                        errorCallback.run();
-                        return null;
-                    });
-        } catch (Exception e) {
-            LOGGER.error("[AFKraft] Unexpected error preparing cancel connect request: ", e);
-        }
-    }
-
-    private static void validateHasConnected(UUID profileId, ConnectResponse connectResponse, QRModalScreen screen) {
-        Minecraft minecraft = Minecraft.getInstance();
-        int interval = Math.max(1, connectResponse.interval());
-        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(connectResponse.expiresIn());
-
-        cancelActivePolling();
-
-        AtomicBoolean cancelled = new AtomicBoolean(false);
-        ACTIVE_POLL_CANCEL.set(cancelled);
-        screen.setOnClosed(() -> cancelled.set(true));
-
-        LOGGER.info("[AFKraft] Iniciando polling de vinculación (cada {}s, expira en {}s)", interval, connectResponse.expiresIn());
-        schedulePoll(profileId, connectResponse.deviceCode(), interval, deadlineNanos, screen, minecraft, cancelled);
-    }
-
-    private static void cancelActivePolling() {
-        AtomicBoolean previous = ACTIVE_POLL_CANCEL.getAndSet(null);
-        if (previous != null) {
-            previous.set(true);
-        }
-    }
-
-    private static void schedulePoll(UUID profileId, String deviceCode, int interval, long deadlineNanos,
-                                     QRModalScreen screen, Minecraft minecraft, AtomicBoolean cancelled) {
-        POLLING_EXECUTOR.schedule(() -> {
-            if (cancelled.get()) {
-                LOGGER.info("[AFKraft] Polling de vinculación cancelado");
-                return;
-            }
-
-            if (System.nanoTime() >= deadlineNanos) {
-                LOGGER.warn("[AFKraft] El código de vinculación expiró");
-                notifyUser(minecraft, "El código de vinculación expiró. Ejecuta /afkraft connect de nuevo.");
-                closeModal(minecraft, screen);
-                return;
-            }
-
-            var hasConnected = validateHasConnected(deviceCode);
-
-            if (hasConnected.isPresent()) {
-                LOGGER.info("[AFKraft] Vinculación completada");
-                notifyUser(minecraft, "Cuenta vinculada con AFKraft correctamente");
-                closeModal(minecraft, screen);
-                generateModCredentials(profileId, hasConnected.get());
-                return;
-            }
-
-            schedulePoll(profileId, deviceCode, interval, deadlineNanos, screen, minecraft, cancelled);
-        }, interval, TimeUnit.SECONDS);
-    }
-
-    private static Optional<HasConnectedResponse> validateHasConnected(String deviceCode) {
-        try {
-            String jsonBody = GsonConfig.toJson(new HasConnectedRequest(deviceCode));
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getHasConnectedUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            String body = response.body();
-
-            if (response.statusCode() != 200) {
-                LOGGER.warn("Has connected is not success (HTTP {}, Body: {}), retrying...", response.statusCode(), body);
-                return Optional.empty();
-            }
-
-            HasConnectedResponse dto = GsonConfig.fromJson(response.body(), HasConnectedResponse.class);
-            return Optional.of(dto);
-
-        }  catch (Exception e) {
-            LOGGER.error("Unexpected error during hasConnected validation: ", e);
-            return Optional.empty();
-        }
-    }
-
     private static void closeModal(Minecraft minecraft, QRModalScreen screen) {
         minecraft.execute(() -> {
             if (minecraft.gui.screen() == screen) {
@@ -247,9 +104,5 @@ public class ClientConnectService {
 
     private static void notifyUser(Minecraft minecraft, String message) {
         minecraft.execute(() -> minecraft.showDebugChat(Component.literal(message)));
-    }
-
-    private static void generateModCredentials(UUID profileId, HasConnectedResponse hasConnectedResponse) {
-        ClientEvents.onClientHasConnected(profileId, hasConnectedResponse.otp());
     }
 }
