@@ -26,6 +26,7 @@ public class AFKContainerConfigData extends SavedData {
     public static final Logger log = LoggerFactory.getLogger("AFKContainerConfigData");
 
     private static final Identifier ID = AFKraftCompanion.id("afk_container_config_data");
+    private static final Identifier LEGACY_ID = Identifier.fromNamespaceAndPath(AFKraftCompanion.LEGACY_MOD_ID, "afk_container_config_data");
 
     private final HashMap<UUID, Map<Identifier, Map<BlockPos, ContainerData>>> config;
     private final HashMap<UUID, Set<UUID>> portableContainers;
@@ -164,13 +165,27 @@ public class AFKContainerConfigData extends SavedData {
             .apply(instance, AFKContainerConfigData::new));
 
     public static final SavedDataType<AFKContainerConfigData> TYPE = new SavedDataType<>(ID, AFKContainerConfigData::new, CODEC, null);
+    private static final SavedDataType<AFKContainerConfigData> LEGACY_TYPE = new SavedDataType<>(LEGACY_ID, AFKContainerConfigData::new, CODEC, null);
 
     // Almacén global: lo anclamos al data storage del overworld.
     public static AFKContainerConfigData getConfig(MinecraftServer server) {
         if (server == null) {
             return new AFKContainerConfigData();
         }
-        return server.overworld().getDataStorage().computeIfAbsent(TYPE);
+        var storage = server.overworld().getDataStorage();
+        var current = storage.get(TYPE);
+        if (current != null) {
+            return current;
+        }
+        var legacy = storage.get(LEGACY_TYPE);
+        if (legacy != null) {
+            var migrated = new AFKContainerConfigData(legacy.getConfig(), legacy.getPortableContainersForCodec());
+            migrated.setDirty();
+            storage.set(TYPE, migrated);
+            log.info("Migrated legacy AFKContainerConfigData from {} to {}", LEGACY_ID, ID);
+            return migrated;
+        }
+        return storage.computeIfAbsent(TYPE);
     }
 
     public void set(ServerPlayer player, BlockPos pos, boolean active) {

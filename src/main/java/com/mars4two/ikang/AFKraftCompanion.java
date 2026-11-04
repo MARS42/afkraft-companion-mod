@@ -1,13 +1,11 @@
 package com.mars4two.ikang;
 
-import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.events.ServerEvents;
-import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
-import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
-import com.mars4two.ikang.network.PayloadRegister;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
+import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
+import com.mars4two.ikang.network.PayloadRegister;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -22,7 +20,8 @@ import org.slf4j.LoggerFactory;
 
 public class AFKraftCompanion implements ModInitializer {
 
-	public static final String MOD_ID = "afkraft-companion";
+	public static final String MOD_ID = "afkraft_companion";
+	public static final String LEGACY_MOD_ID = "afkraft-companion";
 	public static final Logger log = LoggerFactory.getLogger(MOD_ID);
 
 	@Override
@@ -37,11 +36,6 @@ public class AFKraftCompanion implements ModInitializer {
 
 		ServerPlayerEvents.JOIN.register(ServerEvents::onJoinServerPlayer);
 		BlockEvents.USE_WITHOUT_ITEM.register(ServerEvents::onUseWithoutItem);
-
-//		ServerPlayNetworking.registerGlobalReceiver(GetCredentialsStatusServerboundPayload.TYPE, (payload, context) -> {
-//			log.info("Server received credentials status payload for user {}: {}", context.player().getGameProfile().id(), payload);
-//			// TODO: Evitar este usuario en eventos
-//		});
 
 		ServerPlayNetworking.registerGlobalReceiver(AuthorizeServerResponseServerboundPayload.TYPE, (payload, context) -> {
 			ServerEvents.onServerAuthorizedByPlayer(context.server(), context.player(), payload);

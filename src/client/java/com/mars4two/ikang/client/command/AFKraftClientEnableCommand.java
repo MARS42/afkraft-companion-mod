@@ -2,9 +2,9 @@ package com.mars4two.ikang.client.command;
 
 import com.mars4two.ikang.client.core.auth.ClientAuthService;
 import com.mars4two.ikang.client.core.events.ClientEvents;
-import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedRequest;
+import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedResponse;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
-import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedResponse;
+import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedRequest;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -29,10 +29,6 @@ public class AFKraftClientEnableCommand {
                                         req.permissions().hasPermission(Permissions.COMMANDS_ADMIN))
                                 .executes(AFKraftClientEnableCommand::executeClientConnect))
         );
-
-        ClientPlayNetworking.registerGlobalReceiver(IsServerAuthenticatedResponse.TYPE, (payload, context) -> {
-            onIsServerAuthenticatedResponse(context.player(), payload);
-        });
     }
 
     private static int executeClientConnect(CommandContext<FabricClientCommandSource> context) {
@@ -40,7 +36,7 @@ public class AFKraftClientEnableCommand {
         return 1;
     }
 
-    private static void onIsServerAuthenticatedResponse(Player player,IsServerAuthenticatedResponse payload) {
+    public static void onIsServerAuthenticatedResponse(Player player, IsServerAuthenticatedResponse payload) {
         if(payload.isAuthenticated()) {
             player.sendSystemMessage(Component.literal("Credenciales de AFKraft activas, generadas por: " + payload.credentialsOwner()));
             return;

@@ -1,6 +1,9 @@
 {
 	"schemaVersion": 1,
-	"id": "afkraft-companion",
+	"id": "afkraft_companion",
+	"provides": [
+		"afkraft-companion"
+	],
 	"version": "${version}",
 	"name": "AFKraft Companion",
 	"description": "This is an example description! Tell everyone what your mod is about!",
@@ -12,7 +15,7 @@
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/afkraft-companion/icon.png",
+	"icon": "assets/afkraft_companion/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
@@ -23,9 +26,9 @@
 		]
 	},
 	"mixins": [
-		"afkraft-companion.mixins.json",
+		"afkraft_companion.mixins.json",
 		{
-			"config": "afkraft-companion.client.mixins.json",
+			"config": "afkraft_companion.client.mixins.json",
 			"environment": "client"
 		}
 	],

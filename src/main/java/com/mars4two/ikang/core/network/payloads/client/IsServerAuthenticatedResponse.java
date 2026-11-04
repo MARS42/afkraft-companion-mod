@@ -1,4 +1,4 @@
-package com.mars4two.ikang.core.network.payloads.server;
+package com.mars4two.ikang.core.network.payloads.client;
 
 import com.mars4two.ikang.AFKraftCompanion;
 import net.minecraft.network.RegistryFriendlyByteBuf;

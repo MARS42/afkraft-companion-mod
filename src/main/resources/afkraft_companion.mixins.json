@@ -3,7 +3,6 @@
 	"package": "com.mars4two.ikang.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
-		"ExampleMixin",
 		"BlockItemMixin",
 		"BlockEntityMixin",
 		"ShulkerBoxBlockMixin",

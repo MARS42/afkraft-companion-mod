@@ -3,9 +3,6 @@
 	"package": "com.mars4two.ikang.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"ExampleClientMixin"
-	],
-	"mixins": [
 		"AbstractContainerScreenAccessor"
 	],
 	"injectors": {

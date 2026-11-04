@@ -6,6 +6,7 @@ import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
+import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedResponse;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -30,9 +31,9 @@ public class AFKraftCompanionClient implements ClientModInitializer {
             ClientEvents.onAuthorizeServerRequest(payload, context.player());
         });
 
-//        ClientPlayNetworking.registerGlobalReceiver(GetCredentialsRequestClientboundPayload.TYPE, (payload, context) -> {
-//
-//        });
+        ClientPlayNetworking.registerGlobalReceiver(IsServerAuthenticatedResponse.TYPE, (payload, context) -> {
+            AFKraftClientEnableCommand.onIsServerAuthenticatedResponse(context.player(), payload);
+        });
 
         ClientPlayNetworking.registerGlobalReceiver(AFKraftStatusClientBoundPayload.TYPE,
                 (afkraftStatus, context) ->
