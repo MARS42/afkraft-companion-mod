@@ -31,19 +31,26 @@ public class SnapshotIngestManager implements AutoCloseable {
     private static final long HEARTBEAT_INTERVAL_MILLIS = 30_000;
     private static final long HEARTBEAT_IDLE_THRESHOLD_MILLIS = 30_000;
 
-    private Conflater<SnapshotBase> conflater;
-    private String worldName;
+    private volatile Conflater<SnapshotBase> conflater;
+    private volatile String worldName;
 
     public static SnapshotIngestManager getInstance() {
         return INSTANCE;
     }
 
-    public void start(String worldName) {
+    public synchronized void start(String worldName) {
+        if (this.conflater != null) {
+            try {
+                this.conflater.close();
+            } catch (Exception e) {
+                log.warn("Error closing previous conflater before restart", e);
+            }
+        }
         this.worldName = worldName;
 
         wsClient.connectAsync();
 
-        conflater = new Conflater<>(
+        Conflater<SnapshotBase> nextConflater = new Conflater<>(
                 FLUSH_PERIOD_MILLIS,
                 SnapshotBase::key,
                 SnapshotBase::changeToken,
@@ -53,60 +60,101 @@ public class SnapshotIngestManager implements AutoCloseable {
                 HEARTBEAT_IDLE_THRESHOLD_MILLIS,
                 this::onHeartbeat
         );
-        conflater.start();
+        nextConflater.start();
+        this.conflater = nextConflater;
     }
 
     public String getWorldName() {
         return worldName;
     }
 
+    private void submitSnapshot(SnapshotBase snapshot) {
+        Conflater<SnapshotBase> active = this.conflater;
+        if (active != null) {
+            active.submit(snapshot);
+        }
+    }
+
     public void ingestContainerBlockEntity(Set<UUID> playerIds, ContainerView containerView) {
-        conflater.submit(ContainerSnapshot.of(playerIds, containerView));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(ContainerSnapshot.of(playerIds, containerView));
     }
 
     public void ingestContainerDeleted(Set<UUID> playerIds, ContainerView containerView) {
-        conflater.submit(ContainerSnapshot.ofDeleted(playerIds, containerView));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(ContainerSnapshot.ofDeleted(playerIds, containerView));
     }
 
     public void ingestPortableContainerBlockEntity(Set<UUID> playerIds, UUID containerId, ContainerView containerView) {
-        conflater.submit(ContainerSnapshot.ofPortable(playerIds, containerId, containerView));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(ContainerSnapshot.ofPortable(playerIds, containerId, containerView));
     }
 
     public void ingestPortableContainerDeleted(Set<UUID> playerIds, UUID containerId, ContainerView containerView) {
-        conflater.submit(ContainerSnapshot.ofPortableDeleted(playerIds, containerId, containerView));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(ContainerSnapshot.ofPortableDeleted(playerIds, containerId, containerView));
     }
 
     public void ingestLoadStationBlockEntity(Set<UUID> playerIds, ContainerView containerView) {
-        conflater.submit(LoadStationSnapshot.of(playerIds, containerView));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(LoadStationSnapshot.of(playerIds, containerView));
     }
 
     public void ingestLoadStationDeleted(Set<UUID> playerIds, ContainerView containerView) {
-        conflater.submit(LoadStationSnapshot.ofDeleted(playerIds, containerView));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(LoadStationSnapshot.ofDeleted(playerIds, containerView));
     }
 
     public void ingestPlayerStats(PlayerStatsContainer player) {
-        conflater.submit(PlayerStatsSnapshot.of(player));
-        conflater.submit(PlayerEffectStatsSnapshot.of(player));
-        conflater.submit(PlayerHandsStatsSnapshot.of(player));
-        conflater.submit(PlayerAttackCadenceSnapshot.of(player));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(PlayerStatsSnapshot.of(player));
+        submitSnapshot(PlayerEffectStatsSnapshot.of(player));
+        submitSnapshot(PlayerHandsStatsSnapshot.of(player));
+        submitSnapshot(PlayerAttackCadenceSnapshot.of(player));
     }
 
     public void ingestPlayerAttackCadence(PlayerStatsContainer player) {
-        conflater.submit(PlayerAttackCadenceSnapshot.of(player));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(PlayerAttackCadenceSnapshot.of(player));
     }
 
     public void ingestPlayerMobSphere(PlayerStatsContainer player) {
-        conflater.submit(PlayerMobSphereSnapshot.of(player));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(PlayerMobSphereSnapshot.of(player));
     }
 
     public void ingestPlayerInventoryState(InventoryView playerInventory) {
-        conflater.submit(PlayerInventorySnapshot.of(playerInventory));
-        conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(PlayerInventorySnapshot.of(playerInventory));
+        submitSnapshot(PlayerEquipmentSnapshot.of(playerInventory));
     }
 
     public void ingestPlayerHotbarState(InventoryView playerInventory) {
-        conflater.submit(PlayerHotbarSnapshot.of(playerInventory));
-        conflater.submit(PlayerEquipmentSnapshot.of(playerInventory));
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(PlayerHotbarSnapshot.of(playerInventory));
+        submitSnapshot(PlayerEquipmentSnapshot.of(playerInventory));
     }
 
     public static SnapshotsIngestRequest buildIngestRequest(
@@ -230,16 +278,17 @@ public class SnapshotIngestManager implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         try {
             wsClient.close();
         } catch (Exception e) {
             log.error("Error closing SnapshotsWebSocketClient", e);
         }
         try {
-            if (conflater != null) {
-                conflater.close();
-                conflater = null;
+            Conflater<SnapshotBase> active = this.conflater;
+            this.conflater = null;
+            if (active != null) {
+                active.close();
             }
         } catch (Exception e) {
             log.error("Error closing SnapshotIngestManager", e);

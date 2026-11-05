@@ -1,0 +1,67 @@
+plugins {
+	id 'java-library'
+	id 'net.neoforged.moddev'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = "afkraft_companion-common"
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		name = 'SpongePowered'
+		url = 'https://repo.spongepowered.org/repository/maven-public/'
+	}
+}
+
+evaluationDependsOn(':domain')
+
+sourceSets {
+	client {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+neoForge {
+	neoFormVersion = project.neoform_version
+	addModdingDependenciesTo sourceSets.client
+}
+
+dependencies {
+	compileOnly "org.spongepowered:mixin:0.8.7"
+	clientCompileOnly "org.spongepowered:mixin:0.8.7"
+
+	implementation(project(":domain")) {
+		transitive = false
+	}
+	clientImplementation(project(":domain")) {
+		transitive = false
+	}
+
+	testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.named('assemble') {
+	dependsOn tasks.named('clientClasses')
+}
+
+test {
+	dependsOn tasks.named('clientClasses')
+	useJUnitPlatform()
+}

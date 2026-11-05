@@ -9,7 +9,12 @@ import com.mars4two.ikang.core.config.GsonConfig;
 import com.mars4two.ikang.core.snapshots.PlayerStatsSnapshot;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotsIngestRequest;
+import com.mars4two.ikang.core.snapshots.model.RawItemStack;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerAttackCadence;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerEffects;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerHands;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
+import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -153,5 +159,46 @@ class AuthIngestAndConnectDomainTest {
         ClientAuthDomainService.SessionJoinPort port = (id, token, srv) -> {
         };
         assertFalse(port == null);
+    }
+
+    @Test
+    void snapshotIngestManagerSafelyNoOpsBeforeStartOrAfterClose() {
+        SnapshotIngestManager manager = SnapshotIngestManager.getInstance();
+        manager.close();
+
+        PlayerStatsContainer stubPlayer = new PlayerStatsContainer() {
+            @Override
+            public UUID profileId() {
+                return PLAYER_ID;
+            }
+
+            @Override
+            public RawPlayerStats stats() {
+                return new RawPlayerStats("survival", 20f, 20f, 20, 1, 0f, 0, 64, 0, 0f, 0f);
+            }
+
+            @Override
+            public RawPlayerEffects effects() {
+                return new RawPlayerEffects(List.of());
+            }
+
+            @Override
+            public RawPlayerHands handsStats() {
+                return new RawPlayerHands(RawItemStack.EMPTY, RawItemStack.EMPTY);
+            }
+
+            @Override
+            public RawPlayerAttackCadence attackCadence() {
+                return RawPlayerAttackCadence.idle(12.5f);
+            }
+
+            @Override
+            public com.mars4two.ikang.core.snapshots.model.RawMobSphere mobSphere() {
+                return null;
+            }
+        };
+
+        assertDoesNotThrow(() -> manager.ingestPlayerAttackCadence(stubPlayer));
+        assertDoesNotThrow(() -> manager.ingestPlayerStats(stubPlayer));
     }
 }

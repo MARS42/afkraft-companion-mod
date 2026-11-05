@@ -1,0 +1,119 @@
+plugins {
+	id 'net.fabricmc.fabric-loom'
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = "afkraft_companion-fabric"
+}
+
+repositories {
+	mavenCentral()
+}
+
+evaluationDependsOn(':domain')
+evaluationDependsOn(':common')
+
+def commonProject = project(':common')
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"afkraft_companion" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+			sourceSet project(":domain").sourceSets.main
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	compileOnly(project(":common"))
+	clientCompileOnly(commonProject.sourceSets.main.output)
+	clientCompileOnly(commonProject.sourceSets.client.output)
+
+	implementation(project(":domain")) {
+		transitive = false
+	}
+	clientImplementation(project(":domain")) {
+		transitive = false
+	}
+
+	clientRuntimeOnly "com.google.zxing:core:3.5.3"
+	include "com.google.zxing:core:3.5.3"
+}
+
+tasks.named("compileJava", JavaCompile).configure {
+	source(project(":common").sourceSets.main.allJava)
+}
+
+tasks.named("compileClientJava", JavaCompile).configure {
+	source(project(":common").sourceSets.client.allJava)
+}
+
+tasks.named("processResources", ProcessResources).configure {
+	def version = project.version
+	inputs.property "version", version
+
+	from(project(":common").sourceSets.main.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+tasks.named("processClientResources", ProcessResources).configure {
+	from(project(":common").sourceSets.client.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	def projectName = rootProject.name
+	inputs.property "projectName", projectName
+
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(project(":domain").sourceSets.main.output)
+
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_$projectName" }
+	}
+}
+
+tasks.named("sourcesJar", Jar).configure {
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(project(":domain").sourceSets.main.allSource)
+	from(project(":common").sourceSets.main.allSource)
+	from(project(":common").sourceSets.client.allSource)
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}
