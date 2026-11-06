@@ -1,0 +1,148 @@
+plugins {
+	id 'java-library'
+	id 'net.neoforged.moddev'
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = "afkraft_companion-neoforge"
+}
+
+repositories {
+	mavenCentral()
+}
+
+evaluationDependsOn(':domain')
+evaluationDependsOn(':common')
+
+def commonProject = project(':common')
+
+sourceSets {
+	client {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+neoForge {
+	version = project.neoforge_version
+	addModdingDependenciesTo sourceSets.client
+	addModdingDependenciesTo sourceSets.test
+
+	mods {
+		"afkraft_companion" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+			sourceSet project(":domain").sourceSets.main
+		}
+	}
+}
+
+dependencies {
+	compileOnly(project(":common"))
+	clientCompileOnly(commonProject.sourceSets.main.output)
+	clientCompileOnly(commonProject.sourceSets.client.output)
+
+	implementation(project(":domain")) {
+		transitive = false
+	}
+	clientImplementation(project(":domain")) {
+		transitive = false
+	}
+
+	clientRuntimeOnly "com.google.zxing:core:3.5.3"
+	jarJar("com.google.zxing:core:[3.5.3,3.6)") {
+		version {
+			prefer "3.5.3"
+		}
+	}
+
+	testCompileOnly(sourceSets.client.output)
+	testRuntimeOnly(sourceSets.client.output)
+	testImplementation("com.google.zxing:core:3.5.3")
+	testImplementation platform("org.junit:junit-bom:5.11.4")
+	testImplementation "org.junit.jupiter:junit-jupiter"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+tasks.named("compileJava", JavaCompile).configure {
+	source(commonProject.sourceSets.main.allJava)
+}
+
+tasks.named("compileClientJava", JavaCompile).configure {
+	source(commonProject.sourceSets.client.allJava)
+}
+
+tasks.named("processResources", ProcessResources).configure {
+	def version = project.version
+	inputs.property "version", version
+
+	from(commonProject.sourceSets.main.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+
+	filesMatching("META-INF/neoforge.mods.toml") {
+		expand "version": version
+	}
+}
+
+tasks.named("processClientResources", ProcessResources).configure {
+	from(commonProject.sourceSets.client.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = 'UTF-8'
+}
+
+tasks.named("test", Test).configure {
+	useJUnitPlatform()
+	def testWorkDir = layout.buildDirectory.dir("test-work")
+	workingDir = testWorkDir.get().asFile
+	doFirst {
+		testWorkDir.get().asFile.mkdirs()
+	}
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	def projectName = rootProject.name
+	inputs.property "projectName", projectName
+
+	dependsOn tasks.named('clientClasses')
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(sourceSets.client.output)
+	from(project(":domain").sourceSets.main.output)
+
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_$projectName" }
+	}
+}
+
+tasks.named("sourcesJar", Jar).configure {
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(sourceSets.client.allSource)
+	from(project(":domain").sourceSets.main.allSource)
+	from(commonProject.sourceSets.main.allSource)
+	from(commonProject.sourceSets.client.allSource)
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}

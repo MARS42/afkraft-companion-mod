@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -154,6 +155,50 @@ class CommonArchitectureAndSpiTest {
     }
 
     @Test
+    void neoforgeServiceProviderDescriptorsAndMetadataMatchSpiContracts() throws IOException {
+        Path neoforgeRoot = REPO_ROOT.resolve("neoforge");
+        List<ServiceBinding> bindings = List.of(
+                new ServiceBinding(
+                        "src/main/resources/META-INF/services/com.mars4two.ikang.platform.services.NetworkBridge",
+                        "src/main/java"
+                ),
+                new ServiceBinding(
+                        "src/main/resources/META-INF/services/com.mars4two.ikang.platform.services.ServerLifecycleHooks",
+                        "src/main/java"
+                ),
+                new ServiceBinding(
+                        "src/main/resources/META-INF/services/com.mars4two.ikang.platform.services.BlockInteractionHooks",
+                        "src/main/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientCommandBridge",
+                        "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ScreenWidgetBridge",
+                        "src/client/java"
+                )
+        );
+
+        for (ServiceBinding binding : bindings) {
+            Path descriptor = neoforgeRoot.resolve(binding.descriptorPath());
+            assertTrue(Files.isRegularFile(descriptor), "Missing NeoForge ServiceLoader descriptor: " + descriptor);
+            String implFqcn = Files.readString(descriptor).trim();
+            assertFalse(implFqcn.isEmpty(), "Empty NeoForge ServiceLoader descriptor: " + descriptor);
+            Path implJava = neoforgeRoot.resolve(binding.sourceRoot())
+                    .resolve(implFqcn.replace('.', '/') + ".java");
+            assertTrue(Files.isRegularFile(implJava), "Missing NeoForge SPI implementation source: " + implJava);
+        }
+
+        Path modsToml = neoforgeRoot.resolve("src/main/resources/META-INF/neoforge.mods.toml");
+        assertTrue(Files.isRegularFile(modsToml), "Missing META-INF/neoforge.mods.toml");
+        String tomlContent = Files.readString(modsToml);
+        assertTrue(tomlContent.contains("modId=\"afkraft_companion\""), "neoforge.mods.toml must declare modId=\"afkraft_companion\"");
+        assertTrue(tomlContent.contains("afkraft_companion.mixins.json"), "neoforge.mods.toml must register server mixin config");
+        assertTrue(tomlContent.contains("afkraft_companion.client.mixins.json"), "neoforge.mods.toml must register client mixin config");
+    }
+
+    @Test
     void compiledCommonBytecodeContainsZeroLoaderOrClientLeakage() throws IOException {
         Path mainClassesDir = COMMON_ROOT.resolve("build/classes/java/main");
         Path clientClassesDir = COMMON_ROOT.resolve("build/classes/java/client");
@@ -200,6 +245,37 @@ class CommonArchitectureAndSpiTest {
         }
 
         assertTrue(violations.isEmpty(), () -> "Bytecode leakage in :common:\n" + String.join("\n", violations));
+    }
+
+    @Test
+    void everyClientboundPayloadRegistrationHasMatchingClientReceiver() throws IOException {
+        Path payloadRegister = MAIN_JAVA.resolve("com/mars4two/ikang/network/PayloadRegister.java");
+        Path clientEntry = CLIENT_JAVA.resolve("com/mars4two/ikang/client/AFKraftCompanionClient.java");
+        assertTrue(Files.isRegularFile(payloadRegister), "Missing PayloadRegister.java");
+        assertTrue(Files.isRegularFile(clientEntry), "Missing AFKraftCompanionClient.java");
+
+        String registerSource = Files.readString(payloadRegister);
+        String clientSource = Files.readString(clientEntry);
+
+        assertFalse(
+                registerSource.contains("ContainerData.PAYLOAD_TYPE"),
+                "PayloadRegister must not register nested ContainerData as a top-level clientbound packet"
+        );
+        assertEquals(
+                countOccurrences(registerSource, ".registerClientbound("),
+                countOccurrences(clientSource, ".registerClientReceiver("),
+                "Every registered clientbound payload in PayloadRegister must have a client receiver in AFKraftCompanionClient"
+        );
+    }
+
+    private static int countOccurrences(String text, String needle) {
+        int count = 0;
+        int idx = 0;
+        while ((idx = text.indexOf(needle, idx)) >= 0) {
+            count++;
+            idx += needle.length();
+        }
+        return count;
     }
 
     private static List<Path> collectJavaFiles(Path root) throws IOException {

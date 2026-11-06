@@ -9,7 +9,6 @@ import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseSe
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
-import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import com.mars4two.ikang.platform.services.Services;
 
 public final class PayloadRegister {
@@ -23,10 +22,6 @@ public final class PayloadRegister {
     }
 
     public static void registerClientboundPayloads() {
-        Services.NETWORK.registerClientbound(
-                AFKContainerConfigData.ContainerData.PAYLOAD_TYPE,
-                AFKContainerConfigData.ContainerData.STREAM_CODEC
-        );
         Services.NETWORK.registerClientbound(
                 GetCredentialsStatusClientboundPayload.TYPE,
                 GetCredentialsStatusClientboundPayload.STREAM_CODEC

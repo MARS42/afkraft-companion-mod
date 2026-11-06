@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -142,5 +143,9 @@ public final class WorldAndEntityAdapter {
 
     public static String entityTypeId(EntityType<?> entityType) {
         return BuiltInRegistries.ENTITY_TYPE.getKey(entityType).toString();
+    }
+
+    public static void scheduleNextServerTask(MinecraftServer server, Runnable task) {
+        server.schedule(new TickTask(server.getTickCount(), task));
     }
 }

@@ -10,22 +10,25 @@ group = project.maven_group
 evaluationDependsOn(':domain')
 evaluationDependsOn(':common')
 evaluationDependsOn(':fabric')
+evaluationDependsOn(':neoforge')
 
 def collectArtifacts = tasks.register("collectArtifacts", Copy) {
 	group = "build"
 	description = "Collects built loader artifacts into root build/libs."
-	dependsOn(":fabric:build")
+	dependsOn(":fabric:build", ":neoforge:build")
 	from(project(":fabric").tasks.named("jar"))
 	from(project(":fabric").tasks.named("sourcesJar"))
+	from(project(":neoforge").tasks.named("jar"))
+	from(project(":neoforge").tasks.named("sourcesJar"))
 	into(layout.buildDirectory.dir("libs"))
 }
 
 tasks.named("check") {
-	dependsOn(":domain:check", ":common:check", ":fabric:check")
+	dependsOn(":domain:check", ":common:check", ":fabric:check", ":neoforge:check")
 }
 
 tasks.named("assemble") {
-	dependsOn(":domain:assemble", ":common:assemble", ":fabric:assemble", collectArtifacts)
+	dependsOn(":domain:assemble", ":common:assemble", ":fabric:assemble", ":neoforge:assemble", collectArtifacts)
 }
 
 tasks.named("build") {
