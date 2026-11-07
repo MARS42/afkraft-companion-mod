@@ -13,9 +13,13 @@ import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.common.NeoForge;
+//? if >=26.2 {
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadHandler;
+//?} else {
+/*import net.neoforged.neoforge.event.level.BlockEvent;
+*///?}
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import net.neoforged.neoforge.network.registration.PayloadRegistration;
 import org.junit.jupiter.api.Test;
@@ -61,11 +65,12 @@ class NeoForgeRuntimeRegressionTest {
         registrationsField.setAccessible(true);
         var payloadRegistrations = (Map<ConnectionProtocol, Map<Identifier, PayloadRegistration<?>>>) registrationsField.get(null);
 
+        Map<Identifier, PayloadRegistration<?>> playRegistrations = payloadRegistrations.get(ConnectionProtocol.PLAY);
+
+        //? if >=26.2 {
         Field clientHandlersField = NetworkRegistry.class.getDeclaredField("CLIENTBOUND_HANDLERS");
         clientHandlersField.setAccessible(true);
         var clientboundHandlers = (Map<ConnectionProtocol, Map<Identifier, IPayloadHandler<?>>>) clientHandlersField.get(null);
-
-        Map<Identifier, PayloadRegistration<?>> playRegistrations = payloadRegistrations.get(ConnectionProtocol.PLAY);
         Map<Identifier, IPayloadHandler<?>> playClientHandlers = clientboundHandlers.get(ConnectionProtocol.PLAY);
 
         List<Identifier> missingClientHandlers = playRegistrations.values().stream()
@@ -73,6 +78,13 @@ class NeoForgeRuntimeRegressionTest {
                 .map(PayloadRegistration::id)
                 .filter(id -> !playClientHandlers.containsKey(id))
                 .toList();
+        //?} else {
+        /*List<Identifier> missingClientHandlers = playRegistrations.values().stream()
+                .filter(reg -> reg.matchesFlow(PacketFlow.CLIENTBOUND))
+                .filter(reg -> reg.handler() == null)
+                .map(PayloadRegistration::id)
+                .toList();
+        *///?}
 
         assertTrue(
                 missingClientHandlers.isEmpty(),
@@ -92,7 +104,11 @@ class NeoForgeRuntimeRegressionTest {
         );
 
         // Non-server BreakBlockEvent on NeoForge.EVENT_BUS must safely no-op.
+        //? if >=26.2 {
         NeoForge.EVENT_BUS.post(new BreakBlockEvent(null, new BlockPos(1, 2, 3), null, null));
+        //?} else {
+        /*NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(null, new BlockPos(1, 2, 3), null, null));
+        *///?}
         assertTrue(brokenPositions.isEmpty());
 
         Deque<Runnable> scheduledTasks = new ArrayDeque<>();

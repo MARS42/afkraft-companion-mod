@@ -1,9 +1,18 @@
 plugins {
-	id 'net.fabricmc.fabric-loom'
+	id 'dev.kikugie.stonecutter'
 	id 'maven-publish'
 }
 
-version = project.mod_version
+def isObfuscated = stonecutter.eval(stonecutter.current.version, '<26.0')
+apply plugin: isObfuscated ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+
+def javaVersion = project.java_version as int
+def mcVer = stonecutter.current.project
+
+ext.productionJarTaskName = isObfuscated ? 'remapJar' : 'jar'
+ext.productionSourcesJarTaskName = isObfuscated ? 'remapSourcesJar' : 'sourcesJar'
+
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 
 base {
@@ -15,9 +24,9 @@ repositories {
 }
 
 evaluationDependsOn(':domain')
-evaluationDependsOn(':common')
+evaluationDependsOn(":common:${mcVer}")
 
-def commonProject = project(':common')
+def commonProject = project(":common:${mcVer}")
 
 loom {
 	splitEnvironmentSourceSets()
@@ -29,16 +38,33 @@ loom {
 			sourceSet project(":domain").sourceSets.main
 		}
 	}
+
+	runs {
+		client {
+			client()
+			name = "Fabric Client (${project.minecraft_version})"
+			ideConfigGenerated(true)
+			runDir = "run"
+		}
+		server {
+			server()
+			name = "Fabric Server (${project.minecraft_version})"
+			ideConfigGenerated(true)
+			runDir = "run"
+		}
+	}
 }
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-
-	compileOnly(project(":common"))
-	clientCompileOnly(commonProject.sourceSets.main.output)
-	clientCompileOnly(commonProject.sourceSets.client.output)
+	if (isObfuscated) {
+		mappings loom.officialMojangMappings()
+		modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	} else {
+		implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	}
 
 	implementation(project(":domain")) {
 		transitive = false
@@ -52,40 +78,70 @@ dependencies {
 }
 
 tasks.named("compileJava", JavaCompile).configure {
-	source(project(":common").sourceSets.main.allJava)
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerate'))
+	}
+	source(commonProject.sourceSets.main.allJava)
 }
 
 tasks.named("compileClientJava", JavaCompile).configure {
-	source(project(":common").sourceSets.client.allJava)
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerateClient'))
+	}
+	source(commonProject.sourceSets.client.allJava)
 }
 
 tasks.named("processResources", ProcessResources).configure {
-	def version = project.version
-	inputs.property "version", version
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerate'))
+	}
+	def props = [
+		version           : project.version,
+		loader_version    : project.loader_version,
+		fabric_mc_range   : project.fabric_mc_range,
+		java_version      : project.java_version,
+		mixin_compat_level: project.mixin_compat_level
+	]
+	inputs.properties(props)
 
-	from(project(":common").sourceSets.main.resources)
+	from(commonProject.sourceSets.main.resources)
 	duplicatesStrategy = DuplicatesStrategy.FAIL
 
-	filesMatching("fabric.mod.json") {
-		expand "version": version
+	filesMatching(["fabric.mod.json", "afkraft_companion.mixins.json"]) {
+		expand(props)
 	}
 }
 
 tasks.named("processClientResources", ProcessResources).configure {
-	from(project(":common").sourceSets.client.resources)
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerateClient'))
+	}
+	def props = [
+		mixin_compat_level: project.mixin_compat_level
+	]
+	inputs.properties(props)
+
+	from(commonProject.sourceSets.client.resources)
 	duplicatesStrategy = DuplicatesStrategy.FAIL
+
+	filesMatching("afkraft_companion.client.mixins.json") {
+		expand(props)
+	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+	it.options.release = javaVersion
 	it.options.encoding = 'UTF-8'
 }
 
 java {
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(javaVersion)
+	}
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
 }
 
 jar {
@@ -101,10 +157,16 @@ jar {
 }
 
 tasks.named("sourcesJar", Jar).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(
+			commonProject.tasks.named('stonecutterGenerate'),
+			commonProject.tasks.named('stonecutterGenerateClient')
+		)
+	}
 	duplicatesStrategy = DuplicatesStrategy.FAIL
 	from(project(":domain").sourceSets.main.allSource)
-	from(project(":common").sourceSets.main.allSource)
-	from(project(":common").sourceSets.client.allSource)
+	from(commonProject.sourceSets.main.allSource)
+	from(commonProject.sourceSets.client.allSource)
 }
 
 publishing {

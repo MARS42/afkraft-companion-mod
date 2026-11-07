@@ -10,6 +10,11 @@ import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
+//? if <26.2 {
+/*import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+*///?}
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -120,6 +125,28 @@ public class AFKContainerConfigData extends SavedData {
     public static AFKContainerConfigData getConfig(MinecraftServer server) {
         return SavedDataAdapter.getOrCreateConfig(server);
     }
+
+    //? if <26.2 {
+    /*public static AFKContainerConfigData load(CompoundTag tag, HolderLookup.Provider registries) {
+        var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+        return CODEC.parse(ops, tag)
+                .resultOrPartial(err -> log.error("Failed to decode AFKContainerConfigData: {}", err))
+                .orElseGet(AFKContainerConfigData::new);
+    }
+
+    @Override
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+        CODEC.encodeStart(ops, this)
+                .resultOrPartial(err -> log.error("Failed to encode AFKContainerConfigData: {}", err))
+                .ifPresent(encoded -> {
+                    if (encoded instanceof CompoundTag compound) {
+                        compound.getAllKeys().forEach(key -> tag.put(key, compound.get(key)));
+                    }
+                });
+        return tag;
+    }
+    *///?}
 
     public void set(ServerPlayer player, BlockPos pos, boolean active) {
         setPositionalMode(player, pos, active ? ContainerTrackingMode.CONTAINER : ContainerTrackingMode.OFF);

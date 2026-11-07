@@ -16,15 +16,20 @@ import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+//? if >=26.2 {
 import net.minecraft.server.players.NameAndId;
+import net.minecraft.world.level.storage.LevelData;
+//?} else {
+/*import net.minecraft.world.entity.EquipmentSlot;
+*///?}
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.storage.LevelData;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -54,53 +59,93 @@ public final class WorldAndEntityAdapter {
         return Identifier.parse(raw);
     }
 
+    public static ServerLevel serverLevel(ServerPlayer player) {
+        //? if >=26.2 {
+        return player.level();
+        //?} else {
+        /*return player.serverLevel();
+        *///?}
+    }
+
     public static UUID profileId(GameProfile profile) {
+        //? if >=26.2 {
         return profile.id();
+        //?} else {
+        /*return profile.getId();
+        *///?}
     }
 
     public static String profileName(GameProfile profile) {
+        //? if >=26.2 {
         return profile.name();
+        //?} else {
+        /*return profile.getName();
+        *///?}
     }
 
     public static UUID playerId(Player player) {
-        return player.getGameProfile().id();
+        return profileId(player.getGameProfile());
     }
 
     public static String playerName(Player player) {
-        return player.getGameProfile().name();
+        return profileName(player.getGameProfile());
     }
 
     public static boolean isSingleplayerOwner(MinecraftServer server, ServerPlayer player) {
+        //? if >=26.2 {
         return server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
+        //?} else {
+        /*return server.isSingleplayerOwner(player.getGameProfile());
+        *///?}
     }
 
     public static Identifier dimensionId(Level level) {
+        //? if >=1.21.11 {
         return level.dimension().identifier();
+        //?} else {
+        /*return level.dimension().location();
+        *///?}
     }
 
     public static DimensionKey dimensionKey(Level level) {
-        return new DimensionKey(level.dimension().identifier().toString());
+        return new DimensionKey(dimensionId(level).toString());
     }
 
     public static String dimensionString(Level level) {
-        return level.dimension().identifier().toString();
+        return dimensionId(level).toString();
     }
 
     public static Optional<BlockCoord> resolveDimensionSpawn(ServerLevel level) {
+        //? if >=26.2 {
         LevelData.RespawnData respawnData = level.getRespawnData();
         if (respawnData != null && respawnData.dimension().equals(level.dimension())) {
             BlockPos pos = respawnData.pos();
             return Optional.of(new BlockCoord(pos.getX(), pos.getY(), pos.getZ()));
         }
         return Optional.empty();
+        //?} else {
+        /*if (level.dimension().equals(Level.OVERWORLD)) {
+            BlockPos pos = level.getSharedSpawnPos();
+            return Optional.of(new BlockCoord(pos.getX(), pos.getY(), pos.getZ()));
+        }
+        return Optional.empty();
+        *///?}
     }
 
     public static int minY(Level level) {
+        //? if >=26.2 {
         return level.getMinY();
+        //?} else {
+        /*return level.getMinBuildHeight();
+        *///?}
     }
 
     public static int maxY(Level level) {
+        //? if >=26.2 {
         return level.getMaxY();
+        //?} else {
+        /*return level.getMaxBuildHeight();
+        *///?}
     }
 
     public static int spawnableChunkCount(ServerChunkCache chunkCache, NaturalSpawner.SpawnState lastSpawnState) {
@@ -114,7 +159,11 @@ public final class WorldAndEntityAdapter {
     }
 
     public static int handEquipmentSlotIndex(InteractionHand hand) {
+        //? if >=26.2 {
         return hand.asEquipmentSlot().getId();
+        //?} else {
+        /*return (hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND).getFilterFlag();
+        *///?}
     }
 
     public static Component buildClickableCommandWord(
@@ -128,8 +177,13 @@ public final class WorldAndEntityAdapter {
                         .withColor(color)
                         .withBold(true)
                         .withUnderlined(true)
+                        //? if >=26.2 {
                         .withClickEvent(new ClickEvent.RunCommand(command))
                         .withHoverEvent(new HoverEvent.ShowText(Component.literal(hoverTooltip)))
+                        //?} else {
+                        /*.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hoverTooltip)))
+                        *///?}
                 );
     }
 
@@ -145,7 +199,19 @@ public final class WorldAndEntityAdapter {
         return BuiltInRegistries.ENTITY_TYPE.getKey(entityType).toString();
     }
 
+    public static boolean isSuccessfulBlockPlacement(InteractionResult result) {
+        //? if >=26.2 {
+        return result == InteractionResult.SUCCESS;
+        //?} else {
+        /*return result != null && result.indicateItemUse();
+        *///?}
+    }
+
     public static void scheduleNextServerTask(MinecraftServer server, Runnable task) {
+        //? if >=26.2 {
         server.schedule(new TickTask(server.getTickCount(), task));
+        //?} else {
+        /*server.tell(new TickTask(server.getTickCount(), task));
+        *///?}
     }
 }

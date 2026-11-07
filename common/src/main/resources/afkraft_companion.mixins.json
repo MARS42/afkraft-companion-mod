@@ -1,14 +1,16 @@
 {
 	"required": true,
 	"package": "com.mars4two.ikang.mixin",
-	"compatibilityLevel": "JAVA_25",
+	"compatibilityLevel": "${mixin_compat_level}",
 	"mixins": [
 		"BlockItemMixin",
 		"BlockEntityMixin",
+		"ContainerBlockRemoveMixin",
 		"ShulkerBoxBlockMixin",
 		"PlayerAttackMixin",
 		"PlayerSnapshotMixin",
 		"PlayerInventoryMixin",
+		"HotbarSelectionPacketMixin",
 		"LivingEntityInvoker"
 	],
 	"injectors": {

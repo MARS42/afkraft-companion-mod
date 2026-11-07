@@ -10,7 +10,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+//? if >=26.2 {
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+//?} else {
+/*import net.neoforged.neoforge.event.level.BlockEvent;
+*///?}
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -48,7 +52,11 @@ public final class NeoForgeBlockInteractionHooks implements BlockInteractionHook
         NeoForge.EVENT_BUS.addListener(
                 EventPriority.LOWEST,
                 false,
+                //? if >=26.2 {
                 BreakBlockEvent.class,
+                //?} else {
+                /*BlockEvent.BreakEvent.class,
+                *///?}
                 event -> {
                     if (event.getLevel() instanceof ServerLevel serverLevel
                             && event.getPlayer() instanceof ServerPlayer serverPlayer) {

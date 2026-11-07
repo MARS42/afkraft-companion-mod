@@ -22,11 +22,19 @@ public final class NbtCompatAdapter {
         if (tag == null || key == null) {
             return Optional.empty();
         }
+        //? if >=26.2 {
         Optional<String> raw = tag.getString(key);
         if (raw.isEmpty() || raw.get().isBlank()) {
             return Optional.empty();
         }
         return raw;
+        //?} else {
+        /*if (!tag.contains(key, net.minecraft.nbt.Tag.TAG_STRING)) {
+            return Optional.empty();
+        }
+        String raw = tag.getString(key);
+        return raw.isBlank() ? Optional.empty() : Optional.of(raw);
+        *///?}
     }
 
     public static Optional<String> getBlockEntityCustomString(BlockEntity blockEntity, String key) {

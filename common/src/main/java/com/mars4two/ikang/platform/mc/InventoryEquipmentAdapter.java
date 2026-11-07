@@ -4,6 +4,8 @@ import com.mars4two.ikang.core.snapshots.model.RawEnchantment;
 import com.mars4two.ikang.core.snapshots.model.RawItemStack;
 import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Nameable;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
@@ -25,7 +27,8 @@ public final class InventoryEquipmentAdapter {
     }
 
     public static RawItemStack mapItemStack(int slot, ItemStack itemStack) {
-        var customName = itemStack.getCustomName() != null ? itemStack.getCustomName().getString() : "";
+        Component customNameComponent = itemStack.get(DataComponents.CUSTOM_NAME);
+        var customName = customNameComponent != null ? customNameComponent.getString() : "";
 
         var enchantmentHolders = itemStack.getEnchantments().keySet();
         List<RawEnchantment> enchantments = new ArrayList<>(enchantmentHolders.size());
@@ -54,17 +57,19 @@ public final class InventoryEquipmentAdapter {
     }
 
     public static List<RawItemStack> extractHotbarItems(NonNullList<ItemStack> items) {
-        List<RawItemStack> rawItems = new ArrayList<>(Inventory.SELECTION_SIZE);
-        for (int i = 0; i < Inventory.SELECTION_SIZE; i++) {
+        int selectionSize = Inventory.getSelectionSize();
+        List<RawItemStack> rawItems = new ArrayList<>(selectionSize);
+        for (int i = 0; i < selectionSize; i++) {
             rawItems.add(mapItemStack(i, items.get(i)));
         }
         return rawItems;
     }
 
     public static List<RawItemStack> extractMainInventoryItems(NonNullList<ItemStack> items) {
-        int size = Math.max(0, items.size() - Inventory.SELECTION_SIZE);
+        int selectionSize = Inventory.getSelectionSize();
+        int size = Math.max(0, items.size() - selectionSize);
         List<RawItemStack> rawItems = new ArrayList<>(size);
-        for (int i = Inventory.SELECTION_SIZE; i < items.size(); i++) {
+        for (int i = selectionSize; i < items.size(); i++) {
             rawItems.add(mapItemStack(i, items.get(i)));
         }
         return rawItems;
@@ -83,7 +88,11 @@ public final class InventoryEquipmentAdapter {
     }
 
     public static int getSelectedHotbarSlot(Inventory inventory) {
+        //? if >=26.2 {
         return inventory.getSelectedSlot();
+        //?} else {
+        /*return inventory.selected;
+        *///?}
     }
 
     public static boolean isHotbarSlot(int slot) {
@@ -94,6 +103,11 @@ public final class InventoryEquipmentAdapter {
         if (nameable == null || !nameable.hasCustomName()) {
             return null;
         }
+        //? if >=26.2 {
         return nameable.getPlainTextName();
+        //?} else {
+        /*var customName = nameable.getCustomName();
+        return customName != null ? customName.getString() : null;
+        *///?}
     }
 }

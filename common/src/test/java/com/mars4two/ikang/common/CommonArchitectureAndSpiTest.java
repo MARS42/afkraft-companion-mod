@@ -1,5 +1,7 @@
 package com.mars4two.ikang.common;
 
+import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
+import net.minecraft.world.InteractionResult;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -15,10 +17,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CommonArchitectureAndSpiTest {
 
-    private static final Path COMMON_ROOT = Path.of(System.getProperty("user.dir"));
+    private static final Path NODE_OR_MODULE_DIR = Path.of(System.getProperty("user.dir"));
+    private static final Path COMMON_ROOT = resolveCommonBranchRoot(NODE_OR_MODULE_DIR);
     private static final Path REPO_ROOT = COMMON_ROOT.getParent();
     private static final Path MAIN_JAVA = COMMON_ROOT.resolve("src/main/java");
     private static final Path CLIENT_JAVA = COMMON_ROOT.resolve("src/client/java");
+    private static final Path BUILD_DIR = NODE_OR_MODULE_DIR.resolve("build");
+
+    private static Path resolveCommonBranchRoot(Path workingDir) {
+        String explicit = System.getProperty("afkraft.commonBranchRoot");
+        if (explicit != null && !explicit.isBlank()) {
+            return Path.of(explicit);
+        }
+        if (workingDir.getParent() != null
+                && "versions".equals(workingDir.getParent().getFileName().toString())
+                && workingDir.getParent().getParent() != null) {
+            return workingDir.getParent().getParent();
+        }
+        return workingDir;
+    }
 
     @Test
     void commonMainAndClientContainZeroModLoaderImports() throws IOException {
@@ -200,10 +217,10 @@ class CommonArchitectureAndSpiTest {
 
     @Test
     void compiledCommonBytecodeContainsZeroLoaderOrClientLeakage() throws IOException {
-        Path mainClassesDir = COMMON_ROOT.resolve("build/classes/java/main");
-        Path clientClassesDir = COMMON_ROOT.resolve("build/classes/java/client");
-        assertTrue(Files.isDirectory(mainClassesDir), "Expected compiled main classes directory");
-        assertTrue(Files.isDirectory(clientClassesDir), "Expected compiled client classes directory");
+        Path mainClassesDir = BUILD_DIR.resolve("classes/java/main");
+        Path clientClassesDir = BUILD_DIR.resolve("classes/java/client");
+        assertTrue(Files.isDirectory(mainClassesDir), "Expected compiled main classes directory: " + mainClassesDir);
+        assertTrue(Files.isDirectory(clientClassesDir), "Expected compiled client classes directory: " + clientClassesDir);
 
         List<Path> mainClasses = collectFilesWithSuffix(mainClassesDir, ".class");
         List<Path> clientClasses = collectFilesWithSuffix(clientClassesDir, ".class");
@@ -266,6 +283,105 @@ class CommonArchitectureAndSpiTest {
                 countOccurrences(clientSource, ".registerClientReceiver("),
                 "Every registered clientbound payload in PayloadRegister must have a client receiver in AFKraftCompanionClient"
         );
+    }
+
+    @Test
+    void stonecutterEndpointsIdeRunsCiAndVersioningGuideContract() throws IOException {
+        Path stonecutterGradle = REPO_ROOT.resolve("stonecutter.gradle");
+        assertTrue(Files.isRegularFile(stonecutterGradle), "Missing root stonecutter.gradle controller");
+        String controllerContent = Files.readString(stonecutterGradle);
+        assertTrue(controllerContent.contains("stonecutter.active"), "stonecutter.gradle must declare active project");
+        assertTrue(controllerContent.contains("chiseledBuild"), "stonecutter.gradle must register chiseledBuild");
+
+        List<String> requiredPropsKeys = List.of(
+                "minecraft_version=",
+                "java_version=",
+                "mixin_compat_level=",
+                "neoform_version=",
+                "neoforge_version=",
+                "fabric_api_version=",
+                "fabric_mc_range=",
+                "neoforge_mc_range=",
+                "neoforge_loader_range="
+        );
+        for (String endpoint : List.of("1.21.1", "26.2")) {
+            Path propsPath = REPO_ROOT.resolve("versions").resolve(endpoint).resolve("gradle.properties");
+            assertTrue(Files.isRegularFile(propsPath), "Missing endpoint properties: " + propsPath);
+            String propsContent = Files.readString(propsPath);
+            for (String key : requiredPropsKeys) {
+                assertTrue(propsContent.contains(key), "Missing key " + key + " in " + propsPath);
+            }
+        }
+
+        String nodeName = NODE_OR_MODULE_DIR.getFileName().toString();
+        int expectedClassMajor = "1.21.1".equals(nodeName) ? 65 : 69;
+        for (Path classesDir : List.of(BUILD_DIR.resolve("classes/java/main"), BUILD_DIR.resolve("classes/java/client"))) {
+            for (Path cls : collectFilesWithSuffix(classesDir, ".class")) {
+                byte[] bytes = Files.readAllBytes(cls);
+                int major = ((bytes[6] & 0xFF) << 8) | (bytes[7] & 0xFF);
+                assertEquals(
+                        expectedClassMajor,
+                        major,
+                        () -> "Unexpected bytecode major version for node " + nodeName + " in " + classesDir.relativize(cls)
+                );
+            }
+        }
+
+        String fabricBuild = Files.readString(REPO_ROOT.resolve("fabric/build.gradle"));
+        assertTrue(fabricBuild.contains("ideConfigGenerated(true)"), "fabric/build.gradle must enable ideConfigGenerated(true)");
+        assertTrue(fabricBuild.contains("net.fabricmc.fabric-loom-remap"), "fabric/build.gradle must support obfuscated loom-remap");
+        assertTrue(fabricBuild.contains("net.fabricmc.fabric-loom"), "fabric/build.gradle must support unobfuscated loom");
+
+        String neoforgeBuild = Files.readString(REPO_ROOT.resolve("neoforge/build.gradle"));
+        assertTrue(neoforgeBuild.contains("runs {"), "neoforge/build.gradle must configure IDE runs block");
+
+        assertFalse(
+                Files.exists(REPO_ROOT.resolve(".idea/runConfigurations/Minecraft_Client.xml")),
+                "Legacy single-module Minecraft_Client.xml run config must be removed"
+        );
+        assertFalse(
+                Files.exists(REPO_ROOT.resolve(".idea/runConfigurations/Minecraft_Server.xml")),
+                "Legacy single-module Minecraft_Server.xml run config must be removed"
+        );
+
+        String workflowYaml = Files.readString(REPO_ROOT.resolve(".github/workflows/build.yml"));
+        assertTrue(workflowYaml.contains("21") && workflowYaml.contains("25"), "CI workflow must provision Java 21 and Java 25");
+        assertTrue(workflowYaml.contains("chiseledBuild"), "CI workflow must execute chiseledBuild");
+
+        Path versioningGuide = REPO_ROOT.resolve("VERSIONING.md");
+        assertTrue(Files.isRegularFile(versioningGuide), "Missing root VERSIONING.md maintainer guide");
+        String guideContent = Files.readString(versioningGuide);
+        assertTrue(guideContent.contains("versions/") && guideContent.contains("chiseledBuild"), "VERSIONING.md must document version onboarding and chiseledBuild");
+    }
+
+    @Test
+    void blockItemMixinUsesVersionAwareServerPlacementResultPredicate() throws IOException {
+        Path blockItemMixin = MAIN_JAVA.resolve("com/mars4two/ikang/mixin/BlockItemMixin.java");
+        assertTrue(Files.isRegularFile(blockItemMixin), "Missing BlockItemMixin.java");
+        String mixinSource = Files.readString(blockItemMixin);
+        assertFalse(
+                mixinSource.contains("!= InteractionResult.SUCCESS"),
+                "BlockItemMixin must not hardcode != InteractionResult.SUCCESS because 1.21.1 BlockItem.place returns CONSUME on server"
+        );
+        assertTrue(
+                mixinSource.contains("WorldAndEntityAdapter.isSuccessfulBlockPlacement("),
+                "BlockItemMixin must delegate placement result check to WorldAndEntityAdapter.isSuccessfulBlockPlacement"
+        );
+
+        assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(null));
+        assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.PASS));
+        assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.FAIL));
+        assertTrue(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.SUCCESS));
+        //? if >=26.2 {
+        assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.TRY_WITH_EMPTY_HAND));
+        //?} else {
+        /*assertTrue(
+                WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.sidedSuccess(false)),
+                "1.21.1 server-side BlockItem.place returns sidedSuccess(false) == CONSUME and must be treated as successful placement"
+        );
+        assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.CONSUME_PARTIAL));
+        assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.SUCCESS_NO_ITEM_USED));
+        *///?}
     }
 
     private static int countOccurrences(String text, String needle) {

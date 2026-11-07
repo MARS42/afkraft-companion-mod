@@ -33,7 +33,11 @@ public final class FabricNetworkBridge implements NetworkBridge {
             CustomPacketPayload.Type<T> type,
             StreamCodec<? super RegistryFriendlyByteBuf, T> codec
     ) {
+        //? if >=26.2 {
         PayloadTypeRegistry.clientboundPlay().register(type, codec);
+        //?} else {
+        /*PayloadTypeRegistry.playS2C().register(type, codec);
+        *///?}
     }
 
     @Override
@@ -42,7 +46,11 @@ public final class FabricNetworkBridge implements NetworkBridge {
             StreamCodec<? super RegistryFriendlyByteBuf, T> codec,
             ServerPayloadHandler<T> handler
     ) {
+        //? if >=26.2 {
         PayloadTypeRegistry.serverboundPlay().register(type, codec);
+        //?} else {
+        /*PayloadTypeRegistry.playC2S().register(type, codec);
+        *///?}
         ServerPlayNetworking.registerGlobalReceiver(type, (payload, context) -> {
             MinecraftServer server = context.server();
             ServerPlayer player = context.player();

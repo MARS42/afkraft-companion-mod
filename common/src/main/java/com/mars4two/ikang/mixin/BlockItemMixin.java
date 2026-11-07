@@ -2,6 +2,7 @@ package com.mars4two.ikang.mixin;
 
 import com.mars4two.ikang.core.events.ServerEvents;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
+import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
@@ -22,7 +23,7 @@ public class BlockItemMixin {
 
     @Inject(method = "useOn", at = @At("RETURN"))
     private void useOn(UseOnContext context, CallbackInfoReturnable<InteractionResult> cir) {
-        if (cir.getReturnValue() != InteractionResult.SUCCESS) {
+        if (!WorldAndEntityAdapter.isSuccessfulBlockPlacement(cir.getReturnValue())) {
             return;
         }
         if (context.getLevel().isClientSide()) {

@@ -256,7 +256,7 @@ public final class ServerEvents {
     public static List<BlockPos> resolveAfkBlockPositions(BlockPos blockPos, BlockState blockState) {
         if (blockState.getBlock() instanceof ChestBlock
                 && blockState.getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
-            BlockPos connectedBlockPos = ChestBlock.getConnectedBlockPos(blockPos, blockState);
+            BlockPos connectedBlockPos = blockPos.relative(ChestBlock.getConnectedDirection(blockState));
             return List.of(blockPos, connectedBlockPos);
         }
 

@@ -15,7 +15,12 @@ import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mars4two.ikang.core.util.ServerPlayerAttackHook;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mojang.authlib.GameProfile;
+//? if >=26.2 {
 import net.minecraft.server.level.ServerLevel;
+//?} else {
+/*import net.minecraft.core.BlockPos;
+import net.minecraft.world.effect.MobEffects;
+*///?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
@@ -58,8 +63,15 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         @Override
         public RawPlayerStats stats() {
             ServerPlayer self = (ServerPlayer) (Object) PlayerSnapshotMixin.this;
+            //? if >=26.2 {
+            String gameModeName = self.gameMode() != null ? self.gameMode().getName() : "";
+            //?} else {
+            /*String gameModeName = self.gameMode.getGameModeForPlayer() != null
+                    ? self.gameMode.getGameModeForPlayer().getName()
+                    : "";
+            *///?}
             return new RawPlayerStats(
-                    self.gameMode() != null ? self.gameMode().getName() : "",
+                    gameModeName,
                     getHealth(),
                     getMaxHealth(),
                     getFoodData().getFoodLevel(),
@@ -120,9 +132,15 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         }
     };
 
+    //? if >=26.2 {
     protected PlayerSnapshotMixin(Level level, GameProfile gameProfile) {
         super(level, gameProfile);
     }
+    //?} else {
+    /*protected PlayerSnapshotMixin(Level level, BlockPos pos, float yRot, GameProfile gameProfile) {
+        super(level, pos, yRot, gameProfile);
+    }
+    *///?}
 
     @Override
     public void afkraft_companion$onBeforeAttack(Entity target) {
@@ -194,10 +212,17 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
+    //? if >=26.2 {
     @Inject(at = @At("TAIL"), method = "hurtServer")
     private void onHurtServer(ServerLevel level, DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
+    //?} else {
+    /*@Inject(at = @At("TAIL"), method = "hurt")
+    private void onHurt(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
+        ingestManager.ingestPlayerStats(afkraft_companion$statsView);
+    }
+    *///?}
 
     @Inject(at = @At("TAIL"), method = "tick")
     private void onTick(CallbackInfo ci) {
@@ -216,11 +241,16 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
 
     @Unique
     private boolean afkraft_companion$canCriticalAttack(Entity entity) {
+        //? if >=26.2 {
+        boolean mobilityRestricted = this.isMobilityRestricted();
+        //?} else {
+        /*boolean mobilityRestricted = this.hasEffect(MobEffects.BLINDNESS);
+        *///?}
         return this.fallDistance > 0.0
                 && !this.onGround()
                 && !this.onClimbable()
                 && !this.isInWater()
-                && !this.isMobilityRestricted()
+                && !mobilityRestricted
                 && !this.isPassenger()
                 && entity instanceof LivingEntity
                 && !this.isSprinting();

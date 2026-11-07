@@ -58,16 +58,12 @@ public interface BlockEntityWrapper {
             return List.of();
         }
 
-        var iterator = container.iterator();
         List<RawItemStack> items = new ArrayList<>();
-
-        int index = 0;
-        while (iterator.hasNext()) {
-            var itemStack = iterator.next();
+        for (int index = 0, size = container.getContainerSize(); index < size; index++) {
+            var itemStack = container.getItem(index);
             if (!itemStack.isEmpty()) {
                 items.add(ItemStackMapper.from(index, itemStack));
             }
-            index++;
         }
         return items;
     }

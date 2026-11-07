@@ -2,7 +2,11 @@ package com.mars4two.ikang.client.core.screens;
 
 import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
 import net.minecraft.ChatFormatting;
+//? if >=26.2 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -68,6 +72,7 @@ public class AuthorizeServerRequestScreen extends Screen {
         handleDecision(false);
     }
 
+    //? if >=26.2 {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
@@ -75,6 +80,15 @@ public class AuthorizeServerRequestScreen extends Screen {
         int textY = this.height / 2 - 20;
         ClientUiAdapter.drawCenteredText(graphics, this.font, message, this.width / 2, textY, 0xFFFFFFFF);
     }
+    //?} else {
+    /*@Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float a) {
+        super.render(graphics, mouseX, mouseY, a);
+
+        int textY = this.height / 2 - 20;
+        ClientUiAdapter.drawCenteredText(graphics, this.font, message, this.width / 2, textY, 0xFFFFFFFF);
+    }
+    *///?}
 
     @Override
     public boolean isPauseScreen() {

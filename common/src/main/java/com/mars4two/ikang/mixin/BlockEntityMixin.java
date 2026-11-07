@@ -9,13 +9,15 @@ import com.mars4two.ikang.core.util.BlockEntityWrapper;
 import com.mars4two.ikang.core.util.ContainerView;
 import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+//? if >=26.2 {
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+//?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -116,6 +118,7 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
         }
     }
 
+    //? if >=26.2 {
     @Inject(at = @At("HEAD"), method = "preRemoveSideEffects")
     private void onPreRemoveSideEffects(BlockPos pos, BlockState state, CallbackInfo ci) {
         BlockEntity self = (BlockEntity) (Object) this;
@@ -133,6 +136,7 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
         }
         config.deleteFixedContainersAt(dimensionId, pos);
     }
+    //?}
 
     @Override
     public RawContainerType afkraft_companion$type() {
@@ -140,7 +144,7 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
 
         if ((Object) this instanceof ChestBlockEntity chestBlockEntity) {
             var chestType = chestBlockEntity.getBlockState().getValue(ChestBlock.TYPE);
-            var connectedPos = ChestBlock.getConnectedBlockPos(chestBlockEntity.getBlockPos(), chestBlockEntity.getBlockState());
+            var connectedPos = chestBlockEntity.getBlockPos().relative(ChestBlock.getConnectedDirection(chestBlockEntity.getBlockState()));
             var connectedCoord = new BlockCoord(connectedPos.getX(), connectedPos.getY(), connectedPos.getZ());
 
             switch (chestType) {

@@ -136,7 +136,8 @@ public final class ClientEvents {
                         initialMode = ContainerTrackingMode.PORTABLE_CONTAINER;
                     }
 
-                    var portableButton = CycleButton.<ContainerTrackingMode>builder(
+                    //? if >=26.2 {
+                    var portableButtonBuilder = CycleButton.<ContainerTrackingMode>builder(
                                     ClientEvents::formatPortableModeLabel,
                                     initialMode
                             )
@@ -144,7 +145,19 @@ public final class ClientEvents {
                                     ContainerTrackingMode.OFF,
                                     ContainerTrackingMode.PORTABLE_CONTAINER,
                                     ContainerTrackingMode.LOAD_STATION
+                            );
+                    //?} else {
+                    /*var portableButtonBuilder = CycleButton.<ContainerTrackingMode>builder(
+                                    ClientEvents::formatPortableModeLabel
                             )
+                            .withValues(
+                                    ContainerTrackingMode.OFF,
+                                    ContainerTrackingMode.PORTABLE_CONTAINER,
+                                    ContainerTrackingMode.LOAD_STATION
+                            )
+                            .withInitialValue(initialMode);
+                    *///?}
+                    var portableButton = portableButtonBuilder
                             .create(buttonX, buttonY, 84, 16, Component.literal("AFK"),
                                     (b, mode) -> onClickButton(screen, menu, mode));
                     portableButton.active = afkraftEnabled.get();

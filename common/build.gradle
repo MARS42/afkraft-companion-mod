@@ -1,9 +1,12 @@
 plugins {
 	id 'java-library'
+	id 'dev.kikugie.stonecutter'
 	id 'net.neoforged.moddev'
 }
 
-version = project.mod_version
+def javaVersion = project.java_version as int
+
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 
 base {
@@ -30,6 +33,7 @@ sourceSets {
 neoForge {
 	neoFormVersion = project.neoform_version
 	addModdingDependenciesTo sourceSets.client
+	addModdingDependenciesTo sourceSets.test
 }
 
 dependencies {
@@ -47,14 +51,35 @@ dependencies {
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
+tasks.named("processResources", ProcessResources).configure {
+	def mixinCompat = project.mixin_compat_level
+	inputs.property "mixin_compat_level", mixinCompat
+
+	filesMatching("afkraft_companion.mixins.json") {
+		expand "mixin_compat_level": mixinCompat
+	}
+}
+
+tasks.named("processClientResources", ProcessResources).configure {
+	def mixinCompat = project.mixin_compat_level
+	inputs.property "mixin_compat_level", mixinCompat
+
+	filesMatching("afkraft_companion.client.mixins.json") {
+		expand "mixin_compat_level": mixinCompat
+	}
+}
+
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+	it.options.release = javaVersion
 	it.options.encoding = 'UTF-8'
 }
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(javaVersion)
+	}
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
 }
 
 tasks.named('assemble') {
@@ -63,5 +88,6 @@ tasks.named('assemble') {
 
 test {
 	dependsOn tasks.named('clientClasses')
+	systemProperty 'afkraft.commonBranchRoot', rootProject.file('common').absolutePath
 	useJUnitPlatform()
 }

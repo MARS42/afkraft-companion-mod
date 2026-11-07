@@ -21,13 +21,13 @@ config="afkraft_companion.client.mixins.json"
 [[dependencies.afkraft_companion]]
 modId="neoforge"
 type="required"
-versionRange="[26.2,)"
+versionRange="${neoforge_loader_range}"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.afkraft_companion]]
 modId="minecraft"
 type="required"
-versionRange="[26.2,)"
+versionRange="${neoforge_mc_range}"
 ordering="NONE"
 side="BOTH"

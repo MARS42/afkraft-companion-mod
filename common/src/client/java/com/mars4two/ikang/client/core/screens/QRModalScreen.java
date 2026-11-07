@@ -5,10 +5,14 @@ import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+//? if >=26.2 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.KeyEvent;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -100,10 +104,29 @@ public class QRModalScreen extends Screen {
         this.addRenderableWidget(cancelButton);
     }
 
+    //? if >=26.2 {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
 
+        renderModalContents(graphics);
+    }
+    //?} else {
+    /*@Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float a) {
+        super.render(graphics, mouseX, mouseY, a);
+
+        renderModalContents(graphics);
+    }
+    *///?}
+
+    private void renderModalContents(
+            //? if >=26.2 {
+            GuiGraphicsExtractor graphics
+            //?} else {
+            /*GuiGraphics graphics
+            *///?}
+    ) {
         if (!showQr) {
             ClientUiAdapter.drawCenteredText(graphics, this.font, allowShowQrMessage1, this.width / 2, this.height / 2 - 40, 0xFFFFFFFF);
             ClientUiAdapter.drawCenteredText(graphics, this.font, allowShowQrMessage2, this.width / 2, this.height / 2 - 20, 0xFF00FF00);
@@ -134,6 +157,7 @@ public class QRModalScreen extends Screen {
         this.onClose();
     }
 
+    //? if >=26.2 {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (ClientUiAdapter.isEscapeKey(event) && this.shouldCloseOnEsc()) {
@@ -142,6 +166,16 @@ public class QRModalScreen extends Screen {
         }
         return super.keyPressed(event);
     }
+    //?} else {
+    /*@Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (ClientUiAdapter.isEscapeKey(keyCode) && this.shouldCloseOnEsc()) {
+            this.onCancel();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+    *///?}
 
     @Override
     public boolean isPauseScreen() {

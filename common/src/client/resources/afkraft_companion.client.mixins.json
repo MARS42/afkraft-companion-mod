@@ -1,7 +1,7 @@
 {
 	"required": true,
 	"package": "com.mars4two.ikang.client.mixin",
-	"compatibilityLevel": "JAVA_25",
+	"compatibilityLevel": "${mixin_compat_level}",
 	"client": [
 		"AbstractContainerScreenAccessor"
 	],

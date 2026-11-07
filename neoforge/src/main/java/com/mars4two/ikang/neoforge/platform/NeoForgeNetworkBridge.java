@@ -1,5 +1,6 @@
 package com.mars4two.ikang.neoforge.platform;
 
+import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mars4two.ikang.platform.services.NetworkBridge;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -37,11 +38,18 @@ public final class NeoForgeNetworkBridge implements NetworkBridge {
                 registrar.playToClient(type, codec, (payload, context) ->
                         handler.handle(payload, context.player())
                 );
-            } else if (clientSide) {
-                registrar.playToClient(type, codec, (payload, context) -> {
-                });
             } else {
-                registrar.playToClient(type, codec);
+                //? if >=26.2 {
+                if (clientSide) {
+                    registrar.playToClient(type, codec, (payload, context) -> {
+                    });
+                } else {
+                    registrar.playToClient(type, codec);
+                }
+                //?} else {
+                /*registrar.playToClient(type, codec, (payload, context) -> {
+                });
+                *///?}
             }
         }
     }
@@ -54,7 +62,7 @@ public final class NeoForgeNetworkBridge implements NetworkBridge {
         void registerOn(PayloadRegistrar registrar) {
             registrar.playToServer(type, codec, (payload, context) -> {
                 if (context.player() instanceof ServerPlayer serverPlayer) {
-                    MinecraftServer server = serverPlayer.level().getServer();
+                    MinecraftServer server = WorldAndEntityAdapter.serverLevel(serverPlayer).getServer();
                     if (server != null) {
                         handler.handle(payload, server, serverPlayer);
                     }

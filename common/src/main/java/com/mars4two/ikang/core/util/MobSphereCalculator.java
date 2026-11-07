@@ -35,7 +35,7 @@ public final class MobSphereCalculator {
     }
 
     public static RawMobSphere calculate(ServerPlayer player) {
-        ServerLevel level = player.level();
+        ServerLevel level = WorldAndEntityAdapter.serverLevel(player);
         ServerChunkCache chunkCache = level.getChunkSource();
         NaturalSpawner.SpawnState lastSpawnState = chunkCache.getLastSpawnState();
 
