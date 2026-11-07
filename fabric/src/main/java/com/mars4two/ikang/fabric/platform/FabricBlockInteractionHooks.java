@@ -1,7 +1,7 @@
 package com.mars4two.ikang.fabric.platform;
 
 import com.mars4two.ikang.platform.services.BlockInteractionHooks;
-//? if >=26.2 {
+//? if >=1.21.11 {
 import net.fabricmc.fabric.api.event.player.BlockEvents;
 //?} else {
 /*import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -18,7 +18,7 @@ public final class FabricBlockInteractionHooks implements BlockInteractionHooks 
 
     @Override
     public void onBlockUse(BlockUseListener listener) {
-        //? if >=26.2 {
+        //? if >=1.21.11 {
         BlockEvents.USE_WITHOUT_ITEM.register((state, level, pos, player, hitResult) -> {
             if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
                 listener.onUse(serverPlayer, serverLevel, pos, state, hitResult);

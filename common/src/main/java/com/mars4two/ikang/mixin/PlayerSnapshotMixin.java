@@ -15,11 +15,14 @@ import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mars4two.ikang.core.util.ServerPlayerAttackHook;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mojang.authlib.GameProfile;
-//? if >=26.2 {
+//? if >=1.21.2 {
 import net.minecraft.server.level.ServerLevel;
-//?} else {
+//?}
+//? if <1.21.6 {
 /*import net.minecraft.core.BlockPos;
-import net.minecraft.world.effect.MobEffects;
+*///?}
+//? if <1.21.9 {
+/*import net.minecraft.world.effect.MobEffects;
 *///?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
@@ -63,7 +66,7 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         @Override
         public RawPlayerStats stats() {
             ServerPlayer self = (ServerPlayer) (Object) PlayerSnapshotMixin.this;
-            //? if >=26.2 {
+            //? if >=1.21.5 {
             String gameModeName = self.gameMode() != null ? self.gameMode().getName() : "";
             //?} else {
             /*String gameModeName = self.gameMode.getGameModeForPlayer() != null
@@ -132,7 +135,7 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         }
     };
 
-    //? if >=26.2 {
+    //? if >=1.21.6 {
     protected PlayerSnapshotMixin(Level level, GameProfile gameProfile) {
         super(level, gameProfile);
     }
@@ -212,7 +215,7 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
-    //? if >=26.2 {
+    //? if >=1.21.2 {
     @Inject(at = @At("TAIL"), method = "hurtServer")
     private void onHurtServer(ServerLevel level, DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         ingestManager.ingestPlayerStats(afkraft_companion$statsView);
@@ -241,7 +244,7 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
 
     @Unique
     private boolean afkraft_companion$canCriticalAttack(Entity entity) {
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         boolean mobilityRestricted = this.isMobilityRestricted();
         //?} else {
         /*boolean mobilityRestricted = this.hasEffect(MobEffects.BLINDNESS);

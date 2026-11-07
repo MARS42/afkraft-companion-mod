@@ -1,8 +1,8 @@
 package com.mars4two.ikang.fabric.platform;
 
 import com.mars4two.ikang.platform.services.ServerLifecycleHooks;
-import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -22,6 +22,6 @@ public final class FabricServerLifecycleHooks implements ServerLifecycleHooks {
 
     @Override
     public void onPlayerJoin(Consumer<ServerPlayer> listener) {
-        ServerPlayerEvents.JOIN.register(listener::accept);
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> listener.accept(handler.getPlayer()));
     }
 }

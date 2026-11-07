@@ -1,6 +1,6 @@
 package com.mars4two.ikang.neoforge.client.platform;
 
-//? if >=26.2 {
+//? if >=1.21.11 {
 import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
 //?}
 import com.mars4two.ikang.client.platform.services.ClientCommandBridge;
@@ -14,7 +14,7 @@ public final class NeoForgeClientCommandBridge implements ClientCommandBridge {
     private static final SourceAccess<CommandSourceStack> SOURCE_ACCESS = new SourceAccess<>() {
         @Override
         public boolean hasAdminPermission(CommandSourceStack source) {
-            //? if >=26.2 {
+            //? if >=1.21.11 {
             return ClientUiAdapter.hasAdminPermission(source.permissions());
             //?} else {
             /*return source.hasPermission(2);

@@ -136,7 +136,7 @@ public final class ClientEvents {
                         initialMode = ContainerTrackingMode.PORTABLE_CONTAINER;
                     }
 
-                    //? if >=26.2 {
+                    //? if >=1.21.11 {
                     var portableButtonBuilder = CycleButton.<ContainerTrackingMode>builder(
                                     ClientEvents::formatPortableModeLabel,
                                     initialMode

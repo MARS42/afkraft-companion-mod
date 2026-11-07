@@ -1,6 +1,6 @@
 package com.mars4two.ikang.mixin;
 
-//? if <26.2 {
+//? if <1.21.5 {
 /*import com.mars4two.ikang.core.util.PlayerHotbarSyncHook;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,13 +13,13 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.spongepowered.asm.mixin.Mixin;
 
 /**
- * Captures hotbar slot changes on Minecraft 1.21.x where {@code ServerGamePacketListenerImpl}
+ * Captures hotbar slot changes on Minecraft 1.21.1–1.21.4 where {@code ServerGamePacketListenerImpl}
  * mutates {@code Inventory.selected} directly instead of calling {@code Inventory.setSelectedSlot}.
  */
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class HotbarSelectionPacketMixin {
 
-    //? if <26.2 {
+    //? if <1.21.5 {
     /*@Shadow
     public ServerPlayer player;
 

@@ -5,12 +5,14 @@ import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-//? if >=26.2 {
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.input.KeyEvent;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
+//? if >=1.21.9 {
+import net.minecraft.client.input.KeyEvent;
+//?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -104,7 +106,7 @@ public class QRModalScreen extends Screen {
         this.addRenderableWidget(cancelButton);
     }
 
-    //? if >=26.2 {
+    //? if >=26.1 {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
@@ -121,7 +123,7 @@ public class QRModalScreen extends Screen {
     *///?}
 
     private void renderModalContents(
-            //? if >=26.2 {
+            //? if >=26.1 {
             GuiGraphicsExtractor graphics
             //?} else {
             /*GuiGraphics graphics
@@ -157,7 +159,7 @@ public class QRModalScreen extends Screen {
         this.onClose();
     }
 
-    //? if >=26.2 {
+    //? if >=1.21.9 {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (ClientUiAdapter.isEscapeKey(event) && this.shouldCloseOnEsc()) {

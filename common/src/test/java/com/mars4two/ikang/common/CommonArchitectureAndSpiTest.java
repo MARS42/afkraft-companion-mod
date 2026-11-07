@@ -314,7 +314,7 @@ class CommonArchitectureAndSpiTest {
         }
 
         String nodeName = NODE_OR_MODULE_DIR.getFileName().toString();
-        int expectedClassMajor = "1.21.1".equals(nodeName) ? 65 : 69;
+        int expectedClassMajor = nodeName.startsWith("1.21") ? 65 : 69;
         for (Path classesDir : List.of(BUILD_DIR.resolve("classes/java/main"), BUILD_DIR.resolve("classes/java/client"))) {
             for (Path cls : collectFilesWithSuffix(classesDir, ".class")) {
                 byte[] bytes = Files.readAllBytes(cls);
@@ -372,7 +372,7 @@ class CommonArchitectureAndSpiTest {
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.PASS));
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.FAIL));
         assertTrue(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.SUCCESS));
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.TRY_WITH_EMPTY_HAND));
         //?} else {
         /*assertTrue(

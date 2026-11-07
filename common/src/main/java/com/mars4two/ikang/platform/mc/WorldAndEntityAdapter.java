@@ -16,7 +16,7 @@ import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-//? if >=26.2 {
+//? if >=1.21.9 {
 import net.minecraft.server.players.NameAndId;
 import net.minecraft.world.level.storage.LevelData;
 //?} else {
@@ -60,7 +60,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static ServerLevel serverLevel(ServerPlayer player) {
-        //? if >=26.2 {
+        //? if >=1.21.6 {
         return player.level();
         //?} else {
         /*return player.serverLevel();
@@ -68,7 +68,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static UUID profileId(GameProfile profile) {
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         return profile.id();
         //?} else {
         /*return profile.getId();
@@ -76,7 +76,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static String profileName(GameProfile profile) {
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         return profile.name();
         //?} else {
         /*return profile.getName();
@@ -92,7 +92,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static boolean isSingleplayerOwner(MinecraftServer server, ServerPlayer player) {
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         return server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
         //?} else {
         /*return server.isSingleplayerOwner(player.getGameProfile());
@@ -116,7 +116,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static Optional<BlockCoord> resolveDimensionSpawn(ServerLevel level) {
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         LevelData.RespawnData respawnData = level.getRespawnData();
         if (respawnData != null && respawnData.dimension().equals(level.dimension())) {
             BlockPos pos = respawnData.pos();
@@ -133,7 +133,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static int minY(Level level) {
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         return level.getMinY();
         //?} else {
         /*return level.getMinBuildHeight();
@@ -141,7 +141,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static int maxY(Level level) {
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         return level.getMaxY();
         //?} else {
         /*return level.getMaxBuildHeight();
@@ -159,9 +159,11 @@ public final class WorldAndEntityAdapter {
     }
 
     public static int handEquipmentSlotIndex(InteractionHand hand) {
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         return hand.asEquipmentSlot().getId();
-        //?} else {
+        //?} elif >=1.21.2 {
+        /*return (hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND).getId();
+        *///?} else {
         /*return (hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND).getFilterFlag();
         *///?}
     }
@@ -177,7 +179,7 @@ public final class WorldAndEntityAdapter {
                         .withColor(color)
                         .withBold(true)
                         .withUnderlined(true)
-                        //? if >=26.2 {
+                        //? if >=1.21.5 {
                         .withClickEvent(new ClickEvent.RunCommand(command))
                         .withHoverEvent(new HoverEvent.ShowText(Component.literal(hoverTooltip)))
                         //?} else {
@@ -200,7 +202,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static boolean isSuccessfulBlockPlacement(InteractionResult result) {
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         return result == InteractionResult.SUCCESS;
         //?} else {
         /*return result != null && result.indicateItemUse();
@@ -208,7 +210,7 @@ public final class WorldAndEntityAdapter {
     }
 
     public static void scheduleNextServerTask(MinecraftServer server, Runnable task) {
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         server.schedule(new TickTask(server.getTickCount(), task));
         //?} else {
         /*server.tell(new TickTask(server.getTickCount(), task));

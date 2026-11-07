@@ -10,7 +10,7 @@ import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-//? if <26.2 {
+//? if <1.21.5 {
 /*import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -126,7 +126,7 @@ public class AFKContainerConfigData extends SavedData {
         return SavedDataAdapter.getOrCreateConfig(server);
     }
 
-    //? if <26.2 {
+    //? if <1.21.5 {
     /*public static AFKContainerConfigData load(CompoundTag tag, HolderLookup.Provider registries) {
         var ops = registries.createSerializationContext(NbtOps.INSTANCE);
         return CODEC.parse(ops, tag)
