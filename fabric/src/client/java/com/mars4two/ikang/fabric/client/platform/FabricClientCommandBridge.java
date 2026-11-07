@@ -15,7 +15,9 @@ public final class FabricClientCommandBridge implements ClientCommandBridge {
         public boolean hasAdminPermission(FabricClientCommandSource source) {
             //? if >=1.21.11 {
             return ClientUiAdapter.hasAdminPermission(source.permissions());
-            //?} else {
+            //?} elif >=1.21.6 {
+            /*return source.getPlayer() != null && source.getPlayer().hasPermissions(2);
+            *///?} else {
             /*return source.hasPermission(2);
             *///?}
         }
