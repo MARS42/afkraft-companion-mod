@@ -72,6 +72,8 @@ Legacy single-module `.idea/runConfigurations/Minecraft_*.xml` files have been r
 
 ## Version Hotspot Reference
 
+> For the complete decision matrix on when to extend an existing adapter, create a new `platform.mc` adapter, or add a `platform.spi` loader interface, see [ADAPTERS.md](./ADAPTERS.md).
+
 When onboarding an intermediate version between `1.21.1` and `26.2` (or a future `26.x+` release), check the exact boundary where Mojang or the loaders changed an API instead of duplicating business logic:
 
 | Seam / File | Version Boundary | Notes |
