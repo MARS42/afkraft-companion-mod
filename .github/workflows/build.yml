@@ -1,19 +1,30 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
-
 name: build
-on: [pull_request, push]
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.idea/**'
+      - '.vscode/**'
+      - 'LICENSE'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  validate:
+    name: Validate Domain & Wrapper
     runs-on: ubuntu-24.04
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
+
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v6
+
       - name: setup jdk
         uses: actions/setup-java@v5
         with:
@@ -21,13 +32,77 @@ jobs:
             21
             25
           distribution: 'microsoft'
-          cache: 'gradle'
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v6
+
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: build all loaders and minecraft versions
-        run: ./gradlew chiseledBuild --no-daemon
-      - name: capture build artifacts
+
+      - name: verify pure domain
+        run: ./gradlew :domain:check --no-daemon
+
+  build:
+    name: Build MC ${{ matrix.version }}
+    needs: validate
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.21.1'
+          - '1.21.3'
+          - '1.21.4'
+          - '1.21.5'
+          - '1.21.8'
+          - '1.21.10'
+          - '1.21.11'
+          - '26.1.2'
+          - '26.2'
+          - '26.3'
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: |
+            21
+            25
+          distribution: 'microsoft'
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: build and test loader artifacts
+        run: ./gradlew :common:${{ matrix.version }}:test :fabric:${{ matrix.version }}:build :neoforge:${{ matrix.version }}:build --no-daemon
+
+      - name: capture version artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: Artifacts
+          name: artifacts-${{ matrix.version }}
+          path: |
+            fabric/build/libs/*.jar
+            neoforge/build/libs/*.jar
+
+  collect:
+    name: Collect All Release Artifacts
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: download all version artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: artifacts-*
+          path: build/libs
+          merge-multiple: true
+
+      - name: capture consolidated release bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: afkraft_companion-all-jars
           path: build/libs/*.jar
