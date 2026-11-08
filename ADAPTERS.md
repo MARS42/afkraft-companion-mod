@@ -18,15 +18,15 @@
 
 ## 1. Minecraft Versioning Mental Model
 
-1. **Mojang does not follow SemVer internally**: Minor "Game Drop" updates (`1.21.1` -> `1.21.2` -> `1.21.4` -> `1.21.5` -> `1.21.6` -> `1.21.9` -> `1.21.11` -> `26.1`) frequently change vanilla method signatures, `CompoundTag` return types, `DataComponents`, and `GuiGraphics` rendering APIs.
+1. **Mojang does not follow SemVer internally**: Minor "Game Drop" updates (`1.21.1` -> `1.21.2` -> `1.21.4` -> `1.21.5` -> `1.21.6` -> `1.21.9` -> `1.21.11` -> `26.1` -> `26.2` -> `26.3`) frequently change vanilla method signatures, `CompoundTag` return types, `DataComponents`, Mixin target methods, and `GuiGraphicsExtractor` rendering descriptors.
 2. **Compatibility Clusters ("Version Islands")**:
    - Not every patch breaks binary compatibility. Clusters such as `1.21`–`1.21.1`, `1.21.2`–`1.21.3`, `1.21.6`–`1.21.8`, `1.21.9`–`1.21.10`, and `26.1`–`26.1.2` share identical method descriptors for the classes this mod touches.
-   - Only create a new `versions/<mc_version>/gradle.properties` node when a Minecraft release breaks binary compatibility or loader metadata for our code.
+   - Only create a new `versions/<mc_version>/gradle.properties` node when a Minecraft release breaks binary compatibility (including bytecode descriptor changes such as `com.mojang.blaze3d.pipeline.RenderPipeline` moving to `com.mojang.renderpearl.api.pipeline.RenderPipeline` in `26.3`) or loader metadata for our code.
 3. **Obfuscated (`<=1.21.11`, Java 21) vs. Unobfuscated (`26.1+`, Java 25)**:
    - Versions up to `1.21.11` ship obfuscated official JARs; `:fabric` uses `net.fabricmc.fabric-loom-remap` to remap Mojmap bytecode to Intermediary at build time.
    - Versions `26.1+` ship unobfuscated Mojmap JARs on Java 25; `:fabric` uses `net.fabricmc.fabric-loom` without remapping.
 4. **Range-Based Stonecutter Conditionals**:
-   - Because our Stonecutter blocks use exact semantic boundaries (`//? if >=1.21.2`, `//? if >=1.21.4`, `//? if >=1.21.5`, `//? if >=1.21.6`, `//? if >=1.21.9`, `//? if >=1.21.11`, `//? if >=26.1`, `//? if >=26.2`) rather than hardcoded version equalities, every version node automatically selects the right code branch.
+   - Because our Stonecutter blocks use exact semantic boundaries (`//? if >=1.21.2`, `//? if >=1.21.4`, `//? if >=1.21.5`, `//? if >=1.21.6`, `//? if >=1.21.9`, `//? if >=1.21.11`, `//? if >=26.1`, `//? if >=26.2`, `//? if >=26.3`) rather than hardcoded version equalities, every version node automatically selects the right code branch.
 
 ---
 
@@ -40,7 +40,7 @@ Always check if a change fits one of these five adapters before creating a new c
 | `NbtCompatAdapter` | Common (`main`) | `CompoundTag` primitive reads across NBT API overhauls | `getStringOrDefault`, `getIntOrDefault`, `getBooleanOrDefault`, `getCompoundOrEmpty` (`Optional<T>` in `>=1.21.5` vs. raw values + `contains` in `<1.21.5`). |
 | `InventoryEquipmentAdapter` | Common (`main`) | Player inventory slots, hotbar selection, equipment iteration, and item display names | `getSelectedHotbarSlot`, `setSelectedHotbarSlot`, `getItemCustomName`, `getItemPlainName` (`getSelectedSlot()` in `>=1.21.5` vs. `inventory.selected` in `<1.21.5`; `getPlainTextName()` in `>=26.1` vs. `getString()` in `<26.1`). |
 | `WorldAndEntityAdapter` | Common (`main`) | Level/dimension keys, `ServerPlayer` accessors, `EquipmentSlot` protocol IDs, block placement result checks, chat `ClickEvent`/`HoverEvent`, and server `TickTask` scheduling | `serverLevel` (`>=1.21.9`), `dimensionId`, `getMinBuildHeight` (`>=1.21.2`), `handEquipmentSlotIndex` (`>=1.21.9` / `>=1.21.2` / `<1.21.2`), `isSuccessfulBlockPlacement` (`>=1.21.2`), `ClickEvent`/`HoverEvent` (`>=1.21.5`), `GameProfile` (`>=1.21.9`). |
-| `ClientUiAdapter` | Client (`client`) | `Screen` widgets, `GuiGraphics` / `GuiGraphicsExtractor` text, lines, outlines, `DynamicTexture` / `NativeImage` QR pixel writes, and client permission checks | `drawCenteredText`, `drawText`, `drawWordWrap`, `drawBoxOutline`, `blitQrTexture` (`>=26.1` / `>=1.21.6` / `>=1.21.2` / `1.21.1`), `setQrPixel` (`>=1.21.5`), `createBooleanCycleButton` (`>=1.21.11`), `hasOpPermissionLevel` (`>=1.21.11`), `notifyClientChat` (`>=26.2` / `>=26.1` / `<26.1`). |
+| `ClientUiAdapter` | Client (`client`) | `Screen` widgets, `GuiGraphics` / `GuiGraphicsExtractor` text, lines, outlines, `DynamicTexture` / `NativeImage` QR pixel writes, and client permission checks | `drawCenteredText`, `drawText`, `drawWordWrap`, `drawBoxOutline`, `blitQrTexture` (`>=26.1` / `>=1.21.6` / `>=1.21.2` / `1.21.1`), `setQrPixel` (`>=1.21.5`), `createBooleanCycleButton` (`>=1.21.11`), `hasAdminPermission` (`>=1.21.11`), `notifyClientChat` (`>=26.2` / `>=26.1` / `<26.1`). |
 
 ### Example: Extending an Existing Adapter
 
@@ -77,6 +77,6 @@ Loader SPIs decouple `:common` from **Fabric** and **NeoForge**. They are loaded
 
 - [ ] **Verify `:domain` purity first**: Can this logic live in `:domain` using pure Java types? If yes, put it in `:domain` and convert Minecraft types at the `:common` boundary.
 - [ ] **Check the 5 existing `platform.mc` adapters**: Does the change belong to persistence (`SavedDataAdapter`), NBT (`NbtCompatAdapter`), inventory/items (`InventoryEquipmentAdapter`), world/entities/server (`WorldAndEntityAdapter`), or client UI (`ClientUiAdapter`)?
-- [ ] **Use semantic version ranges in Stonecutter comments**: Always write `//? if >=1.21.5 {` ... `//?} else {` rather than exact version equality so intermediate versions inherit the right branch automatically.
-- [ ] **Keep canonical sources on `vcs_version` (`26.2`)**: Run `./gradlew "Reset active project"` before committing so active sources in `common/`, `fabric/`, and `neoforge/` remain on `26.2`.
-- [ ] **Verify all targets**: Run `./gradlew chiseledBuild` (see [VERSIONING.md](./VERSIONING.md)) to confirm all 9 version nodes (`1.21.1` through `26.2`) compile and pass all `:domain`, `:common`, and `:neoforge` JUnit 5 tests.
+- [ ] **Use semantic version ranges in Stonecutter comments**: Always write `//? if >=26.3 {` ... `//?} else {` rather than exact version equality so intermediate versions inherit the right branch automatically.
+- [ ] **Keep canonical sources on `vcs_version` (`26.3`)**: Run `./gradlew "Reset active project"` before committing so active sources in `common/`, `fabric/`, and `neoforge/` remain on `26.3`.
+- [ ] **Verify all targets**: Run `./gradlew chiseledBuild` (see [VERSIONING.md](./VERSIONING.md)) to confirm all 10 version nodes (`1.21.1` through `26.3`) compile and pass all `:domain`, `:common`, and `:neoforge` JUnit 5 tests.
