@@ -2,6 +2,7 @@ package com.mars4two.ikang.platform.mc;
 
 import com.mars4two.ikang.core.snapshots.model.RawEnchantment;
 import com.mars4two.ikang.core.snapshots.model.RawItemStack;
+import com.mars4two.ikang.core.snapshots.model.RawItemStackExtraData;
 import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -45,6 +46,15 @@ public final class InventoryEquipmentAdapter {
                 ? WorldAndEntityAdapter.blockId(((BlockItem) item).getBlock())
                 : WorldAndEntityAdapter.itemId(item);
 
+        boolean isDamageable = itemStack.isDamageableItem();
+        RawItemStackExtraData extraData = null;
+        if (isDamageable && itemStack.getMaxDamage() > 0) {
+            extraData = new RawItemStackExtraData(
+                    itemStack.getDamageValue(),
+                    itemStack.getMaxDamage()
+            );
+        }
+
         return RawItemStack.of(
                 slot,
                 rawId,
@@ -52,7 +62,9 @@ public final class InventoryEquipmentAdapter {
                 customName,
                 itemStack.getCount(),
                 enchantments,
-                itemStack.isStackable()
+                itemStack.isStackable(),
+                isDamageable,
+                extraData
         );
     }
 

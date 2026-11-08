@@ -6,6 +6,7 @@ import com.mars4two.ikang.core.snapshots.model.RawContainer;
 import com.mars4two.ikang.core.snapshots.model.RawContainerType;
 import com.mars4two.ikang.core.snapshots.model.RawEnchantment;
 import com.mars4two.ikang.core.snapshots.model.RawItemStack;
+import com.mars4two.ikang.core.snapshots.model.RawItemStackExtraData;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerEffect;
 import com.mars4two.ikang.core.util.ContainerView;
 import com.mars4two.ikang.core.util.MinecraftIdsUtils;
@@ -67,6 +68,47 @@ class SnapshotModelContractTest {
         );
         assertEquals("b.m:stone", stone.id());
         assertEquals("Bricks", stone.customName());
+
+        RawItemStack damagedSword = RawItemStack.of(
+                1,
+                "minecraft:diamond_sword",
+                false,
+                "Excalibur",
+                1,
+                List.of(),
+                false,
+                true,
+                new RawItemStackExtraData(150, 1561)
+        );
+        assertEquals(true, damagedSword.isDamageable());
+        assertArrayEquals(
+                new Object[]{
+                        "i.m:diamond_sword",
+                        "Excalibur",
+                        1,
+                        new Object[0],
+                        1,
+                        false,
+                        true,
+                        new Object[]{150, 1561}
+                },
+                damagedSword.toPayload()
+        );
+
+        // Verify non-damageable backward-compatible wire format outputs "" for extraData
+        assertArrayEquals(
+                new Object[]{
+                        "b.m:stone",
+                        "Bricks",
+                        64,
+                        new Object[0],
+                        2,
+                        true,
+                        false,
+                        ""
+                },
+                stone.toPayload()
+        );
 
         RawPlayerEffect haste = new RawPlayerEffect("effect.minecraft.haste", 1, 120, true, false);
         assertArrayEquals(new Object[]{"e.m.haste", 1, 120, true, false}, haste.toPayload());
