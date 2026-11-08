@@ -78,8 +78,8 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: build and test loader artifacts
-        run: ./gradlew :common:${{ matrix.version }}:test :fabric:${{ matrix.version }}:build :neoforge:${{ matrix.version }}:build --no-daemon
+      - name: build and check loader artifacts
+        run: ./gradlew :common:${{ matrix.version }}:check :fabric:${{ matrix.version }}:build :neoforge:${{ matrix.version }}:build --no-daemon
 
       - name: capture version artifacts
         uses: actions/upload-artifact@v7
