@@ -1,0 +1,22 @@
+{
+	"required": true,
+	"package": "com.mars4two.ikang.mixin",
+	"compatibilityLevel": "${mixin_compat_level}",
+	"mixins": [
+		"BlockItemMixin",
+		"BlockEntityMixin",
+		"ContainerBlockRemoveMixin",
+		"ShulkerBoxBlockMixin",
+		"PlayerAttackMixin",
+		"PlayerSnapshotMixin",
+		"PlayerInventoryMixin",
+		"HotbarSelectionPacketMixin",
+		"LivingEntityInvoker"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

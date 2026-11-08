@@ -4,10 +4,56 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'NeoForged'
+			url = 'https://maven.neoforged.net/releases/'
+		}
+		maven {
+			name = 'Kikugie Releases'
+			url = 'https://maven.kikugie.dev/releases'
+		}
+		maven {
+			name = 'Kikugie Snapshots'
+			url = 'https://maven.kikugie.dev/snapshots'
+		}
 		mavenCentral()
 		gradlePluginPortal()
 	}
 }
 
+plugins {
+	id 'dev.kikugie.stonecutter' version '0.9.8'
+}
+
+def mcVersions = file('versions').listFiles()
+	?.findAll { it.isDirectory() && new File(it, 'gradle.properties').isFile() }
+	?.collect { it.name }
+	?.sort { a, b -> stonecutter.compare(a, b) } ?: []
+
+gradle.beforeProject { proj ->
+	if (proj.parent != null && proj.parent != proj.rootProject) {
+		def versionPropsFile = new File(rootDir, "versions/${proj.name}/gradle.properties")
+		if (versionPropsFile.isFile()) {
+			def props = new Properties()
+			versionPropsFile.withInputStream { props.load(it) }
+			props.each { k, v -> proj.ext.set(k.toString(), v.toString()) }
+		}
+	}
+}
+
 // Should match your modid
-rootProject.name = 'afkraft-companion'
+rootProject.name = 'afkraft_companion'
+
+include 'domain'
+
+stonecutter {
+	kotlinController = false
+	centralScript = 'build.gradle'
+
+	create(rootProject) {
+		branch('common') { versions(mcVersions as String[]) }
+		branch('fabric') { versions(mcVersions as String[]) }
+		branch('neoforge') { versions(mcVersions as String[]) }
+		vcsVersion = providers.gradleProperty('vcs_version').get()
+	}
+}

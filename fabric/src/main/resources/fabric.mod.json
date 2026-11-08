@@ -1,0 +1,41 @@
+{
+	"schemaVersion": 1,
+	"id": "afkraft_companion",
+	"provides": [
+		"afkraft-companion"
+	],
+	"version": "${version}",
+	"name": "AFKraft Companion",
+	"description": "AFKraft Companion Mod for tracking AFK containers, player stats, and mob spheres.",
+	"authors": [
+		"IKangreburguito"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/afkraft_companion/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.mars4two.ikang.fabric.AFKraftCompanionFabric"
+		],
+		"client": [
+			"com.mars4two.ikang.fabric.client.AFKraftCompanionFabricClient"
+		]
+	},
+	"mixins": [
+		"afkraft_companion.mixins.json",
+		{
+			"config": "afkraft_companion.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=${loader_version}",
+		"minecraft": "${fabric_mc_range}",
+		"java": ">=${java_version}",
+		"fabric-api": "*"
+	}
+}

@@ -1,0 +1,93 @@
+plugins {
+	id 'java-library'
+	id 'dev.kikugie.stonecutter'
+	id 'net.neoforged.moddev'
+}
+
+def javaVersion = project.java_version as int
+
+version = "${project.mod_version}+${project.minecraft_version}"
+group = project.maven_group
+
+base {
+	archivesName = "afkraft_companion-common"
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		name = 'SpongePowered'
+		url = 'https://repo.spongepowered.org/repository/maven-public/'
+	}
+}
+
+evaluationDependsOn(':domain')
+
+sourceSets {
+	client {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+neoForge {
+	neoFormVersion = project.neoform_version
+	addModdingDependenciesTo sourceSets.client
+	addModdingDependenciesTo sourceSets.test
+}
+
+dependencies {
+	compileOnly "org.spongepowered:mixin:0.8.7"
+	clientCompileOnly "org.spongepowered:mixin:0.8.7"
+
+	implementation(project(":domain")) {
+		transitive = false
+	}
+	clientImplementation(project(":domain")) {
+		transitive = false
+	}
+
+	testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+tasks.named("processResources", ProcessResources).configure {
+	def mixinCompat = project.mixin_compat_level
+	inputs.property "mixin_compat_level", mixinCompat
+
+	filesMatching("afkraft_companion.mixins.json") {
+		expand "mixin_compat_level": mixinCompat
+	}
+}
+
+tasks.named("processClientResources", ProcessResources).configure {
+	def mixinCompat = project.mixin_compat_level
+	inputs.property "mixin_compat_level", mixinCompat
+
+	filesMatching("afkraft_companion.client.mixins.json") {
+		expand "mixin_compat_level": mixinCompat
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = javaVersion
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(javaVersion)
+	}
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
+}
+
+tasks.named('assemble') {
+	dependsOn tasks.named('clientClasses')
+}
+
+test {
+	dependsOn tasks.named('clientClasses')
+	systemProperty 'afkraft.commonBranchRoot', rootProject.file('common').absolutePath
+	useJUnitPlatform()
+}

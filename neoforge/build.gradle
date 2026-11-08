@@ -1,0 +1,198 @@
+plugins {
+	id 'java-library'
+	id 'dev.kikugie.stonecutter'
+	id 'net.neoforged.moddev'
+	id 'maven-publish'
+}
+
+def javaVersion = project.java_version as int
+def mcVer = stonecutter.current.project
+
+version = "${project.mod_version}+${project.minecraft_version}"
+group = project.maven_group
+
+base {
+	archivesName = "afkraft_companion-neoforge"
+}
+
+repositories {
+	mavenCentral()
+}
+
+evaluationDependsOn(':domain')
+evaluationDependsOn(":common:${mcVer}")
+
+def commonProject = project(":common:${mcVer}")
+
+sourceSets {
+	client {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+neoForge {
+	version = project.neoforge_version
+	addModdingDependenciesTo sourceSets.client
+	addModdingDependenciesTo sourceSets.test
+
+	mods {
+		"afkraft_companion" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+			sourceSet project(":domain").sourceSets.main
+		}
+	}
+
+	runs {
+		client {
+			client()
+			ideName = "NeoForge Client (${project.minecraft_version})"
+			sourceSet = sourceSets.client
+			gameDirectory = project.file('run')
+		}
+		server {
+			server()
+			ideName = "NeoForge Server (${project.minecraft_version})"
+			programArgument '--nogui'
+			gameDirectory = project.file('run')
+		}
+	}
+}
+
+dependencies {
+	implementation(project(":domain")) {
+		transitive = false
+	}
+	clientImplementation(project(":domain")) {
+		transitive = false
+	}
+
+	clientRuntimeOnly "com.google.zxing:core:3.5.3"
+	jarJar("com.google.zxing:core:[3.5.3,3.6)") {
+		version {
+			prefer "3.5.3"
+		}
+	}
+
+	testCompileOnly(sourceSets.client.output)
+	testRuntimeOnly(sourceSets.client.output)
+	testImplementation("com.google.zxing:core:3.5.3")
+	testImplementation platform("org.junit:junit-bom:5.11.4")
+	testImplementation "org.junit.jupiter:junit-jupiter"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+tasks.named("compileJava", JavaCompile).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerate'))
+	}
+	source(commonProject.sourceSets.main.allJava)
+}
+
+tasks.named("compileClientJava", JavaCompile).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerateClient'))
+	}
+	source(commonProject.sourceSets.client.allJava)
+}
+
+tasks.named("processResources", ProcessResources).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerate'))
+	}
+	def props = [
+		version              : project.version,
+		neoforge_loader_range: project.neoforge_loader_range,
+		neoforge_mc_range    : project.neoforge_mc_range,
+		mixin_compat_level   : project.mixin_compat_level
+	]
+	inputs.properties(props)
+
+	from(commonProject.sourceSets.main.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+
+	filesMatching(["META-INF/neoforge.mods.toml", "afkraft_companion.mixins.json"]) {
+		expand(props)
+	}
+}
+
+tasks.named("processClientResources", ProcessResources).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerateClient'))
+	}
+	def props = [
+		mixin_compat_level: project.mixin_compat_level
+	]
+	inputs.properties(props)
+
+	from(commonProject.sourceSets.client.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+
+	filesMatching("afkraft_companion.client.mixins.json") {
+		expand(props)
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = javaVersion
+	it.options.encoding = 'UTF-8'
+}
+
+tasks.named("test", Test).configure {
+	useJUnitPlatform()
+	def testWorkDir = layout.buildDirectory.dir("test-work")
+	workingDir = testWorkDir.get().asFile
+	doFirst {
+		testWorkDir.get().asFile.mkdirs()
+	}
+}
+
+java {
+	withSourcesJar()
+
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(javaVersion)
+	}
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
+}
+
+jar {
+	def projectName = rootProject.name
+	inputs.property "projectName", projectName
+
+	dependsOn tasks.named('clientClasses')
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(sourceSets.client.output)
+	from(project(":domain").sourceSets.main.output)
+
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_$projectName" }
+	}
+}
+
+tasks.named("sourcesJar", Jar).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(
+			commonProject.tasks.named('stonecutterGenerate'),
+			commonProject.tasks.named('stonecutterGenerateClient')
+		)
+	}
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(sourceSets.client.allSource)
+	from(project(":domain").sourceSets.main.allSource)
+	from(commonProject.sourceSets.main.allSource)
+	from(commonProject.sourceSets.client.allSource)
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}

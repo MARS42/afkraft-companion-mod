@@ -1,0 +1,87 @@
+plugins {
+	id 'dev.kikugie.stonecutter'
+	id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
+	id 'net.neoforged.moddev' version "${moddev_version}" apply false
+}
+
+stonecutter.active '26.2' /* [SC] DO NOT EDIT */
+
+version = project.mod_version
+group = project.maven_group
+
+stonecutter.parameters {
+	replacements.string(stonecutter.eval(current.version, '<1.21.11')) {
+		replace 'Identifier', 'ResourceLocation'
+	}
+}
+
+def mcVersions = file('versions').listFiles()
+	?.findAll { it.isDirectory() && new File(it, 'gradle.properties').isFile() }
+	?.collect { it.name }
+	?.sort { a, b -> stonecutter.compare(a, b) } ?: []
+
+evaluationDependsOn(':domain')
+mcVersions.each { ver ->
+	evaluationDependsOn(":common:${ver}")
+	evaluationDependsOn(":fabric:${ver}")
+	evaluationDependsOn(":neoforge:${ver}")
+}
+
+tasks.register("clean", Delete) {
+	group = "build"
+	description = "Deletes the root build directory."
+	delete(layout.buildDirectory)
+}
+
+def chiseledTest = tasks.register("chiseledTest") {
+	group = "verification"
+	description = "Runs unit and architecture tests across :domain and all configured Minecraft version nodes."
+	dependsOn(":domain:test")
+	mcVersions.each { ver ->
+		dependsOn(":common:${ver}:test", ":neoforge:${ver}:test")
+	}
+}
+
+def collectArtifacts = tasks.register("collectArtifacts", Copy) {
+	group = "build"
+	description = "Collects built Fabric and NeoForge release and sources JARs across all Minecraft versions into root build/libs."
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	mcVersions.each { ver ->
+		def fabricProj = project(":fabric:${ver}")
+		def neoforgeProj = project(":neoforge:${ver}")
+		dependsOn("${fabricProj.path}:build", "${neoforgeProj.path}:build")
+		from(fabricProj.tasks.named(fabricProj.ext.productionJarTaskName as String))
+		from(fabricProj.tasks.named(fabricProj.ext.productionSourcesJarTaskName as String))
+		from(neoforgeProj.tasks.named("jar"))
+		from(neoforgeProj.tasks.named("sourcesJar"))
+	}
+	into(layout.buildDirectory.dir("libs"))
+}
+
+def chiseledBuild = tasks.register("chiseledBuild") {
+	group = "build"
+	description = "Builds, verifies, and collects artifacts for all loaders and configured Minecraft versions."
+	dependsOn(":domain:check", chiseledTest, collectArtifacts)
+	mcVersions.each { ver ->
+		dependsOn(":common:${ver}:check", ":fabric:${ver}:build", ":neoforge:${ver}:build")
+	}
+}
+
+tasks.register("check") {
+	group = "verification"
+	description = "Runs all checks across :domain and versioned nodes."
+	dependsOn(chiseledTest)
+}
+
+tasks.register("assemble") {
+	group = "build"
+	description = "Assembles and collects all loader artifacts."
+	dependsOn(collectArtifacts)
+}
+
+tasks.register("build") {
+	group = "build"
+	description = "Assembles and tests all loaders and configured Minecraft versions."
+	dependsOn(chiseledBuild)
+}

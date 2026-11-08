@@ -1,0 +1,181 @@
+plugins {
+	id 'dev.kikugie.stonecutter'
+	id 'maven-publish'
+}
+
+def isObfuscated = stonecutter.eval(stonecutter.current.version, '<26.0')
+apply plugin: isObfuscated ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+
+def javaVersion = project.java_version as int
+def mcVer = stonecutter.current.project
+
+ext.productionJarTaskName = isObfuscated ? 'remapJar' : 'jar'
+ext.productionSourcesJarTaskName = isObfuscated ? 'remapSourcesJar' : 'sourcesJar'
+
+version = "${project.mod_version}+${project.minecraft_version}"
+group = project.maven_group
+
+base {
+	archivesName = "afkraft_companion-fabric"
+}
+
+repositories {
+	mavenCentral()
+}
+
+evaluationDependsOn(':domain')
+evaluationDependsOn(":common:${mcVer}")
+
+def commonProject = project(":common:${mcVer}")
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"afkraft_companion" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+			sourceSet project(":domain").sourceSets.main
+		}
+	}
+
+	runs {
+		client {
+			client()
+			name = "Fabric Client (${project.minecraft_version})"
+			ideConfigGenerated(true)
+			runDir = "run"
+		}
+		server {
+			server()
+			name = "Fabric Server (${project.minecraft_version})"
+			ideConfigGenerated(true)
+			runDir = "run"
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	if (isObfuscated) {
+		mappings loom.officialMojangMappings()
+		modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	} else {
+		implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	}
+
+	implementation(project(":domain")) {
+		transitive = false
+	}
+	clientImplementation(project(":domain")) {
+		transitive = false
+	}
+
+	clientRuntimeOnly "com.google.zxing:core:3.5.3"
+	include "com.google.zxing:core:3.5.3"
+}
+
+tasks.named("compileJava", JavaCompile).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerate'))
+	}
+	source(commonProject.sourceSets.main.allJava)
+}
+
+tasks.named("compileClientJava", JavaCompile).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerateClient'))
+	}
+	source(commonProject.sourceSets.client.allJava)
+}
+
+tasks.named("processResources", ProcessResources).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerate'))
+	}
+	def props = [
+		version           : project.version,
+		loader_version    : project.loader_version,
+		fabric_mc_range   : project.fabric_mc_range,
+		java_version      : project.java_version,
+		mixin_compat_level: project.mixin_compat_level
+	]
+	inputs.properties(props)
+
+	from(commonProject.sourceSets.main.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+
+	filesMatching(["fabric.mod.json", "afkraft_companion.mixins.json"]) {
+		expand(props)
+	}
+}
+
+tasks.named("processClientResources", ProcessResources).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(commonProject.tasks.named('stonecutterGenerateClient'))
+	}
+	def props = [
+		mixin_compat_level: project.mixin_compat_level
+	]
+	inputs.properties(props)
+
+	from(commonProject.sourceSets.client.resources)
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+
+	filesMatching("afkraft_companion.client.mixins.json") {
+		expand(props)
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = javaVersion
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	withSourcesJar()
+
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(javaVersion)
+	}
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
+}
+
+jar {
+	def projectName = rootProject.name
+	inputs.property "projectName", projectName
+
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(project(":domain").sourceSets.main.output)
+
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_$projectName" }
+	}
+}
+
+tasks.named("sourcesJar", Jar).configure {
+	if (!stonecutter.current.isActive) {
+		dependsOn(
+			commonProject.tasks.named('stonecutterGenerate'),
+			commonProject.tasks.named('stonecutterGenerateClient')
+		)
+	}
+	duplicatesStrategy = DuplicatesStrategy.FAIL
+	from(project(":domain").sourceSets.main.allSource)
+	from(commonProject.sourceSets.main.allSource)
+	from(commonProject.sourceSets.client.allSource)
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}

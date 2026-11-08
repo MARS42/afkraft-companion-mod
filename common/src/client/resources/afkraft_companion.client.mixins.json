@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"package": "com.mars4two.ikang.client.mixin",
+	"compatibilityLevel": "${mixin_compat_level}",
+	"client": [
+		"AbstractContainerScreenAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

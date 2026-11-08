@@ -28,9 +28,13 @@ bin/
 
 *.DS_Store
 
-# fabric
+# fabric / multiloader runs & generated stonecutter nodes
 
 run/
+logs/
+common/versions/
+fabric/versions/
+neoforge/versions/
 
 # java
 
