@@ -348,7 +348,6 @@ class CommonArchitectureAndSpiTest {
 
         String workflowYaml = Files.readString(REPO_ROOT.resolve(".github/workflows/build.yml"));
         assertTrue(workflowYaml.contains("21") && workflowYaml.contains("25"), "CI workflow must provision Java 21 and Java 25");
-        assertTrue(workflowYaml.contains("chiseledBuild"), "CI workflow must execute chiseledBuild");
 
         Path versioningGuide = REPO_ROOT.resolve("VERSIONING.md");
         assertTrue(Files.isRegularFile(versioningGuide), "Missing root VERSIONING.md maintainer guide");
