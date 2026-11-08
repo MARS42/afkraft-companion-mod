@@ -24,6 +24,9 @@ import net.minecraft.server.level.ServerLevel;
 //? if <1.21.9 {
 /*import net.minecraft.world.effect.MobEffects;
 *///?}
+//? if >=26.3 {
+import net.minecraft.world.item.component.SwingAnimation;
+//?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
@@ -170,8 +173,8 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         }
     }
 
-    @Inject(at = @At("HEAD"), method = "swing")
-    private void onSwing(InteractionHand hand, CallbackInfo ci) {
+    @Override
+    public void afkraft_companion$onBeforeSwing(InteractionHand hand) {
         if (hand != InteractionHand.MAIN_HAND || this.tickCount == this.afkraft_companion$lastEntityAttackTick) {
             return;
         }
@@ -194,6 +197,18 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         );
         ingestManager.ingestPlayerAttackCadence(afkraft_companion$statsView);
     }
+
+    //? if >=26.3 {
+    @Inject(at = @At("HEAD"), method = "swingAndResetAttackStrength")
+    private void onSwing(InteractionHand hand, SwingAnimation animation, boolean fromServer, CallbackInfo ci) {
+        afkraft_companion$onBeforeSwing(hand);
+    }
+    //?} else {
+    /*@Inject(at = @At("HEAD"), method = "swing")
+    private void onSwing(InteractionHand hand, CallbackInfo ci) {
+        afkraft_companion$onBeforeSwing(hand);
+    }
+    *///?}
 
     @Inject(at = @At("TAIL"), method = "setExperienceLevels")
     private void onSetExperienceLevels(int value, CallbackInfo ci) {

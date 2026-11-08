@@ -74,6 +74,7 @@ class CommonArchitectureAndSpiTest {
         List<String> forbiddenClientPrefixes = List.of(
                 "net.minecraft.client.",
                 "com.mojang.blaze3d.",
+                "com.mojang.renderpearl.",
                 "com.mars4two.ikang.client."
         );
 
@@ -235,6 +236,7 @@ class CommonArchitectureAndSpiTest {
         List<String> forbiddenClientInternalNames = List.of(
                 "net/minecraft/client/",
                 "com/mojang/blaze3d/",
+                "com/mojang/renderpearl/",
                 "com/mars4two/ikang/client/"
         );
 
@@ -304,7 +306,7 @@ class CommonArchitectureAndSpiTest {
                 "neoforge_mc_range=",
                 "neoforge_loader_range="
         );
-        for (String endpoint : List.of("1.21.1", "26.2")) {
+        for (String endpoint : List.of("1.21.1", "26.2", "26.3")) {
             Path propsPath = REPO_ROOT.resolve("versions").resolve(endpoint).resolve("gradle.properties");
             assertTrue(Files.isRegularFile(propsPath), "Missing endpoint properties: " + propsPath);
             String propsContent = Files.readString(propsPath);
