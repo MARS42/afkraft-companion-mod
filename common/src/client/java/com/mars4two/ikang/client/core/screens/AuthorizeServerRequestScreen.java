@@ -2,7 +2,7 @@ package com.mars4two.ikang.client.core.screens;
 
 import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
 import net.minecraft.ChatFormatting;
-//? if >=26.2 {
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
@@ -72,7 +72,7 @@ public class AuthorizeServerRequestScreen extends Screen {
         handleDecision(false);
     }
 
-    //? if >=26.2 {
+    //? if >=26.1 {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);

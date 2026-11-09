@@ -25,7 +25,7 @@ import java.util.UUID;
 @Mixin(net.minecraft.world.entity.player.Inventory.class)
 public abstract class PlayerInventoryMixin implements PlayerHotbarSyncHook {
 
-    //? if >=26.2 {
+    //? if >=1.21.5 {
     @Final
     @Shadow
     private NonNullList<ItemStack> items;
@@ -127,7 +127,7 @@ public abstract class PlayerInventoryMixin implements PlayerHotbarSyncHook {
         ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
     }
 
-    //? if >=26.2 {
+    //? if >=1.21.5 {
     @Inject(method = "setSelectedSlot", at = @At("TAIL"))
     private void onSetSelectedSlot(int slot, CallbackInfo ci) {
         if (!afkraft_companion$isServerSide()) return;
@@ -145,10 +145,17 @@ public abstract class PlayerInventoryMixin implements PlayerHotbarSyncHook {
         afkraft_companion$syncHotbarSelection();
     }
 
+    //? if >=1.21.4 {
+    @Inject(method = "addAndPickItem", at = @At("TAIL"))
+    private void onAddAndPickItem(ItemStack itemStack, CallbackInfo ci) {
+        afkraft_companion$syncHotbarSelection();
+    }
+    //?} else {
     @Inject(method = "setPickedItem", at = @At("TAIL"))
     private void onSetPickedItem(ItemStack itemStack, CallbackInfo ci) {
         afkraft_companion$syncHotbarSelection();
     }
+    //?}
     *///?}
 
     @Unique

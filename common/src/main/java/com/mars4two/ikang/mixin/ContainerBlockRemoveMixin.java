@@ -1,6 +1,6 @@
 package com.mars4two.ikang.mixin;
 
-//? if <26.2 {
+//? if <1.21.5 {
 /*import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import com.mars4two.ikang.core.util.BlockEntityWrapper;
@@ -19,13 +19,13 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import org.spongepowered.asm.mixin.Mixin;
 
 /**
- * Emits {@code CONTAINER_DELETED} snapshots on Minecraft 1.21.x before {@code Block.onRemove}
- * drops and clears {@code BaseContainerBlockEntity} items (26.2+ uses {@code BlockEntity.preRemoveSideEffects}).
+ * Emits {@code CONTAINER_DELETED} snapshots on Minecraft 1.21.1–1.21.4 before {@code Block.onRemove}
+ * drops and clears {@code BaseContainerBlockEntity} items (1.21.5+ uses {@code BlockEntity.preRemoveSideEffects}).
  */
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public abstract class ContainerBlockRemoveMixin {
 
-    //? if <26.2 {
+    //? if <1.21.5 {
     /*@Shadow
     protected abstract BlockState asState();
 

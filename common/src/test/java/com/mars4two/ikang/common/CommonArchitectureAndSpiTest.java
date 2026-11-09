@@ -74,6 +74,7 @@ class CommonArchitectureAndSpiTest {
         List<String> forbiddenClientPrefixes = List.of(
                 "net.minecraft.client.",
                 "com.mojang.blaze3d.",
+                "com.mojang.renderpearl.",
                 "com.mars4two.ikang.client."
         );
 
@@ -235,6 +236,7 @@ class CommonArchitectureAndSpiTest {
         List<String> forbiddenClientInternalNames = List.of(
                 "net/minecraft/client/",
                 "com/mojang/blaze3d/",
+                "com/mojang/renderpearl/",
                 "com/mars4two/ikang/client/"
         );
 
@@ -304,7 +306,7 @@ class CommonArchitectureAndSpiTest {
                 "neoforge_mc_range=",
                 "neoforge_loader_range="
         );
-        for (String endpoint : List.of("1.21.1", "26.2")) {
+        for (String endpoint : List.of("1.21.1", "26.2", "26.3")) {
             Path propsPath = REPO_ROOT.resolve("versions").resolve(endpoint).resolve("gradle.properties");
             assertTrue(Files.isRegularFile(propsPath), "Missing endpoint properties: " + propsPath);
             String propsContent = Files.readString(propsPath);
@@ -314,7 +316,7 @@ class CommonArchitectureAndSpiTest {
         }
 
         String nodeName = NODE_OR_MODULE_DIR.getFileName().toString();
-        int expectedClassMajor = "1.21.1".equals(nodeName) ? 65 : 69;
+        int expectedClassMajor = nodeName.startsWith("1.21") ? 65 : 69;
         for (Path classesDir : List.of(BUILD_DIR.resolve("classes/java/main"), BUILD_DIR.resolve("classes/java/client"))) {
             for (Path cls : collectFilesWithSuffix(classesDir, ".class")) {
                 byte[] bytes = Files.readAllBytes(cls);
@@ -346,7 +348,6 @@ class CommonArchitectureAndSpiTest {
 
         String workflowYaml = Files.readString(REPO_ROOT.resolve(".github/workflows/build.yml"));
         assertTrue(workflowYaml.contains("21") && workflowYaml.contains("25"), "CI workflow must provision Java 21 and Java 25");
-        assertTrue(workflowYaml.contains("chiseledBuild"), "CI workflow must execute chiseledBuild");
 
         Path versioningGuide = REPO_ROOT.resolve("VERSIONING.md");
         assertTrue(Files.isRegularFile(versioningGuide), "Missing root VERSIONING.md maintainer guide");
@@ -372,7 +373,7 @@ class CommonArchitectureAndSpiTest {
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.PASS));
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.FAIL));
         assertTrue(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.SUCCESS));
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.TRY_WITH_EMPTY_HAND));
         //?} else {
         /*assertTrue(

@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
-//? if >=26.2 {
+//? if >=1.21.5 {
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 //?}
@@ -118,7 +118,7 @@ public abstract class BlockEntityMixin implements BlockEntityWrapper {
         }
     }
 
-    //? if >=26.2 {
+    //? if >=1.21.5 {
     @Inject(at = @At("HEAD"), method = "preRemoveSideEffects")
     private void onPreRemoveSideEffects(BlockPos pos, BlockState state, CallbackInfo ci) {
         BlockEntity self = (BlockEntity) (Object) this;

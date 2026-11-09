@@ -33,7 +33,7 @@ public final class FabricNetworkBridge implements NetworkBridge {
             CustomPacketPayload.Type<T> type,
             StreamCodec<? super RegistryFriendlyByteBuf, T> codec
     ) {
-        //? if >=26.2 {
+        //? if >=26.1 {
         PayloadTypeRegistry.clientboundPlay().register(type, codec);
         //?} else {
         /*PayloadTypeRegistry.playS2C().register(type, codec);
@@ -46,7 +46,7 @@ public final class FabricNetworkBridge implements NetworkBridge {
             StreamCodec<? super RegistryFriendlyByteBuf, T> codec,
             ServerPayloadHandler<T> handler
     ) {
-        //? if >=26.2 {
+        //? if >=26.1 {
         PayloadTypeRegistry.serverboundPlay().register(type, codec);
         //?} else {
         /*PayloadTypeRegistry.playC2S().register(type, codec);

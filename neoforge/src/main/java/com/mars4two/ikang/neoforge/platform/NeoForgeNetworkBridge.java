@@ -39,7 +39,7 @@ public final class NeoForgeNetworkBridge implements NetworkBridge {
                         handler.handle(payload, context.player())
                 );
             } else {
-                //? if >=26.2 {
+                //? if >=1.21.7 {
                 if (clientSide) {
                     registrar.playToClient(type, codec, (payload, context) -> {
                     });

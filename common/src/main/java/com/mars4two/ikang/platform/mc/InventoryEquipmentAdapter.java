@@ -88,7 +88,7 @@ public final class InventoryEquipmentAdapter {
     }
 
     public static int getSelectedHotbarSlot(Inventory inventory) {
-        //? if >=26.2 {
+        //? if >=1.21.5 {
         return inventory.getSelectedSlot();
         //?} else {
         /*return inventory.selected;
@@ -103,7 +103,7 @@ public final class InventoryEquipmentAdapter {
         if (nameable == null || !nameable.hasCustomName()) {
             return null;
         }
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         return nameable.getPlainTextName();
         //?} else {
         /*var customName = nameable.getCustomName();

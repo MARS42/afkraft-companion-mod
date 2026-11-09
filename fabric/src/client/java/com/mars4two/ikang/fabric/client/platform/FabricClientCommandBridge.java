@@ -1,6 +1,6 @@
 package com.mars4two.ikang.fabric.client.platform;
 
-//? if >=26.2 {
+//? if >=1.21.11 {
 import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
 //?}
 import com.mars4two.ikang.client.platform.services.ClientCommandBridge;
@@ -13,9 +13,11 @@ public final class FabricClientCommandBridge implements ClientCommandBridge {
     private static final SourceAccess<FabricClientCommandSource> SOURCE_ACCESS = new SourceAccess<>() {
         @Override
         public boolean hasAdminPermission(FabricClientCommandSource source) {
-            //? if >=26.2 {
+            //? if >=1.21.11 {
             return ClientUiAdapter.hasAdminPermission(source.permissions());
-            //?} else {
+            //?} elif >=1.21.6 {
+            /*return source.getPlayer() != null && source.getPlayer().hasPermissions(2);
+            *///?} else {
             /*return source.hasPermission(2);
             *///?}
         }

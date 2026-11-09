@@ -13,12 +13,14 @@ import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.common.NeoForge;
-//? if >=26.2 {
+//? if >=26.1.2 {
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
-import net.neoforged.neoforge.network.handling.IPayloadHandler;
 //?} else {
 /*import net.neoforged.neoforge.event.level.BlockEvent;
 *///?}
+//? if >=1.21.7 {
+import net.neoforged.neoforge.network.handling.IPayloadHandler;
+//?}
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import net.neoforged.neoforge.network.registration.PayloadRegistration;
@@ -67,7 +69,7 @@ class NeoForgeRuntimeRegressionTest {
 
         Map<Identifier, PayloadRegistration<?>> playRegistrations = payloadRegistrations.get(ConnectionProtocol.PLAY);
 
-        //? if >=26.2 {
+        //? if >=1.21.7 {
         Field clientHandlersField = NetworkRegistry.class.getDeclaredField("CLIENTBOUND_HANDLERS");
         clientHandlersField.setAccessible(true);
         var clientboundHandlers = (Map<ConnectionProtocol, Map<Identifier, IPayloadHandler<?>>>) clientHandlersField.get(null);
@@ -104,7 +106,7 @@ class NeoForgeRuntimeRegressionTest {
         );
 
         // Non-server BreakBlockEvent on NeoForge.EVENT_BUS must safely no-op.
-        //? if >=26.2 {
+        //? if >=26.1.2 {
         NeoForge.EVENT_BUS.post(new BreakBlockEvent(null, new BlockPos(1, 2, 3), null, null));
         //?} else {
         /*NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(null, new BlockPos(1, 2, 3), null, null));

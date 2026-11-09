@@ -4,15 +4,23 @@ import com.mars4two.ikang.core.auth.AuthenticationException;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-//? if >=26.2 {
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.server.permissions.PermissionSet;
-import net.minecraft.server.permissions.Permissions;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
+//? if >=1.21.9 {
+import net.minecraft.client.input.KeyEvent;
+//?}
+//? if >=1.21.6 {
+import net.minecraft.client.renderer.RenderPipelines;
+//?} elif >=1.21.2 {
+/*import net.minecraft.client.renderer.RenderType;
+*///?}
+//? if >=1.21.11 {
+import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.server.permissions.Permissions;
+//?}
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
@@ -30,14 +38,14 @@ public final class ClientUiAdapter {
     private ClientUiAdapter() {
     }
 
-    //? if >=26.2 {
+    //? if >=1.21.11 {
     public static boolean hasAdminPermission(PermissionSet permissions) {
         return permissions.hasPermission(Permissions.COMMANDS_ADMIN);
     }
     //?}
 
     public static void showScreen(Minecraft minecraft, Screen screen) {
-        //? if >=26.2 {
+        //? if >=1.21.9 {
         minecraft.setScreenAndShow(screen);
         //?} else {
         /*minecraft.setScreen(screen);
@@ -55,13 +63,15 @@ public final class ClientUiAdapter {
     public static void notifyClientChat(Minecraft minecraft, Component message) {
         //? if >=26.2 {
         minecraft.showDebugChat(message);
-        //?} else {
+        //?} elif >=26.1 {
+        /*minecraft.gui.getChat().addClientSystemMessage(message);
+        *///?} else {
         /*minecraft.gui.getChat().addMessage(message);
         *///?}
     }
 
     public static void sendPlayerMessage(Player player, Component message) {
-        //? if >=26.2 {
+        //? if >=26.1 {
         player.sendSystemMessage(message);
         //?} else {
         /*player.displayClientMessage(message, false);
@@ -83,7 +93,7 @@ public final class ClientUiAdapter {
     public static void joinMojangSession(Minecraft minecraft, UUID profileId, String accessToken, String serverId)
             throws AuthenticationException {
         try {
-            //? if >=26.2 {
+            //? if >=1.21.9 {
             minecraft.services().sessionService().joinServer(profileId, accessToken, serverId);
             //?} else {
             /*minecraft.getMinecraftSessionService().joinServer(profileId, accessToken, serverId);
@@ -94,7 +104,7 @@ public final class ClientUiAdapter {
     }
 
     public static int getPixel(NativeImage image, int x, int y) {
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         return image.getPixel(x, y);
         //?} else {
         /*return image.getPixelRGBA(x, y);
@@ -102,7 +112,7 @@ public final class ClientUiAdapter {
     }
 
     public static void setPixel(NativeImage image, int x, int y, int color) {
-        //? if >=26.2 {
+        //? if >=1.21.2 {
         image.setPixel(x, y, color);
         //?} else {
         /*image.setPixelRGBA(x, y, color);
@@ -115,7 +125,7 @@ public final class ClientUiAdapter {
             String debugLabel,
             NativeImage image
     ) {
-        //? if >=26.2 {
+        //? if >=1.21.5 {
         DynamicTexture texture = new DynamicTexture(() -> debugLabel, image);
         //?} else {
         /*DynamicTexture texture = new DynamicTexture(image);
@@ -133,7 +143,7 @@ public final class ClientUiAdapter {
         minecraft.getTextureManager().release(textureId);
     }
 
-    //? if >=26.2 {
+    //? if >=26.1 {
     public static void drawCenteredText(
             GuiGraphicsExtractor graphics,
             Font font,
@@ -154,10 +164,6 @@ public final class ClientUiAdapter {
     ) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, textureId, x, y, 0, 0, size, size, size, size, size, size);
     }
-
-    public static boolean isEscapeKey(KeyEvent event) {
-        return event.isEscape();
-    }
     //?} else {
     /*public static void drawCenteredText(
             GuiGraphics graphics,
@@ -177,10 +183,22 @@ public final class ClientUiAdapter {
             int y,
             int size
     ) {
+        //? if >=1.21.6 {
+        graphics.blit(RenderPipelines.GUI_TEXTURED, textureId, x, y, 0.0F, 0.0F, size, size, size, size);
+        //?} elif >=1.21.2 {
+        graphics.blit(RenderType::guiTextured, textureId, x, y, 0.0F, 0.0F, size, size, size, size);
+        //?} else {
         graphics.blit(textureId, x, y, 0.0F, 0.0F, size, size, size, size);
+        //?}
     }
+    *///?}
 
-    public static boolean isEscapeKey(int keyCode) {
+    //? if >=1.21.9 {
+    public static boolean isEscapeKey(KeyEvent event) {
+        return event.isEscape();
+    }
+    //?} else {
+    /*public static boolean isEscapeKey(int keyCode) {
         return keyCode == 256;
     }
     *///?}

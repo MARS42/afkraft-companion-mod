@@ -22,7 +22,7 @@ public final class NbtCompatAdapter {
         if (tag == null || key == null) {
             return Optional.empty();
         }
-        //? if >=26.2 {
+        //? if >=1.21.5 {
         Optional<String> raw = tag.getString(key);
         if (raw.isEmpty() || raw.get().isBlank()) {
             return Optional.empty();
