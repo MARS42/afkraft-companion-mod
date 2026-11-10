@@ -81,6 +81,7 @@ class SnapshotModelContractTest {
                 new RawItemStackExtraData(150, 1561)
         );
         assertEquals(true, damagedSword.isDamageable());
+        assertEquals(1411, damagedSword.extraData().remainingUsages());
         assertArrayEquals(
                 new Object[]{
                         "i.m:diamond_sword",
@@ -90,7 +91,7 @@ class SnapshotModelContractTest {
                         1,
                         false,
                         true,
-                        new Object[]{150, 1561}
+                        new Object[]{150, 1561, 1411}
                 },
                 damagedSword.toPayload()
         );
