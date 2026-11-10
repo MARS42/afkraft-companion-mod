@@ -8,6 +8,7 @@ import com.mars4two.ikang.core.snapshots.model.RawEnchantment;
 import com.mars4two.ikang.core.snapshots.model.RawItemStack;
 import com.mars4two.ikang.core.snapshots.model.RawItemStackExtraData;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerEffect;
+import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
 import com.mars4two.ikang.core.util.ContainerView;
 import com.mars4two.ikang.core.util.MinecraftIdsUtils;
 import org.junit.jupiter.api.Test;
@@ -170,5 +171,16 @@ class SnapshotModelContractTest {
         assertEquals("load-station", loadStation.getSnapshotName());
         assertTrue(loadStation.key().startsWith("load-station:"));
         assertEquals(true, loadStation.data().deleted());
+    }
+
+    @Test
+    void rawPlayerStatsPayloadMaintainsExactWireOrderWithOxygen() {
+        RawPlayerStats stats = new RawPlayerStats(
+                "survival", 20.0f, 20.0f, 20, 300, 5, 0.5f, 10.0, 64.0, -10.0, 90.0f, 0.0f
+        );
+        assertArrayEquals(
+                new Object[]{"survival", 20.0f, 20.0f, 20, 300, 5, 0.5f, 10.0, 64.0, -10.0, 90.0f, 0.0f},
+                stats.toPayload()
+        );
     }
 }

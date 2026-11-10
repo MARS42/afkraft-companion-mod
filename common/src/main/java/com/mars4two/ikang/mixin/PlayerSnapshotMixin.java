@@ -81,6 +81,7 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
                     getHealth(),
                     getMaxHealth(),
                     getFoodData().getFoodLevel(),
+                    Math.max(0, getAirSupply()),
                     experienceLevel,
                     experienceProgress,
                     getX(),

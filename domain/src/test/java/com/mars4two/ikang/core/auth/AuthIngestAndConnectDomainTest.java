@@ -78,7 +78,7 @@ class AuthIngestAndConnectDomainTest {
     void snapshotIngestManagerBuildsExpectedWireRequestPayload() {
         PlayerStatsSnapshot snap = new PlayerStatsSnapshot(
                 Set.of(PLAYER_ID),
-                new RawPlayerStats("survival", 20.0f, 20.0f, 20, 30, 0.5f, 1.0, 64.0, -2.0, 90.0f, 0.0f)
+                new RawPlayerStats("survival", 20.0f, 20.0f, 20, 300, 30, 0.5f, 1.0, 64.0, -2.0, 90.0f, 0.0f)
         );
 
         SnapshotsIngestRequest request = SnapshotIngestManager.buildIngestRequest(
@@ -174,7 +174,7 @@ class AuthIngestAndConnectDomainTest {
 
             @Override
             public RawPlayerStats stats() {
-                return new RawPlayerStats("survival", 20f, 20f, 20, 1, 0f, 0, 64, 0, 0f, 0f);
+                return new RawPlayerStats("survival", 20f, 20f, 20, 300, 1, 0f, 0, 64, 0, 0f, 0f);
             }
 
             @Override
