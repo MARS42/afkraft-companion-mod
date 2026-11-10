@@ -49,9 +49,13 @@ public final class InventoryEquipmentAdapter {
         boolean isDamageable = itemStack.isDamageableItem();
         RawItemStackExtraData extraData = null;
         if (isDamageable && itemStack.getMaxDamage() > 0) {
+            int maxDamage = itemStack.getMaxDamage();
+            int currentDamage = itemStack.getDamageValue();
+            int remainingUsages = Math.max(0, maxDamage - currentDamage);
             extraData = new RawItemStackExtraData(
-                    itemStack.getDamageValue(),
-                    itemStack.getMaxDamage()
+                    currentDamage,
+                    maxDamage,
+                    remainingUsages
             );
         }
 
