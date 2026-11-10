@@ -10,9 +10,11 @@ public record RawItemStack(
         int count,
         List<RawEnchantment> enchantments,
         int index,
-        boolean isStackable
+        boolean isStackable,
+        boolean isDamageable,
+        RawItemStackExtraData extraData
 ) implements RawObject {
-    public static final RawItemStack EMPTY = new RawItemStack("", null, 0, List.of(), 0, false);
+    public static final RawItemStack EMPTY = new RawItemStack("", null, 0, List.of(), 0, false, false, null);
 
     public static RawItemStack of(
             int slot,
@@ -23,6 +25,20 @@ public record RawItemStack(
             List<RawEnchantment> enchantments,
             boolean isStackable
     ) {
+        return of(slot, rawId, isBlockItem, customName, count, enchantments, isStackable, false, null);
+    }
+
+    public static RawItemStack of(
+            int slot,
+            String rawId,
+            boolean isBlockItem,
+            String customName,
+            int count,
+            List<RawEnchantment> enchantments,
+            boolean isStackable,
+            boolean isDamageable,
+            RawItemStackExtraData extraData
+    ) {
         String aliasedId = isBlockItem
                 ? MinecraftIdsUtils.blockAlias(rawId)
                 : MinecraftIdsUtils.itemAlias(rawId);
@@ -32,7 +48,9 @@ public record RawItemStack(
                 count,
                 enchantments != null ? List.copyOf(enchantments) : List.of(),
                 slot,
-                isStackable
+                isStackable,
+                isDamageable,
+                extraData
         );
     }
 
@@ -44,7 +62,9 @@ public record RawItemStack(
                 count,
                 enchantments,
                 index,
-                isStackable
+                isStackable,
+                isDamageable,
+                extraData
         };
     }
 }
