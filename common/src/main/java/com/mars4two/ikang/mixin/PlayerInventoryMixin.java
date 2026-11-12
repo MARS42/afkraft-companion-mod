@@ -91,6 +91,22 @@ public abstract class PlayerInventoryMixin implements PlayerHotbarSyncHook {
         ingestManager.ingestPlayerHotbarState(afkraft_companion$inventoryView);
     }
 
+    @Override
+    public void afkraft_companion$syncEquipmentAndHotbar() {
+        if (!afkraft_companion$isServerSide()) {
+            return;
+        }
+        ingestManager.ingestPlayerHotbarState(afkraft_companion$inventoryView);
+    }
+
+    @Override
+    public void afkraft_companion$syncSlotChange(int slot) {
+        if (!afkraft_companion$isServerSide()) {
+            return;
+        }
+        ingestSlotedItems(slot);
+    }
+
     @Inject(method = "setItem", at = @At("TAIL"))
     private void onSetItem(int slot, ItemStack itemStack, CallbackInfo ci) {
         if (!afkraft_companion$isServerSide()) return;
@@ -106,7 +122,7 @@ public abstract class PlayerInventoryMixin implements PlayerHotbarSyncHook {
     @Inject(method = "add(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("TAIL"))
     private void onAdd(ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
         if (!afkraft_companion$isServerSide()) return;
-        ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
+        ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
     }
 
     @Inject(method = "removeItem(II)Lnet/minecraft/world/item/ItemStack;", at = @At("RETURN"))
@@ -118,14 +134,40 @@ public abstract class PlayerInventoryMixin implements PlayerHotbarSyncHook {
     @Inject(method = "removeItem(Lnet/minecraft/world/item/ItemStack;)V", at = @At("TAIL"))
     private void onRemove(ItemStack itemStack, CallbackInfo ci) {
         if (!afkraft_companion$isServerSide()) return;
-        ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
+        ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
     }
 
     @Inject(method = "dropAll", at = @At("TAIL"))
     private void onDropAll(CallbackInfo ci) {
         if (!afkraft_companion$isServerSide()) return;
-        ingestManager.ingestPlayerInventoryState(afkraft_companion$inventoryView);
+        ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
     }
+
+    @Inject(method = "setChanged", at = @At("TAIL"))
+    private void onSetChanged(CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
+        ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
+    }
+
+    @Inject(method = "pickSlot", at = @At("TAIL"))
+    private void onPickSlot(int slot, CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
+        ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
+    }
+
+    //? if >=1.21.4 {
+    @Inject(method = "addAndPickItem", at = @At("TAIL"))
+    private void onAddAndPickItem(ItemStack itemStack, CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
+        ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
+    }
+    //?} else {
+    /*@Inject(method = "setPickedItem", at = @At("TAIL"))
+    private void onSetPickedItem(ItemStack itemStack, CallbackInfo ci) {
+        if (!afkraft_companion$isServerSide()) return;
+        ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
+    }
+    *///?}
 
     //? if >=1.21.5 {
     @Inject(method = "setSelectedSlot", at = @At("TAIL"))
@@ -139,28 +181,15 @@ public abstract class PlayerInventoryMixin implements PlayerHotbarSyncHook {
         if (!afkraft_companion$isServerSide()) return;
         ingestManager.ingestPlayerHotbarState(afkraft_companion$inventoryView);
     }
-    //?} else {
-    /*@Inject(method = "pickSlot", at = @At("TAIL"))
-    private void onPickSlot(int slot, CallbackInfo ci) {
-        afkraft_companion$syncHotbarSelection();
-    }
-
-    //? if >=1.21.4 {
-    @Inject(method = "addAndPickItem", at = @At("TAIL"))
-    private void onAddAndPickItem(ItemStack itemStack, CallbackInfo ci) {
-        afkraft_companion$syncHotbarSelection();
-    }
-    //?} else {
-    @Inject(method = "setPickedItem", at = @At("TAIL"))
-    private void onSetPickedItem(ItemStack itemStack, CallbackInfo ci) {
-        afkraft_companion$syncHotbarSelection();
-    }
     //?}
-    *///?}
 
     @Unique
     private void ingestSlotedItems(int slot) {
         if (!afkraft_companion$isServerSide()) {
+            return;
+        }
+        if (slot < 0) {
+            ingestManager.ingestPlayerFullInventoryState(afkraft_companion$inventoryView);
             return;
         }
         if (InventoryEquipmentAdapter.isHotbarSlot(slot)) {

@@ -21,11 +21,6 @@ public record PlayerHotbarSnapshot(
         return getSnapshotName() + playerIds;
     }
 
-    @Override
-    public Object changeToken() {
-        return "" + data.items() + data.selectedSlot();
-    }
-
     public static PlayerHotbarSnapshot of(InventoryView inventory) {
         return new PlayerHotbarSnapshot(
                 Set.of(inventory.playerId()),

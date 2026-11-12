@@ -141,6 +141,22 @@ public class SnapshotIngestManager implements AutoCloseable {
         submitSnapshot(PlayerMobSphereSnapshot.of(player));
     }
 
+    public void ingestPlayerEquipmentState(InventoryView playerInventory) {
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(PlayerEquipmentSnapshot.of(playerInventory));
+    }
+
+    public void ingestPlayerFullInventoryState(InventoryView playerInventory) {
+        if (this.conflater == null) {
+            return;
+        }
+        submitSnapshot(PlayerHotbarSnapshot.of(playerInventory));
+        submitSnapshot(PlayerInventorySnapshot.of(playerInventory));
+        submitSnapshot(PlayerEquipmentSnapshot.of(playerInventory));
+    }
+
     public void ingestPlayerInventoryState(InventoryView playerInventory) {
         if (this.conflater == null) {
             return;

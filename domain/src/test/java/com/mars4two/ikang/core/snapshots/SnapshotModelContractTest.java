@@ -9,10 +9,13 @@ import com.mars4two.ikang.core.snapshots.model.RawItemStack;
 import com.mars4two.ikang.core.snapshots.model.RawItemStackExtraData;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerEffect;
 import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
+import com.mars4two.ikang.core.util.Conflater;
 import com.mars4two.ikang.core.util.ContainerView;
+import com.mars4two.ikang.core.util.InventoryView;
 import com.mars4two.ikang.core.util.MinecraftIdsUtils;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -20,6 +23,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SnapshotModelContractTest {
@@ -183,5 +187,135 @@ class SnapshotModelContractTest {
                 new Object[]{"survival", 20.0f, 20.0f, 20, 300, 5, 0.5f, 10.0, 64.0, -10.0, 90.0f, 0.0f},
                 stats.toPayload()
         );
+    }
+
+    @Test
+    void hotbarAndEquipmentSnapshotsDetectStackCountAndDurabilityChangesInConflater() throws Exception {
+        UUID playerId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        List<SnapshotBase> emitted = new ArrayList<>();
+
+        try (Conflater<SnapshotBase> conflater = new Conflater<>(
+                60_000,
+                SnapshotBase::key,
+                SnapshotBase::changeToken,
+                emitted::addAll,
+                null
+        )) {
+            InventoryView initialView = stubInventoryView(
+                    playerId,
+                    0,
+                    List.of(
+                            RawItemStack.of(0, "minecraft:cobblestone", true, "", 10, List.of(), true),
+                            RawItemStack.of(1, "minecraft:diamond_pickaxe", false, "", 1, List.of(), false, true, new RawItemStackExtraData(10, 1561))
+                    ),
+                    List.of(
+                            RawItemStack.of(0, "minecraft:diamond_chestplate", false, "", 1, List.of(), false, true, new RawItemStackExtraData(5, 528))
+                    ),
+                    20
+            );
+
+            PlayerHotbarSnapshot hotbarInitial = PlayerHotbarSnapshot.of(initialView);
+            PlayerEquipmentSnapshot equipInitial = PlayerEquipmentSnapshot.of(initialView);
+            conflater.submit(hotbarInitial);
+            conflater.submit(equipInitial);
+            conflater.flush();
+            assertEquals(2, emitted.size());
+            emitted.clear();
+
+            // 1. Hotbar stack pickup (count 10 -> 11 in slot 0 without changing selectedSlot)
+            InventoryView stackedHotbarView = stubInventoryView(
+                    playerId,
+                    0,
+                    List.of(
+                            RawItemStack.of(0, "minecraft:cobblestone", true, "", 11, List.of(), true),
+                            RawItemStack.of(1, "minecraft:diamond_pickaxe", false, "", 1, List.of(), false, true, new RawItemStackExtraData(10, 1561))
+                    ),
+                    initialView.playerEquipment(),
+                    20
+            );
+            PlayerHotbarSnapshot hotbarAfterPickup = PlayerHotbarSnapshot.of(stackedHotbarView);
+            assertNotEquals(hotbarInitial.changeToken(), hotbarAfterPickup.changeToken());
+            conflater.submit(hotbarAfterPickup);
+            conflater.flush();
+            assertEquals(1, emitted.size());
+            assertEquals("playerHotbar", emitted.getFirst().getSnapshotName());
+            emitted.clear();
+
+            // 2. Damageable item used in hotbar (pickaxe damage 10 -> 11 without changing selectedSlot)
+            InventoryView damagedToolHotbarView = stubInventoryView(
+                    playerId,
+                    0,
+                    List.of(
+                            RawItemStack.of(0, "minecraft:cobblestone", true, "", 11, List.of(), true),
+                            RawItemStack.of(1, "minecraft:diamond_pickaxe", false, "", 1, List.of(), false, true, new RawItemStackExtraData(11, 1561))
+                    ),
+                    initialView.playerEquipment(),
+                    20
+            );
+            PlayerHotbarSnapshot hotbarAfterToolUse = PlayerHotbarSnapshot.of(damagedToolHotbarView);
+            assertNotEquals(hotbarAfterPickup.changeToken(), hotbarAfterToolUse.changeToken());
+            conflater.submit(hotbarAfterToolUse);
+            conflater.flush();
+            assertEquals(1, emitted.size());
+            assertEquals("playerHotbar", emitted.getFirst().getSnapshotName());
+            emitted.clear();
+
+            // 3. Armor durability loss on player damage (chestplate damage 5 -> 6, armor value stays 20)
+            InventoryView damagedArmorView = stubInventoryView(
+                    playerId,
+                    0,
+                    damagedToolHotbarView.hotbarItems(),
+                    List.of(
+                            RawItemStack.of(0, "minecraft:diamond_chestplate", false, "", 1, List.of(), false, true, new RawItemStackExtraData(6, 528))
+                    ),
+                    20
+            );
+            PlayerEquipmentSnapshot equipAfterDamage = PlayerEquipmentSnapshot.of(damagedArmorView);
+            assertNotEquals(equipInitial.changeToken(), equipAfterDamage.changeToken());
+            conflater.submit(equipAfterDamage);
+            conflater.flush();
+            assertEquals(1, emitted.size());
+            assertEquals("playerEquipment", emitted.getFirst().getSnapshotName());
+        }
+    }
+
+    private static InventoryView stubInventoryView(
+            UUID playerId,
+            int selectedSlot,
+            List<RawItemStack> hotbarItems,
+            List<RawItemStack> equipmentItems,
+            int armorValue
+    ) {
+        return new InventoryView() {
+            @Override
+            public UUID playerId() {
+                return playerId;
+            }
+
+            @Override
+            public List<RawItemStack> hotbarItems() {
+                return hotbarItems;
+            }
+
+            @Override
+            public List<RawItemStack> inventoryItems() {
+                return List.of();
+            }
+
+            @Override
+            public List<RawItemStack> playerEquipment() {
+                return equipmentItems;
+            }
+
+            @Override
+            public int armorValue() {
+                return armorValue;
+            }
+
+            @Override
+            public int selectedSlot() {
+                return selectedSlot;
+            }
+        };
     }
 }
