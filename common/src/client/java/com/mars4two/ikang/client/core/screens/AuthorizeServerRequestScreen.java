@@ -1,6 +1,7 @@
 package com.mars4two.ikang.client.core.screens;
 
 import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
+import com.mars4two.ikang.core.util.AFKraftTranslations;
 import net.minecraft.ChatFormatting;
 //? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -25,13 +26,14 @@ public class AuthorizeServerRequestScreen extends Screen {
     }
 
     public AuthorizeServerRequestScreen(Screen parentScreen, String serverName, Consumer<Boolean> callback) {
-        super(Component.literal("AFKraft: Autorizar servidor"));
+        super(AFKraftTranslations.translatable(AFKraftTranslations.GUI_AUTH_SERVER_TITLE));
         this.parentScreen = parentScreen;
         this.serverName = serverName;
         this.callback = callback;
-        this.message = Component.literal("¿Autorizar el servidor \"")
-                .append(Component.literal(this.serverName).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
-                .append(Component.literal("\"?"));
+        this.message = AFKraftTranslations.translatable(
+                AFKraftTranslations.GUI_AUTH_SERVER_MSG,
+                Component.literal(this.serverName).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+        );
     }
 
     @Override
@@ -43,14 +45,14 @@ public class AuthorizeServerRequestScreen extends Screen {
         int buttonsY = this.height / 2 + 15;
 
         Button authorizeButton = Button.builder(
-                        Component.literal("Autorizar"),
+                        AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_AUTHORIZE),
                         button -> handleDecision(true)
                 )
                 .bounds(this.width / 2 - buttonWidth - 6, buttonsY, buttonWidth, buttonHeight)
                 .build();
 
         Button cancelButton = Button.builder(
-                        Component.literal("En otro momento"),
+                        AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_LATER),
                         button -> handleDecision(false)
                 )
                 .bounds(this.width / 2 + 6, buttonsY, buttonWidth, buttonHeight)

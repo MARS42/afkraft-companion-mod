@@ -7,6 +7,7 @@ import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
 import com.mars4two.ikang.core.auth.AuthService;
 import com.mars4two.ikang.core.auth.AuthenticationException;
 import com.mars4two.ikang.core.auth.dtos.HasConnectedResponse;
+import com.mars4two.ikang.core.util.AFKraftTranslations;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
@@ -27,7 +28,7 @@ public final class ClientConnectService {
     private ClientConnectService() {
     }
 
-    public static int executeConnect(Consumer<String> onFeedback, Consumer<String> onFeedbackError) {
+    public static int executeConnect(Consumer<Component> onFeedback, Consumer<Component> onFeedbackError) {
         Minecraft minecraft = Minecraft.getInstance();
 
         CompletableFuture.runAsync(() -> {
@@ -36,11 +37,15 @@ public final class ClientConnectService {
 
                 var isConnected = AuthService.getIsConnected(profileId);
                 if (isConnected) {
-                    minecraft.execute(() -> onFeedback.accept("Ya te encuentras conectado a AFKraft Companion"));
+                    minecraft.execute(() -> onFeedback.accept(
+                            AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_ALREADY)
+                    ));
                     return;
                 }
 
-                minecraft.execute(() -> onFeedback.accept("Conectando a AFKraft Companion..."));
+                minecraft.execute(() -> onFeedback.accept(
+                        AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_CONNECTING)
+                ));
 
                 LOGGER.info("[AFKraft] Iniciando autenticación para usuario: {}", profileId);
 
@@ -60,11 +65,11 @@ public final class ClientConnectService {
                 Runnable cancelPollHandle = ClientConnectDomainService.startPolling(
                         connectData,
                         () -> {
-                            notifyUser(minecraft, "El código de vinculación expiró. Ejecuta /afkraft connect de nuevo.");
+                            notifyUser(minecraft, AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_EXPIRED));
                             closeModal(minecraft, screen);
                         },
                         (HasConnectedResponse hasConnected) -> {
-                            notifyUser(minecraft, "Cuenta vinculada con AFKraft correctamente");
+                            notifyUser(minecraft, AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_SUCCESS));
                             closeModal(minecraft, screen);
                             ClientEvents.onClientHasConnected(profileId, hasConnected.otp());
                         }
@@ -73,21 +78,29 @@ public final class ClientConnectService {
                 screen.setOnClosed(cancelPollHandle);
                 screen.setOnCancel(() -> ClientConnectDomainService.cancelConnect(
                         connectData.verificationUrl(),
-                        () -> minecraft.execute(() -> onFeedback.accept("Vinculación cancelada")),
-                        () -> minecraft.execute(() -> onFeedbackError.accept("Ocurrió un error al cancelar la vinculación"))
+                        () -> minecraft.execute(() -> onFeedback.accept(
+                                AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_CANCELLED)
+                        )),
+                        () -> minecraft.execute(() -> onFeedbackError.accept(
+                                AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_CANCEL_ERROR)
+                        ))
                 ));
 
                 minecraft.execute(() -> {
-                    onFeedback.accept("Esperando aprobación de vinculación...");
+                    onFeedback.accept(AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_WAITING));
                     ClientUiAdapter.showScreen(minecraft, screen);
                 });
 
             } catch (AuthenticationException e) {
                 LOGGER.error("[AFKraft] Error de autenticación", e);
-                minecraft.execute(() -> onFeedbackError.accept("Error de autenticación: " + e.getMessage()));
+                minecraft.execute(() -> onFeedbackError.accept(
+                        AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_AUTH_ERROR, e.getMessage())
+                ));
             } catch (Exception e) {
                 LOGGER.error("[AFKraft] Error inesperado durante la autenticación", e);
-                minecraft.execute(() -> onFeedbackError.accept("Error al conectar: " + e.getMessage()));
+                minecraft.execute(() -> onFeedbackError.accept(
+                        AFKraftTranslations.translatable(AFKraftTranslations.CMD_CONNECT_GENERIC_ERROR, e.getMessage())
+                ));
             }
         });
 
@@ -102,7 +115,7 @@ public final class ClientConnectService {
         });
     }
 
-    private static void notifyUser(Minecraft minecraft, String message) {
-        minecraft.execute(() -> ClientUiAdapter.notifyClientChat(minecraft, Component.literal(message)));
+    private static void notifyUser(Minecraft minecraft, Component message) {
+        minecraft.execute(() -> ClientUiAdapter.notifyClientChat(minecraft, message));
     }
 }

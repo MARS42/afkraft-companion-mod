@@ -4,7 +4,6 @@ import com.mars4two.ikang.client.core.auth.ClientConnectService;
 import com.mars4two.ikang.client.platform.services.ClientCommandBridge;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.network.chat.Component;
 
 public final class AFKraftClientConnectCommand {
 
@@ -21,8 +20,8 @@ public final class AFKraftClientConnectCommand {
                                 .executes(context -> {
                                     S source = context.getSource();
                                     return ClientConnectService.executeConnect(
-                                            msg -> sourceAccess.sendFeedback(source, Component.literal(msg)),
-                                            errorMsg -> sourceAccess.sendError(source, Component.literal(errorMsg))
+                                            msg -> sourceAccess.sendFeedback(source, msg),
+                                            errorMsg -> sourceAccess.sendError(source, errorMsg)
                                     );
                                 }))
         );
