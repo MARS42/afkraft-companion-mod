@@ -385,6 +385,42 @@ class CommonArchitectureAndSpiTest {
         *///?}
     }
 
+    @Test
+    void hotbarPickupItemDurabilityAndEquipmentHurtMixinsAreRegisteredAndWired() throws IOException {
+        Path mixinsJson = COMMON_ROOT.resolve("src/main/resources/afkraft_companion.mixins.json");
+        Path itemStackMixin = MAIN_JAVA.resolve("com/mars4two/ikang/mixin/ItemStackMixin.java");
+        Path playerInventoryMixin = MAIN_JAVA.resolve("com/mars4two/ikang/mixin/PlayerInventoryMixin.java");
+        Path playerSnapshotMixin = MAIN_JAVA.resolve("com/mars4two/ikang/mixin/PlayerSnapshotMixin.java");
+
+        assertTrue(Files.isRegularFile(mixinsJson), "Missing afkraft_companion.mixins.json");
+        assertTrue(Files.isRegularFile(itemStackMixin), "Missing ItemStackMixin.java");
+        assertTrue(Files.isRegularFile(playerInventoryMixin), "Missing PlayerInventoryMixin.java");
+        assertTrue(Files.isRegularFile(playerSnapshotMixin), "Missing PlayerSnapshotMixin.java");
+
+        String mixinsConfig = Files.readString(mixinsJson);
+        assertTrue(mixinsConfig.contains("\"ItemStackMixin\""), "afkraft_companion.mixins.json must register ItemStackMixin");
+
+        String itemStackSource = Files.readString(itemStackMixin);
+        assertTrue(itemStackSource.contains("hurtAndBreak"), "ItemStackMixin must inject into hurtAndBreak");
+        assertTrue(itemStackSource.contains("afkraft_companion$syncEquipmentAndHotbar"), "ItemStackMixin must trigger syncEquipmentAndHotbar");
+
+        String inventorySource = Files.readString(playerInventoryMixin);
+        assertTrue(
+                inventorySource.contains("ingestPlayerFullInventoryState"),
+                "PlayerInventoryMixin must ingest full inventory state (hotbar + inventory + equipment) on non-slot-specific additions/updates"
+        );
+
+        String snapshotSource = Files.readString(playerSnapshotMixin);
+        assertTrue(
+                snapshotSource.contains("afkraft_companion$syncEquipmentAndHotbar"),
+                "PlayerSnapshotMixin hurt handler must trigger syncEquipmentAndHotbar"
+        );
+        assertTrue(
+                snapshotSource.contains("afkraft_companion$syncSlotChange"),
+                "PlayerSnapshotMixin initMenu listener must sync slot changes"
+        );
+    }
+
     private static int countOccurrences(String text, String needle) {
         int count = 0;
         int idx = 0;

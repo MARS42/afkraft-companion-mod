@@ -11,6 +11,7 @@ import com.mars4two.ikang.core.snapshots.model.RawPlayerStats;
 import com.mars4two.ikang.core.util.AttackCadenceTracker;
 import com.mars4two.ikang.core.util.ItemStackMapper;
 import com.mars4two.ikang.core.util.MobSphereCalculator;
+import com.mars4two.ikang.core.util.PlayerHotbarSyncHook;
 import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import com.mars4two.ikang.core.util.ServerPlayerAttackHook;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
@@ -35,6 +36,11 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerListener;
+import net.minecraft.world.inventory.ResultSlot;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -231,15 +237,40 @@ public abstract class PlayerSnapshotMixin extends Player implements ServerPlayer
         ingestManager.ingestPlayerStats(afkraft_companion$statsView);
     }
 
+    @Inject(at = @At("TAIL"), method = "initMenu")
+    private void onInitMenu(AbstractContainerMenu container, CallbackInfo ci) {
+        container.addSlotListener(new ContainerListener() {
+            @Override
+            public void slotChanged(AbstractContainerMenu menu, int slotIndex, ItemStack changedItem) {
+                Slot slot = menu.getSlot(slotIndex);
+                if (!(slot instanceof ResultSlot)
+                        && slot.container == PlayerSnapshotMixin.this.getInventory()
+                        && PlayerSnapshotMixin.this.getInventory() instanceof PlayerHotbarSyncHook hook) {
+                    hook.afkraft_companion$syncSlotChange(slot.getContainerSlot());
+                }
+            }
+
+            @Override
+            public void dataChanged(AbstractContainerMenu menu, int id, int value) {
+            }
+        });
+    }
+
     //? if >=1.21.2 {
     @Inject(at = @At("TAIL"), method = "hurtServer")
     private void onHurtServer(ServerLevel level, DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         ingestManager.ingestPlayerStats(afkraft_companion$statsView);
+        if (this.getInventory() instanceof PlayerHotbarSyncHook hook) {
+            hook.afkraft_companion$syncEquipmentAndHotbar();
+        }
     }
     //?} else {
     /*@Inject(at = @At("TAIL"), method = "hurt")
     private void onHurt(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         ingestManager.ingestPlayerStats(afkraft_companion$statsView);
+        if (this.getInventory() instanceof PlayerHotbarSyncHook hook) {
+            hook.afkraft_companion$syncEquipmentAndHotbar();
+        }
     }
     *///?}
 
