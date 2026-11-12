@@ -10,6 +10,7 @@ import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseSe
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
 import com.mars4two.ikang.core.storage.ContainerTrackingMode;
+import com.mars4two.ikang.core.util.AFKraftTranslations;
 import com.mars4two.ikang.platform.services.Services;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -158,14 +159,26 @@ public final class ClientEvents {
                             .withInitialValue(initialMode);
                     *///?}
                     var portableButton = portableButtonBuilder
-                            .create(buttonX, buttonY, 84, 16, Component.literal("AFK"),
-                                    (b, mode) -> onClickButton(screen, menu, mode));
+                            .create(
+                                    buttonX,
+                                    buttonY,
+                                    84,
+                                    16,
+                                    AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONTAINER_PREFIX),
+                                    (b, mode) -> onClickButton(screen, menu, mode)
+                            );
                     portableButton.active = afkraftEnabled.get();
                     addWidget.accept(portableButton);
                 } else {
                     var containerButton = CycleButton.onOffBuilder(afkContainerMode.get().isEnabled())
-                            .create(buttonX, buttonY, 48, 16, Component.literal("AFK"),
-                                    (b, enabled) -> onClickButton(screen, menu, enabled ? ContainerTrackingMode.CONTAINER : ContainerTrackingMode.OFF));
+                            .create(
+                                    buttonX,
+                                    buttonY,
+                                    48,
+                                    16,
+                                    AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONTAINER_PREFIX),
+                                    (b, enabled) -> onClickButton(screen, menu, enabled ? ContainerTrackingMode.CONTAINER : ContainerTrackingMode.OFF)
+                            );
                     containerButton.active = afkraftEnabled.get();
                     addWidget.accept(containerButton);
                 }
@@ -175,9 +188,9 @@ public final class ClientEvents {
 
     private static Component formatPortableModeLabel(ContainerTrackingMode mode) {
         return switch (mode) {
-            case PORTABLE_CONTAINER -> Component.literal("Shulker");
-            case LOAD_STATION -> Component.literal("Posición");
-            default -> Component.literal("Off");
+            case PORTABLE_CONTAINER -> AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONTAINER_SHULKER);
+            case LOAD_STATION -> AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONTAINER_STATION);
+            default -> AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONTAINER_OFF);
         };
     }
 

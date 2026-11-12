@@ -3,9 +3,9 @@ package com.mars4two.ikang.client.core.auth;
 import com.mars4two.ikang.client.core.events.ClientEvents;
 import com.mars4two.ikang.client.core.screens.AuthorizeServerRequestScreen;
 import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
+import com.mars4two.ikang.core.util.AFKraftTranslations;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,12 +59,15 @@ public final class ClientAuthorizeServerService {
                     log.info("Server authorized by player successfully");
                     minecraft.execute(() -> {
                         hasAuthorizedCallback.run();
-                        ClientUiAdapter.sendPlayerMessage(player, Component.literal("Servidor autorizado correctamente"));
+                        ClientUiAdapter.sendPlayerMessage(
+                                player,
+                                AFKraftTranslations.translatable(AFKraftTranslations.CHAT_AUTH_SERVER_SUCCESS)
+                        );
                     });
                 },
                 () -> minecraft.execute(() -> ClientUiAdapter.sendPlayerMessage(
                         player,
-                        Component.literal("Error al autorizar el servidor")
+                        AFKraftTranslations.translatable(AFKraftTranslations.CHAT_AUTH_SERVER_ERROR)
                 ))
         );
     }
@@ -73,7 +76,7 @@ public final class ClientAuthorizeServerService {
         log.error("Error while authorizing server", e);
         minecraft.execute(() -> ClientUiAdapter.sendPlayerMessage(
                 player,
-                Component.literal("Ocurrió un error al autorizar el servidor, intenta más tarde")
+                AFKraftTranslations.translatable(AFKraftTranslations.CHAT_AUTH_SERVER_RETRY)
         ));
     }
 
@@ -81,7 +84,7 @@ public final class ClientAuthorizeServerService {
         log.info("User is not connected");
         minecraft.execute(() -> ClientUiAdapter.sendPlayerMessage(
                 player,
-                Component.literal("Debes estar conectado para autorizar un servidor")
+                AFKraftTranslations.translatable(AFKraftTranslations.CHAT_AUTH_SERVER_NOT_CONNECTED)
         ));
     }
 }

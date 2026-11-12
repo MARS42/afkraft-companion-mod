@@ -7,12 +7,12 @@ import com.mars4two.ikang.client.platform.services.ClientCommandBridge;
 import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedResponse;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedRequest;
+import com.mars4two.ikang.core.util.AFKraftTranslations;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mars4two.ikang.platform.services.Services;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
 public final class AFKraftClientEnableCommand {
@@ -39,12 +39,12 @@ public final class AFKraftClientEnableCommand {
         if (payload.isAuthenticated()) {
             ClientUiAdapter.sendPlayerMessage(
                     player,
-                    Component.literal("Credenciales de AFKraft activas, generadas por: " + payload.credentialsOwner())
+                    AFKraftTranslations.translatable(AFKraftTranslations.CMD_ENABLE_ALREADY_ACTIVE, payload.credentialsOwner())
             );
             return;
         }
 
-        ClientUiAdapter.sendPlayerMessage(player, Component.literal("Generando credenciales AFKraft..."));
+        ClientUiAdapter.sendPlayerMessage(player, AFKraftTranslations.translatable(AFKraftTranslations.CMD_ENABLE_GENERATING));
         ClientAuthService.authenticate(
                 (serverId, joinOtp) -> Minecraft.getInstance().execute(
                         () -> Services.NETWORK.sendToServer(new GetCredentialsRequestServerboundPayload(
@@ -54,8 +54,8 @@ public final class AFKraftClientEnableCommand {
                                 ClientEvents.getWorldName()
                         ))
                 ),
-                e -> ClientUiAdapter.sendPlayerMessage(player, Component.literal("Error al generar credenciales AFKraft")),
-                () -> ClientUiAdapter.sendPlayerMessage(player, Component.literal("Aún no has enlazado tu cuenta con AFKraft"))
+                e -> ClientUiAdapter.sendPlayerMessage(player, AFKraftTranslations.translatable(AFKraftTranslations.CMD_ENABLE_ERROR)),
+                () -> ClientUiAdapter.sendPlayerMessage(player, AFKraftTranslations.translatable(AFKraftTranslations.CMD_ENABLE_NOT_LINKED))
         );
     }
 }

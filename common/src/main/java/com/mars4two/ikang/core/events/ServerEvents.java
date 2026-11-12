@@ -12,6 +12,7 @@ import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServe
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import com.mars4two.ikang.core.storage.ContainerTrackingMode;
+import com.mars4two.ikang.core.util.AFKraftTranslations;
 import com.mars4two.ikang.core.util.BlockEntityWrapper;
 import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
@@ -72,7 +73,6 @@ public final class ServerEvents {
             // TODO Implement "Remember server" feature
 //            if(AuthService.isPlayerAuthorized(playerId)){
 //                log.info("Player {} already authorized the server", playerId);
-//                player.sendSystemMessage(Component.literal("Bienvenido de nuevo, ya has autorizado este servidor para AFKraft"));
 //                return;
 //            }
             sendAuthorizeServerRequestToPlayer(player);
@@ -109,7 +109,7 @@ public final class ServerEvents {
                 payload.serverName(),
                 WorldAndEntityAdapter.playerName(admin),
                 () -> {
-                    admin.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
+                    admin.sendSystemMessage(AFKraftTranslations.translatable(AFKraftTranslations.CHAT_ADMIN_CREDS_SUCCESS));
                     var server = admin.level().getServer();
                     if (!server.isDedicatedServer()) {
                         log.info("Server is not dedicated, no need to send authorize server request to players");
@@ -118,7 +118,7 @@ public final class ServerEvents {
 
                     server.getPlayerList().getPlayers().forEach(ServerEvents::sendAuthorizeServerRequestToPlayer);
                 },
-                () -> admin.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft"))
+                () -> admin.sendSystemMessage(AFKraftTranslations.translatable(AFKraftTranslations.CHAT_ADMIN_CREDS_ERROR))
         );
     }
 
@@ -128,16 +128,16 @@ public final class ServerEvents {
             if (Boolean.FALSE.equals(isConnected)) {
                 log.info("Player {} is not connected, skipping authorize server request", profileId);
                 Component clickableWord = WorldAndEntityAdapter.buildClickableCommandWord(
-                        "[vincula]",
+                        AFKraftTranslations.translatable(AFKraftTranslations.CHAT_SERVER_LINK_TEXT),
                         ChatFormatting.GREEN,
                         "/afkraft connect",
-                        "Haz clic aquí para iniciar la vinculación"
+                        AFKraftTranslations.translatable(AFKraftTranslations.CHAT_SERVER_LINK_HOVER)
                 );
 
-                Component fullMessage = Component.literal("El servidor ha activado AFKraft, pero tú no has enlazado tu cuenta con AFKraft. Por favor, ")
-                        .withStyle(ChatFormatting.YELLOW)
-                        .append(clickableWord)
-                        .append(Component.literal(" tu cuenta para poder autorizar el servidor.").withStyle(ChatFormatting.YELLOW));
+                Component fullMessage = AFKraftTranslations.translatable(
+                        AFKraftTranslations.CHAT_SERVER_LINK_PROMPT,
+                        clickableWord
+                ).withStyle(ChatFormatting.YELLOW);
 
                 player.sendSystemMessage(fullMessage);
                 return;
