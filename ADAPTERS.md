@@ -70,6 +70,8 @@ Loader SPIs decouple `:common` from **Fabric** and **NeoForge**. They are loaded
 | `BlockInteractionHooks` | Common (`main`) | `FabricBlockInteractionHooks` | `NeoForgeBlockInteractionHooks` | Right-click block inspection (`InteractionResult`) and deferred post-block-break cleanup (`<26.2` vs `>=26.2`). |
 | `ClientCommandBridge` | Client (`client`) | `FabricClientCommandBridge` | `NeoForgeClientCommandBridge` | Client-side `/afkraft_companion` subcommands (`connect`, `status`, `disconnect`) and permission checks (`<1.21.6`, `1.21.6`–`1.21.10`, `>=1.21.11`). |
 | `ScreenWidgetBridge` | Client (`client`) | `FabricScreenWidgetBridge` | `NeoForgeScreenWidgetBridge` | Injecting the AFK toggle button into container screens after `Screen.init`. |
+| `PlatformInfoHooks` | Common (`main`) | `FabricPlatformInfoHooks` | `NeoForgePlatformInfoHooks` | Querying mod version, Minecraft version, and loader environment dynamically. |
+| `ClientLifecycleHooks` | Client (`client`) | `FabricClientLifecycleHooks` | `NeoForgeClientLifecycleHooks` | Client-side world connection and player login lifecycle hooks. |
 
 ---
 

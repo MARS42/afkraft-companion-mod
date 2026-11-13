@@ -25,6 +25,10 @@
   "chat.afkraft.server_link_prompt.link_text": "[link]",
   "chat.afkraft.server_link_prompt.link_hover": "Click here to start linking",
 
+  "chat.afkraft.update.available": "A new version of AFKraft Companion is available: %s (installed: %s). %s",
+  "chat.afkraft.update.button_download": "[Download Update]",
+  "chat.afkraft.update.hover_tooltip": "Click to open the download page",
+
   "gui.afkraft.authorize_server.title": "AFKraft: Authorize Server",
   "gui.afkraft.authorize_server.message": "Authorize server \"%s\"?",
   "gui.afkraft.button.authorize": "Authorize",

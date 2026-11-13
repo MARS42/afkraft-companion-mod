@@ -12,6 +12,7 @@ public final class Services {
     public static final NetworkBridge NETWORK = load(NetworkBridge.class);
     public static final ServerLifecycleHooks SERVER_LIFECYCLE = load(ServerLifecycleHooks.class);
     public static final BlockInteractionHooks BLOCK_INTERACTION = load(BlockInteractionHooks.class);
+    public static final PlatformInfoHooks PLATFORM_INFO = load(PlatformInfoHooks.class);
 
     private Services() {
     }

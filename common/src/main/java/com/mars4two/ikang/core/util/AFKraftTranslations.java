@@ -38,6 +38,11 @@ public final class AFKraftTranslations {
     public static final String CHAT_SERVER_LINK_TEXT = "chat.afkraft.server_link_prompt.link_text";
     public static final String CHAT_SERVER_LINK_HOVER = "chat.afkraft.server_link_prompt.link_hover";
 
+    // Chat - Update Notification
+    public static final String CHAT_UPDATE_AVAILABLE = "chat.afkraft.update.available";
+    public static final String CHAT_UPDATE_BUTTON = "chat.afkraft.update.button_download";
+    public static final String CHAT_UPDATE_HOVER = "chat.afkraft.update.hover_tooltip";
+
     // GUI - Authorize Server Screen
     public static final String GUI_AUTH_SERVER_TITLE = "gui.afkraft.authorize_server.title";
     public static final String GUI_AUTH_SERVER_MSG = "gui.afkraft.authorize_server.message";
