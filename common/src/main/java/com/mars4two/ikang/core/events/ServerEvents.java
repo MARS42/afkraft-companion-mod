@@ -15,6 +15,7 @@ import com.mars4two.ikang.core.storage.ContainerTrackingMode;
 import com.mars4two.ikang.core.util.AFKraftTranslations;
 import com.mars4two.ikang.core.util.BlockEntityWrapper;
 import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
+import com.mars4two.ikang.core.version.UpdateCheckerService;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mars4two.ikang.platform.services.Services;
 import net.minecraft.ChatFormatting;
@@ -265,6 +266,20 @@ public final class ServerEvents {
 
     public static void onServerStarted(MinecraftServer server) {
         SnapshotIngestManager.getInstance().start(server.getWorldData().getLevelName());
+
+        if (server.isDedicatedServer()) {
+            String modVer = Services.PLATFORM_INFO.getModVersion();
+            String mcVer = Services.PLATFORM_INFO.getMinecraftVersion();
+            new UpdateCheckerService().checkAsync(modVer, mcVer)
+                    .thenAccept(res -> {
+                        if (res.isOutdated()) {
+                            log.warn("[AFKraft Companion] An update is available: v{} (running: v{}). Download: {}",
+                                    res.latestVersion().toCleanString(),
+                                    res.currentVersion().toCleanString(),
+                                    res.downloadUrl());
+                        }
+                    });
+        }
     }
 
     public static void onServerClosed(MinecraftServer server) {

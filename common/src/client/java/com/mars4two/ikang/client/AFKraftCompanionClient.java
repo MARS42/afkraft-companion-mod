@@ -3,6 +3,7 @@ package com.mars4two.ikang.client;
 import com.mars4two.ikang.client.command.AFKraftClientConnectCommand;
 import com.mars4two.ikang.client.command.AFKraftClientEnableCommand;
 import com.mars4two.ikang.client.core.events.ClientEvents;
+import com.mars4two.ikang.client.core.update.ClientUpdateNotificationManager;
 import com.mars4two.ikang.client.platform.services.ClientCommandBridge;
 import com.mars4two.ikang.client.platform.services.ClientServices;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
@@ -41,6 +42,8 @@ public final class AFKraftCompanionClient {
         );
 
         ClientServices.SCREENS.onAfterScreenInit(ClientEvents::onAfterScreenInit);
+
+        ClientUpdateNotificationManager.init();
     }
 
     private static <S> void registerClientCommands(

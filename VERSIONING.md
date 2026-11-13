@@ -151,6 +151,8 @@ All Stonecutter directives use exact semantic boundaries verified against Mojmap
 
 ## Porting & Release Checklist
 
+> For publishing new versions of the mod itself, bumping `mod_version`, managing `update.json`, and running in-game update verification, see the [Mod Version Administration & Release Runbook (RELEASING.md)](./RELEASING.md).
+
 - [ ] Previous top version's `neoforge_mc_range` is closed (`[<prev>,<new>)`) if `<new>` is a new top node.
 - [ ] `versions/<mc_version>/gradle.properties` defines all 9 required keys.
 - [ ] If the new version requires a new Java LTS/feature release, add that JDK version to `.github/workflows/build.yml` (`actions/setup-java`) and `CommonArchitectureAndSpiTest`.

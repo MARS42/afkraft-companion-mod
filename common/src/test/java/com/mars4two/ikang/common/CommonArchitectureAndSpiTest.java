@@ -113,15 +113,17 @@ class CommonArchitectureAndSpiTest {
     }
 
     @Test
-    void allFiveSpisAndFiveVersionAdaptersExist() {
+    void allSpisAndFiveVersionAdaptersExist() {
         List<String> requiredPaths = List.of(
                 "src/main/java/com/mars4two/ikang/platform/services/Services.java",
                 "src/main/java/com/mars4two/ikang/platform/services/NetworkBridge.java",
                 "src/main/java/com/mars4two/ikang/platform/services/ServerLifecycleHooks.java",
                 "src/main/java/com/mars4two/ikang/platform/services/BlockInteractionHooks.java",
+                "src/main/java/com/mars4two/ikang/platform/services/PlatformInfoHooks.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ClientServices.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ClientCommandBridge.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ScreenWidgetBridge.java",
+                "src/client/java/com/mars4two/ikang/client/platform/services/ClientLifecycleHooks.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/SavedDataAdapter.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/NbtCompatAdapter.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/InventoryEquipmentAdapter.java",
@@ -157,6 +159,14 @@ class CommonArchitectureAndSpiTest {
                 ),
                 new ServiceBinding(
                         "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ScreenWidgetBridge",
+                        "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/main/resources/META-INF/services/com.mars4two.ikang.platform.services.PlatformInfoHooks",
+                        "src/main/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientLifecycleHooks",
                         "src/client/java"
                 )
         );
@@ -195,6 +205,14 @@ class CommonArchitectureAndSpiTest {
                 new ServiceBinding(
                         "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ScreenWidgetBridge",
                         "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/main/resources/META-INF/services/com.mars4two.ikang.platform.services.PlatformInfoHooks",
+                        "src/main/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientLifecycleHooks",
+                        "src/client/java"
                 )
         );
 
@@ -214,6 +232,7 @@ class CommonArchitectureAndSpiTest {
         assertTrue(tomlContent.contains("modId=\"afkraft_companion\""), "neoforge.mods.toml must declare modId=\"afkraft_companion\"");
         assertTrue(tomlContent.contains("afkraft_companion.mixins.json"), "neoforge.mods.toml must register server mixin config");
         assertTrue(tomlContent.contains("afkraft_companion.client.mixins.json"), "neoforge.mods.toml must register client mixin config");
+        assertTrue(tomlContent.contains("updateJSONURL="), "neoforge.mods.toml must declare updateJSONURL");
     }
 
     @Test

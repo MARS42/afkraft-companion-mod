@@ -203,6 +203,27 @@ public final class WorldAndEntityAdapter {
                 );
     }
 
+    public static Component buildClickableUrlWord(
+            Component text,
+            ChatFormatting color,
+            String url,
+            Component hoverTooltip
+    ) {
+        return text.copy()
+                .withStyle(style -> style
+                        .withColor(color)
+                        .withBold(true)
+                        .withUnderlined(true)
+                        //? if >=1.21.5 {
+                        .withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create(url)))
+                        .withHoverEvent(new HoverEvent.ShowText(hoverTooltip))
+                        //?} else {
+                        /*.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverTooltip))
+                        *///?}
+                );
+    }
+
     public static String blockId(Block block) {
         return BuiltInRegistries.BLOCK.getKey(block).toString();
     }
