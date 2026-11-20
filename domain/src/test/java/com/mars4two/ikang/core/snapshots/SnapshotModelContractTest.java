@@ -47,8 +47,8 @@ class SnapshotModelContractTest {
     @Test
     void rawItemStackAndEffectAliasesMatchLegacyWireFormat() {
         assertEquals("e.m.haste", MinecraftIdsUtils.effectAlias("effect.minecraft.haste"));
-        assertEquals("i.m:diamond_sword", MinecraftIdsUtils.itemAlias("minecraft:diamond_sword"));
-        assertEquals("b.m:chest", MinecraftIdsUtils.blockAlias("minecraft:chest"));
+        assertEquals("i.m.diamond_sword", MinecraftIdsUtils.itemAlias("minecraft:diamond_sword"));
+        assertEquals("b.m.chest", MinecraftIdsUtils.blockAlias("minecraft:chest"));
 
         RawItemStack sword = RawItemStack.of(
                 0,
@@ -59,7 +59,7 @@ class SnapshotModelContractTest {
                 List.of(new RawEnchantment("minecraft:sharpness", 5)),
                 false
         );
-        assertEquals("i.m:diamond_sword", sword.id());
+        assertEquals("i.m.diamond_sword", sword.id());
         assertEquals("", sword.customName());
 
         RawItemStack stone = RawItemStack.of(
@@ -71,7 +71,7 @@ class SnapshotModelContractTest {
                 List.of(),
                 true
         );
-        assertEquals("b.m:stone", stone.id());
+        assertEquals("b.m.stone", stone.id());
         assertEquals("Bricks", stone.customName());
 
         RawItemStack damagedSword = RawItemStack.of(
@@ -89,7 +89,7 @@ class SnapshotModelContractTest {
         assertEquals(1411, damagedSword.extraData().remainingUsages());
         assertArrayEquals(
                 new Object[]{
-                        "i.m:diamond_sword",
+                        "i.m.diamond_sword",
                         "Excalibur",
                         1,
                         new Object[0],
@@ -104,7 +104,7 @@ class SnapshotModelContractTest {
         // Verify non-damageable backward-compatible wire format outputs "" for extraData
         assertArrayEquals(
                 new Object[]{
-                        "b.m:stone",
+                        "b.m.stone",
                         "Bricks",
                         64,
                         new Object[0],
