@@ -10,7 +10,7 @@ public record PlayerAttackCadenceSnapshot(Set<UUID> playerIds, RawPlayerAttackCa
 
     @Override
     public String getSnapshotName() {
-        return "playerAttackCadence";
+        return SnapshotType.PLAYER_ATTACK_CADENCE.snapshotName();
     }
 
     @Override

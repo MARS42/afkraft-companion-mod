@@ -56,12 +56,14 @@ public final class Conflater<T> implements AutoCloseable {
 
     /** Estado por clave. Inmutable; las transiciones se hacen con compute(). */
     private static final class Entry<T> {
+        final String group;        // logical group (e.g. snapshotName) for targeted invalidation
         final Object emittedToken; // token del último valor emitido (null = nunca emitido)
         final T pending;           // valor esperando emisión (null cuando está limpio)
         final Object pendingToken; // token del pending
         final boolean dirty;       // hay algo por emitir
 
-        Entry(Object emittedToken, T pending, Object pendingToken, boolean dirty) {
+        Entry(String group, Object emittedToken, T pending, Object pendingToken, boolean dirty) {
+            this.group = group;
             this.emittedToken = emittedToken;
             this.pending = pending;
             this.pendingToken = pendingToken;
@@ -76,6 +78,7 @@ public final class Conflater<T> implements AutoCloseable {
 
     private final Function<? super T, String> keyFn;
     private final Function<? super T, ?> tokenFn;
+    private final Function<? super T, String> groupFn;
     private final BatchConsumer<T> emitter;
     private final Consumer<Throwable> errorHandler;
     private final long periodMillis;
@@ -101,7 +104,7 @@ public final class Conflater<T> implements AutoCloseable {
                      Function<? super T, ?> tokenFn,
                      BatchConsumer<T> emitter,
                      Consumer<Throwable> errorHandler) {
-        this(periodMillis, keyFn, tokenFn, emitter, errorHandler, 0, 0, null);
+        this(periodMillis, keyFn, tokenFn, v -> "", emitter, errorHandler, 0, 0, null);
     }
 
     /**
@@ -122,12 +125,25 @@ public final class Conflater<T> implements AutoCloseable {
                      long heartbeatIntervalMillis,
                      long idleThresholdMillis,
                      Runnable onHeartbeat) {
+        this(periodMillis, keyFn, tokenFn, v -> "", emitter, errorHandler, heartbeatIntervalMillis, idleThresholdMillis, onHeartbeat);
+    }
+
+    public Conflater(long periodMillis,
+                     Function<? super T, String> keyFn,
+                     Function<? super T, ?> tokenFn,
+                     Function<? super T, String> groupFn,
+                     BatchConsumer<T> emitter,
+                     Consumer<Throwable> errorHandler,
+                     long heartbeatIntervalMillis,
+                     long idleThresholdMillis,
+                     Runnable onHeartbeat) {
         if (periodMillis <= 0) throw new IllegalArgumentException("periodMillis debe ser > 0");
         if (heartbeatIntervalMillis < 0) throw new IllegalArgumentException("heartbeatIntervalMillis debe ser >= 0");
         if (idleThresholdMillis < 0) throw new IllegalArgumentException("idleThresholdMillis debe ser >= 0");
         this.periodMillis = periodMillis;
         this.keyFn = Objects.requireNonNull(keyFn, "keyFn");
         this.tokenFn = Objects.requireNonNull(tokenFn, "tokenFn");
+        this.groupFn = (groupFn != null) ? groupFn : v -> "";
         this.emitter = Objects.requireNonNull(emitter, "emitter");
         this.errorHandler = (errorHandler != null) ? errorHandler : t -> { };
         this.heartbeatIntervalMillis = heartbeatIntervalMillis;
@@ -144,21 +160,43 @@ public final class Conflater<T> implements AutoCloseable {
     public void submit(T value) {
         final String key = keyFn.apply(value);
         final Object token = tokenFn.apply(value);
+        final String group = groupFn.apply(value);
 
         Entry<T> result = state.compute(key, (k, e) -> {
             Object emitted = (e == null) ? null : e.emittedToken;
             if (Objects.equals(token, emitted)) {
                 // Igual a lo ya emitido: descarta cualquier pendiente, queda limpio.
-                return new Entry<>(emitted, null, null, false);
+                return new Entry<>(group, emitted, null, null, false);
             }
             // Difiere de lo emitido -> se vuelve/sobrescribe el pendiente (last-writer-wins).
-            return new Entry<>(emitted, value, token, true);
+            return new Entry<>(group, emitted, value, token, true);
         });
 
         if (result.dirty) {
             dirtyKeys.add(key);
             lastActivityTime = System.currentTimeMillis();
         }
+    }
+
+    /**
+     * Evicts both pending and previously-emitted tokens for all keys belonging to the given groups.
+     * Ensures disabled snapshots cannot leak on the next flush and re-enabled snapshots emit fresh state immediately.
+     */
+    public void invalidateGroups(Set<String> groups) {
+        if (groups == null || groups.isEmpty()) {
+            return;
+        }
+        state.forEach((key, entry) -> {
+            if (entry != null && groups.contains(entry.group)) {
+                state.compute(key, (k, current) -> {
+                    if (current != null && groups.contains(current.group)) {
+                        dirtyKeys.remove(k);
+                        return null;
+                    }
+                    return current;
+                });
+            }
+        });
     }
 
     /** Arranca el flush periódico. Idempotente-no: llamar una sola vez. */
@@ -224,7 +262,7 @@ public final class Conflater<T> implements AutoCloseable {
                 }
                 batch.add(e.pending);
                 // El pendiente pasa a ser "lo emitido"; la entrada queda limpia.
-                return new Entry<>(e.pendingToken, null, null, false);
+                return new Entry<>(e.group, e.pendingToken, null, null, false);
             });
         }
 

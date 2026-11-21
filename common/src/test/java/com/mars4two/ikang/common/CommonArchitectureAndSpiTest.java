@@ -124,6 +124,7 @@ class CommonArchitectureAndSpiTest {
                 "src/client/java/com/mars4two/ikang/client/platform/services/ClientCommandBridge.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ScreenWidgetBridge.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ClientLifecycleHooks.java",
+                "src/client/java/com/mars4two/ikang/client/platform/services/ClientKeyMappingBridge.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/SavedDataAdapter.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/NbtCompatAdapter.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/InventoryEquipmentAdapter.java",
@@ -167,6 +168,10 @@ class CommonArchitectureAndSpiTest {
                 ),
                 new ServiceBinding(
                         "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientLifecycleHooks",
+                        "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientKeyMappingBridge",
                         "src/client/java"
                 )
         );
@@ -212,6 +217,10 @@ class CommonArchitectureAndSpiTest {
                 ),
                 new ServiceBinding(
                         "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientLifecycleHooks",
+                        "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientKeyMappingBridge",
                         "src/client/java"
                 )
         );

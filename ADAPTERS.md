@@ -40,7 +40,7 @@ Always check if a change fits one of these five adapters before creating a new c
 | `NbtCompatAdapter` | Common (`main`) | `CompoundTag` primitive reads across NBT API overhauls | `getStringOrDefault`, `getIntOrDefault`, `getBooleanOrDefault`, `getCompoundOrEmpty` (`Optional<T>` in `>=1.21.5` vs. raw values + `contains` in `<1.21.5`). |
 | `InventoryEquipmentAdapter` | Common (`main`) | Player inventory slots, hotbar selection, equipment iteration, and item display names | `getSelectedHotbarSlot`, `setSelectedHotbarSlot`, `getItemCustomName`, `getItemPlainName` (`getSelectedSlot()` in `>=1.21.5` vs. `inventory.selected` in `<1.21.5`; `getPlainTextName()` in `>=26.1` vs. `getString()` in `<26.1`). |
 | `WorldAndEntityAdapter` | Common (`main`) | Level/dimension keys, `ServerPlayer` accessors, `EquipmentSlot` protocol IDs, block placement result checks, chat `ClickEvent`/`HoverEvent`, and server `TickTask` scheduling | `serverLevel` (`>=1.21.9`), `dimensionId`, `getMinBuildHeight` (`>=1.21.2`), `handEquipmentSlotIndex` (`>=1.21.9` / `>=1.21.2` / `<1.21.2`), `isSuccessfulBlockPlacement` (`>=1.21.2`), `ClickEvent`/`HoverEvent` (`>=1.21.5`), `GameProfile` (`>=1.21.9`). |
-| `ClientUiAdapter` | Client (`client`) | `Screen` widgets, `GuiGraphics` / `GuiGraphicsExtractor` text, lines, outlines, `DynamicTexture` / `NativeImage` QR pixel writes, and client permission checks | `drawCenteredText`, `drawText`, `drawWordWrap`, `drawBoxOutline`, `blitQrTexture` (`>=26.1` / `>=1.21.6` / `>=1.21.2` / `1.21.1`), `setQrPixel` (`>=1.21.5`), `createBooleanCycleButton` (`>=1.21.11`), `hasAdminPermission` (`>=1.21.11`), `notifyClientChat` (`>=26.2` / `>=26.1` / `<26.1`). |
+| `ClientUiAdapter` | Client (`client`) | `Screen` widgets, `GuiGraphics` / `GuiGraphicsExtractor` text, tooltips, widget rendering, `DynamicTexture` / `NativeImage` QR pixel writes, `KeyMapping` creation, and client permission checks | `drawCenteredText`, `drawText`, `renderTooltip` (`>=1.21.6` / `<1.21.6`), `renderWidget` (`>=26.1` / `<26.1`), `blitQrTexture` (`>=26.1` / `>=1.21.6` / `>=1.21.2` / `1.21.1`), `createKeyMapping` (`>=1.21.9` `KeyMapping.Category` / `<1.21.9` `String`), `currentScreen` (`>=26.2` / `<26.2`), `hasAdminPermission` (`>=1.21.11`), `notifyClientChat` (`>=26.2` / `>=26.1` / `<26.1`). |
 
 ### Example: Extending an Existing Adapter
 
@@ -72,6 +72,7 @@ Loader SPIs decouple `:common` from **Fabric** and **NeoForge**. They are loaded
 | `ScreenWidgetBridge` | Client (`client`) | `FabricScreenWidgetBridge` | `NeoForgeScreenWidgetBridge` | Injecting the AFK toggle button into container screens after `Screen.init`. |
 | `PlatformInfoHooks` | Common (`main`) | `FabricPlatformInfoHooks` | `NeoForgePlatformInfoHooks` | Querying mod version, Minecraft version, and loader environment dynamically. |
 | `ClientLifecycleHooks` | Client (`client`) | `FabricClientLifecycleHooks` | `NeoForgeClientLifecycleHooks` | Client-side world connection and player login lifecycle hooks. |
+| `ClientKeyMappingBridge` | Client (`client`) | `FabricClientKeyMappingBridge` | `NeoForgeClientKeyMappingBridge` | Registering vanilla `KeyMapping` controls (`KeyMappingHelper` in `>=26.1` vs `KeyBindingHelper` in `<26.1` on Fabric; `RegisterKeyMappingsEvent` on NeoForge) and polling `consumeClick()` on client ticks. |
 
 ---
 

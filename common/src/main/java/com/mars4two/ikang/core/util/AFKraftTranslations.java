@@ -64,6 +64,61 @@ public final class AFKraftTranslations {
     public static final String GUI_CONTAINER_STATION = "gui.afkraft.container_mode.load_station";
     public static final String GUI_CONTAINER_OFF = "gui.afkraft.container_mode.off";
 
+    // Keybindings
+    public static final String KEY_CATEGORY = "key.category.afkraft_companion.general";
+    public static final String KEY_OPEN_CONFIG = "key.afkraft_companion.open_config";
+
+    // GUI - Snapshot Preferences Screen
+    public static final String GUI_PREFS_TITLE = "gui.afkraft.preferences.title";
+    public static final String GUI_PREFS_LOADING = "gui.afkraft.preferences.loading";
+    public static final String GUI_PREFS_SAVING = "gui.afkraft.preferences.saving";
+    public static final String GUI_PREFS_READONLY = "gui.afkraft.preferences.readonly";
+    public static final String GUI_PREFS_READONLY_TOOLTIP = "gui.afkraft.preferences.readonly_tooltip";
+    public static final String GUI_PREFS_SAVED = "gui.afkraft.preferences.saved";
+    public static final String GUI_PREFS_BTN_SAVE = "gui.afkraft.preferences.button.save";
+    public static final String GUI_PREFS_BTN_REVERT = "gui.afkraft.preferences.button.revert";
+    public static final String GUI_PREFS_BTN_EXIT = "gui.afkraft.preferences.button.exit";
+
+    // Preferences - Errors & Feedback
+    public static final String PREFS_ERROR_NOT_AUTHENTICATED = "gui.afkraft.preferences.error.not_authenticated";
+    public static final String PREFS_ERROR_FORBIDDEN = "gui.afkraft.preferences.error.forbidden";
+    public static final String PREFS_ERROR_RATE_LIMITED = "gui.afkraft.preferences.error.rate_limited";
+    public static final String PREFS_ERROR_NOT_FOUND = "gui.afkraft.preferences.error.not_found";
+    public static final String PREFS_ERROR_INVALID = "gui.afkraft.preferences.error.invalid";
+    public static final String PREFS_ERROR_SAVE_IN_PROGRESS = "gui.afkraft.preferences.error.save_in_progress";
+    public static final String PREFS_ERROR_LOAD_FAILED = "gui.afkraft.preferences.error.load_failed";
+    public static final String PREFS_ERROR_SAVE_FAILED = "gui.afkraft.preferences.error.save_failed";
+
+    // Preferences - Snapshot Names & Descriptions
+    public static final String PREFS_SNAP_PLAYER_STATS_NAME = "gui.afkraft.preferences.snapshot.player_stats.name";
+    public static final String PREFS_SNAP_PLAYER_STATS_DESC = "gui.afkraft.preferences.snapshot.player_stats.description";
+    public static final String PREFS_SNAP_PLAYER_EFFECT_STATS_NAME = "gui.afkraft.preferences.snapshot.player_effect_stats.name";
+    public static final String PREFS_SNAP_PLAYER_EFFECT_STATS_DESC = "gui.afkraft.preferences.snapshot.player_effect_stats.description";
+    public static final String PREFS_SNAP_PLAYER_HANDS_STATS_NAME = "gui.afkraft.preferences.snapshot.player_hands_stats.name";
+    public static final String PREFS_SNAP_PLAYER_HANDS_STATS_DESC = "gui.afkraft.preferences.snapshot.player_hands_stats.description";
+    public static final String PREFS_SNAP_PLAYER_ATTACK_CADENCE_NAME = "gui.afkraft.preferences.snapshot.player_attack_cadence.name";
+    public static final String PREFS_SNAP_PLAYER_ATTACK_CADENCE_DESC = "gui.afkraft.preferences.snapshot.player_attack_cadence.description";
+    public static final String PREFS_SNAP_PLAYER_HOTBAR_NAME = "gui.afkraft.preferences.snapshot.player_hotbar.name";
+    public static final String PREFS_SNAP_PLAYER_HOTBAR_DESC = "gui.afkraft.preferences.snapshot.player_hotbar.description";
+    public static final String PREFS_SNAP_PLAYER_INVENTORY_NAME = "gui.afkraft.preferences.snapshot.player_inventory.name";
+    public static final String PREFS_SNAP_PLAYER_INVENTORY_DESC = "gui.afkraft.preferences.snapshot.player_inventory.description";
+    public static final String PREFS_SNAP_PLAYER_EQUIPMENT_NAME = "gui.afkraft.preferences.snapshot.player_equipment.name";
+    public static final String PREFS_SNAP_PLAYER_EQUIPMENT_DESC = "gui.afkraft.preferences.snapshot.player_equipment.description";
+    public static final String PREFS_SNAP_PLAYER_MOB_SPHERE_NAME = "gui.afkraft.preferences.snapshot.player_mob_sphere.name";
+    public static final String PREFS_SNAP_PLAYER_MOB_SPHERE_DESC = "gui.afkraft.preferences.snapshot.player_mob_sphere.description";
+    public static final String PREFS_SNAP_CONTAINER_NAME = "gui.afkraft.preferences.snapshot.container.name";
+    public static final String PREFS_SNAP_CONTAINER_DESC = "gui.afkraft.preferences.snapshot.container.description";
+    public static final String PREFS_SNAP_LOAD_STATION_NAME = "gui.afkraft.preferences.snapshot.load_station.name";
+    public static final String PREFS_SNAP_LOAD_STATION_DESC = "gui.afkraft.preferences.snapshot.load_station.description";
+
+    public static String snapshotNameKey(String translationSlug) {
+        return "gui.afkraft.preferences.snapshot." + translationSlug + ".name";
+    }
+
+    public static String snapshotDescriptionKey(String translationSlug) {
+        return "gui.afkraft.preferences.snapshot." + translationSlug + ".description";
+    }
+
     public static MutableComponent translatable(String key, Object... args) {
         return Component.translatable(key, args);
     }

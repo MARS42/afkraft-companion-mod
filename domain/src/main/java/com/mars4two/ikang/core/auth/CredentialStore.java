@@ -87,7 +87,15 @@ final class CredentialStore {
         return load().map(ModCredentials::serverId).orElseThrow();
     }
 
+    public static Optional<UUID> findServerId() {
+        return load().map(ModCredentials::serverId);
+    }
+
     public static UUID getAdminProfileId() {
         return load().map(ModCredentials::adminProfileId).orElseThrow();
+    }
+
+    public static Optional<UUID> findAdminProfileId() {
+        return load().map(ModCredentials::adminProfileId);
     }
 }

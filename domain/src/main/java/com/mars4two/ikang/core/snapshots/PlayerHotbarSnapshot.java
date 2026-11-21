@@ -13,7 +13,7 @@ public record PlayerHotbarSnapshot(
 
     @Override
     public String getSnapshotName() {
-        return "playerHotbar";
+        return SnapshotType.PLAYER_HOTBAR.snapshotName();
     }
 
     @Override

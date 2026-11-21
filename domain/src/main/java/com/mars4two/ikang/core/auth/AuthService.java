@@ -123,8 +123,16 @@ public class AuthService {
         return CredentialStore.getServerId();
     }
 
+    public static Optional<UUID> findCurrentServerId() {
+        return CredentialStore.findServerId();
+    }
+
     public static UUID getAdminProfileId() {
         return CredentialStore.getAdminProfileId();
+    }
+
+    public static Optional<UUID> findAdminProfileId() {
+        return CredentialStore.findAdminProfileId();
     }
 
     public static Optional<String> getAccessToken() {
