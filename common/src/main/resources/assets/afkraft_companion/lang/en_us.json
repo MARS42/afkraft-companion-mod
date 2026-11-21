@@ -69,7 +69,7 @@
 
   "gui.afkraft.preferences.snapshot.player_stats.name": "Player Stats",
   "gui.afkraft.preferences.snapshot.player_stats.description": "Health, hunger, air supply, experience, game mode, and coordinates.",
-  "gui.afkraft.preferences.snapshot.player_effect_stats.name": "Status Effects",
+  "gui.afkraft.preferences.snapshot.player_effect_stats.name": "Effects",
   "gui.afkraft.preferences.snapshot.player_effect_stats.description": "Active potion and beacon effects with amplifier and remaining duration.",
   "gui.afkraft.preferences.snapshot.player_hands_stats.name": "Held Items (Hands)",
   "gui.afkraft.preferences.snapshot.player_hands_stats.description": "Main hand and off-hand items including durability and enchantments.",
@@ -83,8 +83,8 @@
   "gui.afkraft.preferences.snapshot.player_equipment.description": "Equipped armor pieces, durability, enchantments, and total armor value.",
   "gui.afkraft.preferences.snapshot.player_mob_sphere.name": "Mob Despawn Sphere",
   "gui.afkraft.preferences.snapshot.player_mob_sphere.description": "Mob cap counts, species breakdown, and clusters within the 128-block sphere.",
-  "gui.afkraft.preferences.snapshot.container.name": "Tracked Containers",
-  "gui.afkraft.preferences.snapshot.container.description": "Contents of chests, hoppers, barrels, furnaces, and tracked portable shulkers.",
+  "gui.afkraft.preferences.snapshot.container.name": "Containers",
+  "gui.afkraft.preferences.snapshot.container.description": "Contents of chests, hoppers, barrels, furnaces, and portable shulkers.",
   "gui.afkraft.preferences.snapshot.load_station.name": "Load Stations",
   "gui.afkraft.preferences.snapshot.load_station.description": "Contents and fill progress of shulker load stations."
 }
