@@ -69,7 +69,7 @@
 
   "gui.afkraft.preferences.snapshot.player_stats.name": "Estadísticas del jugador",
   "gui.afkraft.preferences.snapshot.player_stats.description": "Vida, hambre, oxígeno, experiencia, modo de juego y coordenadas.",
-  "gui.afkraft.preferences.snapshot.player_effect_stats.name": "Efectos de estado",
+  "gui.afkraft.preferences.snapshot.player_effect_stats.name": "Efectos",
   "gui.afkraft.preferences.snapshot.player_effect_stats.description": "Efectos activos de pociones y faros con nivel y duración restante.",
   "gui.afkraft.preferences.snapshot.player_hands_stats.name": "Objetos en manos",
   "gui.afkraft.preferences.snapshot.player_hands_stats.description": "Objetos en mano principal y secundaria, incluyendo durabilidad y encantamientos.",
@@ -83,8 +83,8 @@
   "gui.afkraft.preferences.snapshot.player_equipment.description": "Piezas de armadura equipadas, durabilidad, encantamientos y puntos de armadura.",
   "gui.afkraft.preferences.snapshot.player_mob_sphere.name": "Esfera de mobs",
   "gui.afkraft.preferences.snapshot.player_mob_sphere.description": "Conteo de mob cap, desglose por tipo y agrupaciones dentro de la esfera de 128 bloques.",
-  "gui.afkraft.preferences.snapshot.container.name": "Contenedores monitoreados",
-  "gui.afkraft.preferences.snapshot.container.description": "Contenido de cofres, tolvas, barriles, hornos y shulkers portátiles monitoreados.",
+  "gui.afkraft.preferences.snapshot.container.name": "Contenedores",
+  "gui.afkraft.preferences.snapshot.container.description": "Contenido de cofres, tolvas, barriles, hornos y shulkers portátiles.",
   "gui.afkraft.preferences.snapshot.load_station.name": "Estaciones de carga",
   "gui.afkraft.preferences.snapshot.load_station.description": "Contenido y progreso de llenado de las estaciones de carga de shulkers."
 }
