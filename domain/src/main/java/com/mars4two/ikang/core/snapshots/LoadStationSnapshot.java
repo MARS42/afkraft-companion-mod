@@ -14,7 +14,7 @@ public record LoadStationSnapshot(
 
     @Override
     public String getSnapshotName() {
-        return "load-station";
+        return SnapshotType.LOAD_STATION.snapshotName();
     }
 
     @Override

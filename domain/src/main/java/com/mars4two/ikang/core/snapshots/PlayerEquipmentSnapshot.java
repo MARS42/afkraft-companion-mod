@@ -13,7 +13,7 @@ public record PlayerEquipmentSnapshot(
 
     @Override
     public String getSnapshotName() {
-        return "playerEquipment";
+        return SnapshotType.PLAYER_EQUIPMENT.snapshotName();
     }
 
     @Override

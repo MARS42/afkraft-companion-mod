@@ -10,7 +10,7 @@ public record PlayerHandsStatsSnapshot(Set<UUID> playerIds, RawPlayerHands data)
 
     @Override
     public String getSnapshotName() {
-        return "playerHandsStats";
+        return SnapshotType.PLAYER_HANDS_STATS.snapshotName();
     }
 
     @Override

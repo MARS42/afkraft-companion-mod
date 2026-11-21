@@ -31,7 +31,7 @@ public record PlayerMobSphereSnapshot(Set<UUID> playerIds, RawMobSphere data) im
 
     @Override
     public String getSnapshotName() {
-        return "playerMobSphere";
+        return SnapshotType.PLAYER_MOB_SPHERE.snapshotName();
     }
 
     @Override

@@ -57,6 +57,18 @@ public class HttpConfig {
         return URI.create(BACKEND_URL + "/mod-worker/snapshots/ws/heartbeat");
     }
 
+    public static URI getModPreferencesUri(UUID serverId, UUID adminProfileId) {
+        return URI.create(BACKEND_URL + "/mod-worker/preferences?serverId=" + serverId + "&adminProfileId=" + adminProfileId);
+    }
+
+    public static URI getModPreferencesUri() {
+        return URI.create(BACKEND_URL + "/mod-worker/preferences");
+    }
+
+    public static URI getModPreferencesToggleUri() {
+        return URI.create(BACKEND_URL + "/mod-worker/preferences/toggle");
+    }
+
     public static URI getModCredentialsUri() {
         return URI.create(BACKEND_URL + "/mod-auth/get-credentials");
     }
