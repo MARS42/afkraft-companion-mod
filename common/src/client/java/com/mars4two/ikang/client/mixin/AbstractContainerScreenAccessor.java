@@ -11,4 +11,7 @@ public interface AbstractContainerScreenAccessor {
 
     @Accessor("topPos")
     int topPos();
+
+    @Accessor("imageWidth")
+    int imageWidth();
 }

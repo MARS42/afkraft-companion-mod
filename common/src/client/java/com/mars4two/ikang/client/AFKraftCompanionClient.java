@@ -4,6 +4,7 @@ import com.mars4two.ikang.client.command.AFKraftClientConfigCommand;
 import com.mars4two.ikang.client.command.AFKraftClientConnectCommand;
 import com.mars4two.ikang.client.command.AFKraftClientEnableCommand;
 import com.mars4two.ikang.client.core.events.ClientEvents;
+import com.mars4two.ikang.client.core.preferences.ClientContainerButtonConfigService;
 import com.mars4two.ikang.client.core.preferences.ClientPreferencesService;
 import com.mars4two.ikang.client.core.update.ClientUpdateNotificationManager;
 import com.mars4two.ikang.client.platform.mc.ClientUiAdapter;
@@ -66,6 +67,15 @@ public final class AFKraftCompanionClient {
         ClientServices.KEY_MAPPINGS.registerKeyMapping(
                 openConfigKey,
                 minecraft -> ClientPreferencesService.requestOpenPreferencesScreen()
+        );
+
+        KeyMapping openButtonPosKey = ClientUiAdapter.createKeyMapping(
+                AFKraftTranslations.KEY_OPEN_BUTTON_POSITION,
+                InputConstants.KEY_MINUS
+        );
+        ClientServices.KEY_MAPPINGS.registerKeyMapping(
+                openButtonPosKey,
+                minecraft -> ClientContainerButtonConfigService.openPositionConfigScreen()
         );
 
         ClientServices.SCREENS.onAfterScreenInit(ClientEvents::onAfterScreenInit);

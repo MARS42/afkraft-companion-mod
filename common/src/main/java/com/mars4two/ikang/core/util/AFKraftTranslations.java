@@ -67,6 +67,22 @@ public final class AFKraftTranslations {
     // Keybindings
     public static final String KEY_CATEGORY = "key.category.afkraft_companion.general";
     public static final String KEY_OPEN_CONFIG = "key.afkraft_companion.open_config";
+    public static final String KEY_OPEN_BUTTON_POSITION = "key.afkraft_companion.open_button_position";
+
+    // GUI - Container Button Position Screen
+    public static final String GUI_BUTTON_POS_TITLE = "gui.afkraft.button_position.title";
+    public static final String GUI_BUTTON_POS_HINT = "gui.afkraft.button_position.hint";
+    public static final String GUI_BUTTON_POS_COORDS = "gui.afkraft.button_position.coords";
+    public static final String GUI_BUTTON_POS_SAVED = "gui.afkraft.button_position.saved";
+    public static final String GUI_BUTTON_POS_SAVE_FAILED = "gui.afkraft.button_position.save_failed";
+    public static final String GUI_BUTTON_POS_PREVIEW_STANDARD = "gui.afkraft.button_position.preview.standard";
+    public static final String GUI_BUTTON_POS_PREVIEW_SHULKER = "gui.afkraft.button_position.preview.shulker";
+    public static final String GUI_BUTTON_POS_PREVIEW_LABEL = "gui.afkraft.button_position.preview.label";
+    public static final String GUI_BUTTON_POS_CONTAINER_LABEL = "gui.afkraft.button_position.container_preview";
+    public static final String GUI_BUTTON_POS_BTN_SAVE = "gui.afkraft.button_position.button.save";
+    public static final String GUI_BUTTON_POS_BTN_REVERT = "gui.afkraft.button_position.button.revert";
+    public static final String GUI_BUTTON_POS_BTN_DEFAULT = "gui.afkraft.button_position.button.default";
+    public static final String GUI_BUTTON_POS_BTN_CANCEL = "gui.afkraft.button_position.button.cancel";
 
     // GUI - Snapshot Preferences Screen
     public static final String GUI_PREFS_TITLE = "gui.afkraft.preferences.title";

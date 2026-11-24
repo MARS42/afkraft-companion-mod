@@ -47,6 +47,21 @@
 
   "key.category.afkraft_companion.general": "AFKraft Companion",
   "key.afkraft_companion.open_config": "Abrir preferencias de snapshots",
+  "key.afkraft_companion.open_button_position": "Configurar posición del botón en contenedores",
+
+  "gui.afkraft.button_position.title": "AFKraft: Posición del botón en contenedores",
+  "gui.afkraft.button_position.hint": "Arrastra el botón o usa las flechas (Shift para 10px) para moverlo.",
+  "gui.afkraft.button_position.coords": "Desplazamiento X: %d, Y: %d",
+  "gui.afkraft.button_position.saved": "Posición del botón guardada localmente.",
+  "gui.afkraft.button_position.save_failed": "Error al guardar la posición del botón localmente.",
+  "gui.afkraft.button_position.preview.standard": "Vista: Estándar",
+  "gui.afkraft.button_position.preview.shulker": "Vista: Shulker",
+  "gui.afkraft.button_position.preview.label": "%s: %s",
+  "gui.afkraft.button_position.container_preview": "Contenedor",
+  "gui.afkraft.button_position.button.save": "Guardar",
+  "gui.afkraft.button_position.button.revert": "Revertir",
+  "gui.afkraft.button_position.button.default": "Por defecto",
+  "gui.afkraft.button_position.button.cancel": "Cancelar",
 
   "gui.afkraft.preferences.title": "AFKraft: Preferencias de Snapshots",
   "gui.afkraft.preferences.loading": "Cargando preferencias...",
