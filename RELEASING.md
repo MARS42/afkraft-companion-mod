@@ -12,12 +12,13 @@ Because this mod is built across **10 Stonecutter Minecraft release nodes (`1.21
 flowchart TD
     A["1. SemVer Planning<br/>Decide MAJOR, MINOR, or PATCH"] --> B["2. Bump `mod_version`<br/>Update root `gradle.properties`"]
     B --> C["3. Update `update.json`<br/>Register new version & changelog per MC cluster"]
-    C --> D["4. Pre-Flight Verification<br/>Run unit, purity, parity & architecture tests"]
-    D --> E["5. Reset Active Project<br/>`./gradlew 'Reset active project'`"]
-    E --> F["6. Build Matrix<br/>`./gradlew chiseledBuild` (Produces 20 JARs)"]
-    F --> G["7. Git Tag & Push<br/>Commit with `chore(release): vX.Y.Z` & push tag"]
-    G --> H["8. GitHub Release<br/>Attach compiled JARs & publish release notes"]
-    H --> I["9. Post-Release Verification<br/>Verify in-game notifications (Fabric & NeoForge)"]
+    C --> W["4. Synchronize Web Wiki<br/>Update `wiki-catalog.ts` & pass `wiki-parity.test.ts`"]
+    W --> D["5. Pre-Flight Verification<br/>Run unit, purity, parity & architecture tests"]
+    D --> E["6. Reset Active Project<br/>`./gradlew 'Reset active project'`"]
+    E --> F["7. Build Matrix<br/>`./gradlew chiseledBuild` (Produces 20 JARs)"]
+    F --> G["8. Git Tag & Push<br/>Commit with `chore(release): vX.Y.Z` & push tag"]
+    G --> H["9. GitHub Release<br/>Attach compiled JARs & publish release notes"]
+    H --> I["10. Post-Release Verification<br/>Verify in-game notifications (Fabric & NeoForge)"]
 ```
 
 ---
@@ -119,7 +120,23 @@ When publishing version `1.0.1`:
 
 ---
 
-## 4. Step 3: Mandatory Pre-Flight Verification
+## 4. Step 3: Synchronize the Player Wiki in `afkraft-companion-web`
+
+Documentation synchronization is a **blocking release priority**. Before running pre-flight verification or tagging a new mod release, ensure the player-facing Wiki in `afkraft-companion-web` reflects every new or modified feature for `mod_version`:
+
+1. **Follow the Canonical Wiki Workflow**:
+   - Refer to `afkraft-companion-web/docs/WIKI_WORKFLOW.md` for the **Zero Programming Jargon** editorial rules and 4-part article template (*¿Qué es?*, *¿Para qué sirve?*, *¿Cómo se usa paso a paso?*, *Disponible desde*).
+2. **Update `src/lib/wiki-catalog.ts` in `afkraft-companion-web`**:
+   - If the release adds or changes a `SnapshotType`, command (`/afkraft ...`), keybind, container mode, or screen, update the corresponding `es` and `en` article with `sinceModVersion` / `lastUpdatedModVersion`.
+   - Append a new entry to `WIKI_MOD_RELEASES` summarizing in plain player language what changed in this version and why it helps players in their worlds/farms.
+3. **Run the Automated Wiki Parity & Jargon Gate** in `afkraft-companion-web`:
+   ```bash
+   node --experimental-strip-types --test test/wiki-parity.test.ts
+   ```
+
+---
+
+## 5. Step 4: Mandatory Pre-Flight Verification
 
 Before tagging or pushing, run all validation suites locally.
 
@@ -215,6 +232,7 @@ Copy this checklist into release issues or PR descriptions:
 
 - [ ] `mod_version` bumped in root `gradle.properties`.
 - [ ] `update.json` updated with new version in `promos` (`-latest` / `-recommended`) and changelog entries.
+- [ ] Player Wiki synchronized in `afkraft-companion-web/src/lib/wiki-catalog.ts` (`sinceModVersion`, `lastUpdatedModVersion`, and `WIKI_MOD_RELEASES`) and verified via `node --experimental-strip-types --test test/wiki-parity.test.ts`.
 - [ ] `./gradlew :domain:check` passed.
 - [ ] `./gradlew :common:26.3:check` passed (architecture and localization tests green).
 - [ ] `./gradlew "Reset active project"` executed (canonical sources on `26.3`).
