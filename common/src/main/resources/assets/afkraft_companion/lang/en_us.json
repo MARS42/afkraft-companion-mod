@@ -47,6 +47,21 @@
 
   "key.category.afkraft_companion.general": "AFKraft Companion",
   "key.afkraft_companion.open_config": "Open Snapshot Preferences",
+  "key.afkraft_companion.open_button_position": "Configure Container Button Position",
+
+  "gui.afkraft.button_position.title": "AFKraft: Container Button Position",
+  "gui.afkraft.button_position.hint": "Drag the button or use arrow keys (Shift for 10px) to reposition it.",
+  "gui.afkraft.button_position.coords": "Offset X: %d, Y: %d",
+  "gui.afkraft.button_position.saved": "Button position saved locally.",
+  "gui.afkraft.button_position.save_failed": "Failed to save button position locally.",
+  "gui.afkraft.button_position.preview.standard": "Preview: Standard",
+  "gui.afkraft.button_position.preview.shulker": "Preview: Shulker",
+  "gui.afkraft.button_position.preview.label": "%s: %s",
+  "gui.afkraft.button_position.container_preview": "Container",
+  "gui.afkraft.button_position.button.save": "Save",
+  "gui.afkraft.button_position.button.revert": "Revert",
+  "gui.afkraft.button_position.button.default": "Default",
+  "gui.afkraft.button_position.button.cancel": "Cancel",
 
   "gui.afkraft.preferences.title": "AFKraft: Snapshot Preferences",
   "gui.afkraft.preferences.loading": "Loading preferences...",

@@ -2,6 +2,8 @@ package com.mars4two.ikang.client.core.events;
 
 import com.mars4two.ikang.client.core.auth.ClientAuthService;
 import com.mars4two.ikang.client.core.auth.ClientAuthorizeServerService;
+import com.mars4two.ikang.client.core.preferences.ClientContainerButtonConfigService;
+import com.mars4two.ikang.client.core.preferences.ContainerButtonPosition;
 import com.mars4two.ikang.client.mixin.AbstractContainerScreenAccessor;
 import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundPayload;
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
@@ -127,11 +129,25 @@ public final class ClientEvents {
                 var accessor = (AbstractContainerScreenAccessor) handledScreen;
                 int guiLeft = accessor.leftPos();
                 int guiTop = accessor.topPos();
-                int bgWidth = handledScreen.width;
-                int buttonX = bgWidth - guiLeft + 4;
-                int buttonY = guiTop + 4;
+                int imageWidth = accessor.imageWidth();
+                boolean portable = PORTABLE_CONTAINER_MENUS.contains(menuClass);
+                int buttonWidth = portable ? 84 : 48;
+                int buttonHeight = 16;
 
-                if (PORTABLE_CONTAINER_MENUS.contains(menuClass)) {
+                ContainerButtonPosition.ResolvedPosition resolvedPos = ClientContainerButtonConfigService.getPosition()
+                        .resolveForContainer(
+                                guiLeft,
+                                guiTop,
+                                imageWidth,
+                                handledScreen.width,
+                                handledScreen.height,
+                                buttonWidth,
+                                buttonHeight
+                        );
+                int buttonX = resolvedPos.x();
+                int buttonY = resolvedPos.y();
+
+                if (portable) {
                     ContainerTrackingMode initialMode = afkContainerMode.get();
                     if (initialMode == ContainerTrackingMode.CONTAINER) {
                         initialMode = ContainerTrackingMode.PORTABLE_CONTAINER;
