@@ -9,6 +9,7 @@ import com.mars4two.ikang.core.config.HttpConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -135,11 +136,10 @@ public final class ClientAuthDomainService {
                         serverName
                 ));
 
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(HttpConfig.getSendPlayerAuthorizationUri())
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                        .build();
+                HttpRequest request = buildPlayerAuthorizationRequest(
+                        HttpConfig.getSendPlayerAuthorizationUri(),
+                        jsonBody
+                );
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -158,5 +158,12 @@ public final class ClientAuthDomainService {
                 errorCallback.run();
             }
         });
+    }
+
+    static HttpRequest buildPlayerAuthorizationRequest(URI uri, String jsonBody) {
+        return HttpConfig.newBackendRequestBuilder(uri)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
     }
 }

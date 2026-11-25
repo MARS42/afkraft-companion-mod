@@ -12,6 +12,7 @@ import com.mars4two.ikang.core.config.HttpConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -49,11 +50,7 @@ public final class ClientConnectDomainService {
         try {
             String jsonBody = GsonConfig.toJson(new ConnectRequest(serverId, profileId, hasJoinedResponse.joinOtp()));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getConnectUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest request = buildJsonPostRequest(HttpConfig.getConnectUri(), jsonBody);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -85,11 +82,7 @@ public final class ClientConnectDomainService {
         try {
             String jsonBody = GsonConfig.toJson(new CancelConnectRequest(verificationUrl));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getCancelConnectUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest request = buildJsonPostRequest(HttpConfig.getCancelConnectUri(), jsonBody);
 
             client.sendAsync(request, HttpResponse.BodyHandlers.discarding())
                     .thenAccept(response -> {
@@ -200,11 +193,7 @@ public final class ClientConnectDomainService {
         try {
             String jsonBody = GsonConfig.toJson(new HasConnectedRequest(deviceCode));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getHasConnectedUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest request = buildJsonPostRequest(HttpConfig.getHasConnectedUri(), jsonBody);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String body = response.body();
@@ -220,5 +209,12 @@ public final class ClientConnectDomainService {
             LOGGER.error("Unexpected error during hasConnected validation: ", e);
             return Optional.empty();
         }
+    }
+
+    static HttpRequest buildJsonPostRequest(URI uri, String jsonBody) {
+        return HttpConfig.newBackendRequestBuilder(uri)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
     }
 }

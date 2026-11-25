@@ -2,8 +2,11 @@ package com.mars4two.ikang.core.config;
 
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class HttpConfig {
     private static final String BACKEND_URL = "https://api-mvp.afkraft.com/core";
@@ -11,6 +14,8 @@ public class HttpConfig {
     private static final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(REQUEST_TIMEOUT)
             .build();
+    private static final AtomicReference<ModClientTelemetry> clientTelemetry =
+            new AtomicReference<>(ModClientTelemetry.EMPTY);
 
     private HttpConfig() {
         // Utility class, no instances allowed
@@ -18,6 +23,30 @@ public class HttpConfig {
 
     public static HttpClient getHttpClient() {
         return httpClient;
+    }
+
+    public static void configureClientTelemetry(ModClientTelemetry telemetry) {
+        clientTelemetry.set(telemetry != null ? telemetry : ModClientTelemetry.EMPTY);
+    }
+
+    public static ModClientTelemetry getClientTelemetry() {
+        return clientTelemetry.get();
+    }
+
+    public static HttpRequest.Builder newBackendRequestBuilder(URI uri) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(uri);
+        clientTelemetry.get().applyTo(builder);
+        return builder;
+    }
+
+    public static WebSocket.Builder newBackendWebSocketBuilder() {
+        return newBackendWebSocketBuilder(httpClient);
+    }
+
+    public static WebSocket.Builder newBackendWebSocketBuilder(HttpClient client) {
+        WebSocket.Builder builder = client.newWebSocketBuilder();
+        clientTelemetry.get().applyTo(builder);
+        return builder;
     }
 
     public static URI getServerIdUri() {

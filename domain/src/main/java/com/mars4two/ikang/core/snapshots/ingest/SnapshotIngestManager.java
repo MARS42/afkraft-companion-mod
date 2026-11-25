@@ -12,6 +12,7 @@ import com.mars4two.ikang.core.util.PlayerStatsContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -282,12 +283,11 @@ public class SnapshotIngestManager implements AutoCloseable {
 
             // Fallback to HTTP POST if WebSocket is disconnected
             log.debug("WebSocket not connected; falling back to HTTP POST");
-            HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getSnapshotsIngestUri())
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + accessToken.get())
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest httpRequest = buildAuthorizedJsonPostRequest(
+                    HttpConfig.getSnapshotsIngestUri(),
+                    accessToken.get(),
+                    jsonBody
+            );
 
             HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
@@ -329,12 +329,11 @@ public class SnapshotIngestManager implements AutoCloseable {
             var request = new HeartbeatRequest(serverId, adminProfileId);
             String jsonBody = GsonConfig.toJson(request);
 
-            HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getSnapshotsHeartbeatUri())
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + accessToken.get())
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest httpRequest = buildAuthorizedJsonPostRequest(
+                    HttpConfig.getSnapshotsHeartbeatUri(),
+                    accessToken.get(),
+                    jsonBody
+            );
 
             client.sendAsync(httpRequest, HttpResponse.BodyHandlers.discarding())
                     .thenAccept(response -> {
@@ -351,6 +350,14 @@ public class SnapshotIngestManager implements AutoCloseable {
         } catch (Exception e) {
             log.error("Error preparing heartbeat request: {}", e.getMessage());
         }
+    }
+
+    static HttpRequest buildAuthorizedJsonPostRequest(URI uri, String accessToken, String jsonBody) {
+        return HttpConfig.newBackendRequestBuilder(uri)
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + accessToken)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
     }
 
     @Override
