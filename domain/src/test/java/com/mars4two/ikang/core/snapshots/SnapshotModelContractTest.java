@@ -38,7 +38,7 @@ class SnapshotModelContractTest {
         RawContainerType doubleChest = RawContainerType.doubleChest(first, last);
         String json = GsonConfig.toJson(doubleChest.toPayload());
 
-        assertTrue(json.contains("\"b.m:chest\""), "Expected aliased chest block id in payload JSON: " + json);
+        assertTrue(json.contains("\"b.m.chest\""), "Expected aliased chest block id in payload JSON: " + json);
         assertTrue(json.contains("\"bicombiner\""), "Expected bicombiner key in payload JSON: " + json);
         assertTrue(json.contains("\"first\":{\"x\":10,\"y\":64,\"z\":-20}"), "Expected first BlockCoord JSON contract: " + json);
         assertTrue(json.contains("\"last\":{\"x\":11,\"y\":64,\"z\":-20}"), "Expected last BlockCoord JSON contract: " + json);
