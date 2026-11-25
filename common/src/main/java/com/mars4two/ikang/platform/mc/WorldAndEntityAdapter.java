@@ -5,6 +5,7 @@ import com.mars4two.ikang.core.model.BlockCoord;
 import com.mars4two.ikang.core.model.DimensionKey;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.ChatFormatting;
+import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ClickEvent;
@@ -250,5 +251,24 @@ public final class WorldAndEntityAdapter {
         //?} else {
         /*server.tell(new TickTask(server.getTickCount(), task));
         *///?}
+    }
+
+    public static String minecraftVersionId(String fallback) {
+        try {
+            var version = SharedConstants.getCurrentVersion();
+            if (version != null) {
+                //? if >=1.21.6 {
+                String id = version.id();
+                //?} else {
+                /*String id = version.getId();
+                *///?}
+                if (id != null && !id.isBlank()) {
+                    return id;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Fallback when SharedConstants has not been bootstrapped (e.g. headless unit tests)
+        }
+        return fallback;
     }
 }

@@ -56,8 +56,7 @@ public class WorldPreferencesService {
         }
 
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(getUriProvider.apply(serverId, adminProfileId))
+            HttpRequest request = HttpConfig.newBackendRequestBuilder(getUriProvider.apply(serverId, adminProfileId))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Authorization", "Bearer " + accessToken)
                     .GET()
@@ -89,8 +88,7 @@ public class WorldPreferencesService {
 
         try {
             String jsonBody = GsonConfig.toJson(new UpdateWorldPreferencesRequest(serverId, adminProfileId, snapshots));
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(putUriProvider.get())
+            HttpRequest request = HttpConfig.newBackendRequestBuilder(putUriProvider.get())
                     .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + accessToken)

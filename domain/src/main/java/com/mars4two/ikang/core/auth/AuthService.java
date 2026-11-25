@@ -6,6 +6,7 @@ import com.mars4two.ikang.core.config.HttpConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -34,11 +35,7 @@ public class AuthService {
         try {
             String jsonBody = GsonConfig.toJson(new GetServerIdRequest(profileId));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getServerIdUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest request = buildJsonPostRequest(HttpConfig.getServerIdUri(), jsonBody);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -61,11 +58,7 @@ public class AuthService {
         try {
             String jsonBody = GsonConfig.toJson(new HasJoinedRequest(username, serverId, profileId));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getHasJoinedUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest request = buildJsonPostRequest(HttpConfig.getHasJoinedUri(), jsonBody);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -162,10 +155,7 @@ public class AuthService {
 
     public static boolean getIsConnected(UUID profileId) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getIsConnectedUri(profileId))
-                    .POST(HttpRequest.BodyPublishers.noBody())
-                    .build();
+            HttpRequest request = buildEmptyPostRequest(HttpConfig.getIsConnectedUri(profileId));
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String body = response.body();
@@ -201,11 +191,7 @@ public class AuthService {
         try {
             String jsonBody = GsonConfig.toJson(new GetModCredentialsRequest(profileId, serverId, joinOtp, serverName));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getModCredentialsUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest request = buildJsonPostRequest(HttpConfig.getModCredentialsUri(), jsonBody);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -228,11 +214,7 @@ public class AuthService {
         try {
             String jsonBody = GsonConfig.toJson(new RefreshModCredentialsRequest(modCredentials.refreshToken(), modCredentials.serverId(), modCredentials.adminProfileId()));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(HttpConfig.getRefreshAccessTokenUri())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            HttpRequest request = buildJsonPostRequest(HttpConfig.getRefreshAccessTokenUri(), jsonBody);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -251,6 +233,19 @@ public class AuthService {
             log.error("Unexpected error during refreshing mod credentials: ", e);
             return Optional.empty();
         }
+    }
+
+    static HttpRequest buildJsonPostRequest(URI uri, String jsonBody) {
+        return HttpConfig.newBackendRequestBuilder(uri)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+    }
+
+    static HttpRequest buildEmptyPostRequest(URI uri) {
+        return HttpConfig.newBackendRequestBuilder(uri)
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
     }
 
     public static void clearModCredentials() {
