@@ -35,10 +35,13 @@
   "gui.afkraft.button.later": "En otro momento",
   "gui.afkraft.button.cancel": "Cancelar",
   "gui.afkraft.button.show_qr": "Mostrar QR",
+  "gui.afkraft.button.copy_url": "Copiar URL",
+  "gui.afkraft.button.use_qr": "Usar QR",
 
   "gui.afkraft.connect_qr.title": "AFKraft: Conectar cuenta",
   "gui.afkraft.connect_qr.warning_show": "Estás a punto de mostrar el código QR para vincular tu cuenta.",
   "gui.afkraft.connect_qr.warning_privacy": "¡Asegúrate de que sólo tú puedas verlo!",
+  "gui.afkraft.connect_qr.url_copied": "URL de vinculación copiada al portapapeles. Entra y acepta la vinculación.",
 
   "gui.afkraft.container_mode.prefix": "AFK",
   "gui.afkraft.container_mode.shulker": "Shulker",

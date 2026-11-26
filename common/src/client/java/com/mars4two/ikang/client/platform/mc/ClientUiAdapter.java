@@ -88,6 +88,12 @@ public final class ClientUiAdapter {
         return currentScreen(minecraft) == screen;
     }
 
+    public static void setClipboard(Minecraft minecraft, String text) {
+        if (minecraft != null && minecraft.keyboardHandler != null && text != null) {
+            minecraft.keyboardHandler.setClipboard(text);
+        }
+    }
+
     public static void notifyClientChat(Minecraft minecraft, Component message) {
         //? if >=26.2 {
         minecraft.showDebugChat(message);
@@ -183,6 +189,17 @@ public final class ClientUiAdapter {
         graphics.centeredText(font, text, centerX, y, color);
     }
 
+    public static void drawCenteredText(
+            GuiGraphicsExtractor graphics,
+            Font font,
+            FormattedCharSequence text,
+            int centerX,
+            int y,
+            int color
+    ) {
+        graphics.centeredText(font, text, centerX, y, color);
+    }
+
     public static void drawText(
             GuiGraphicsExtractor graphics,
             Font font,
@@ -250,6 +267,17 @@ public final class ClientUiAdapter {
             GuiGraphics graphics,
             Font font,
             Component text,
+            int centerX,
+            int y,
+            int color
+    ) {
+        graphics.drawCenteredString(font, text, centerX, y, color);
+    }
+
+    public static void drawCenteredText(
+            GuiGraphics graphics,
+            Font font,
+            FormattedCharSequence text,
             int centerX,
             int y,
             int color

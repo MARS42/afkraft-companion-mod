@@ -51,12 +51,15 @@ public final class AFKraftTranslations {
     public static final String GUI_CONNECT_QR_TITLE = "gui.afkraft.connect_qr.title";
     public static final String GUI_CONNECT_QR_WARN_SHOW = "gui.afkraft.connect_qr.warning_show";
     public static final String GUI_CONNECT_QR_WARN_PRIVACY = "gui.afkraft.connect_qr.warning_privacy";
+    public static final String GUI_CONNECT_QR_URL_COPIED = "gui.afkraft.connect_qr.url_copied";
 
     // GUI - Buttons
     public static final String GUI_BTN_AUTHORIZE = "gui.afkraft.button.authorize";
     public static final String GUI_BTN_LATER = "gui.afkraft.button.later";
     public static final String GUI_BTN_CANCEL = "gui.afkraft.button.cancel";
     public static final String GUI_BTN_SHOW_QR = "gui.afkraft.button.show_qr";
+    public static final String GUI_BTN_COPY_URL = "gui.afkraft.button.copy_url";
+    public static final String GUI_BTN_USE_QR = "gui.afkraft.button.use_qr";
 
     // GUI - Container Tracking Mode Cycle Button
     public static final String GUI_CONTAINER_PREFIX = "gui.afkraft.container_mode.prefix";

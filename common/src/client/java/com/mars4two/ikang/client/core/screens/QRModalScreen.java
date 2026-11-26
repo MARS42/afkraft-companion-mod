@@ -19,22 +19,51 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class QRModalScreen extends Screen {
 
+    enum ViewState {
+        INITIAL_WARNING,
+        SHOW_QR,
+        URL_COPIED;
+
+        ViewState onShowQr() {
+            return SHOW_QR;
+        }
+
+        ViewState onCopyUrl() {
+            return URL_COPIED;
+        }
+
+        ViewState onUseQr() {
+            return SHOW_QR;
+        }
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger("AFKraft-QRModalScreen");
+    private static final int QR_SIZE = 196;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int INITIAL_BUTTON_WIDTH = 100;
+    private static final int INITIAL_BUTTON_SPACING = 6;
+    private static final int ACTION_BUTTON_WIDTH = 120;
+    private static final int ACTION_BUTTON_SPACING = 12;
+    private static final int LINE_HEIGHT = 12;
+    private static final int COLOR_TEXT = 0xFFFFFFFF;
 
     private final String url;
-    private final int qrSize = 196;
     private DynamicTexture qrTexture;
     private Identifier qrTextureId;
     private volatile Runnable onClosed = () -> {};
     private volatile Runnable onCancel = () -> {};
-    private boolean showQr = false;
+    private ViewState viewState = ViewState.INITIAL_WARNING;
     private final Component allowShowQrMessage1;
     private final Component allowShowQrMessage2;
+    private final Component urlCopiedMessage;
 
     public QRModalScreen(String url) {
         super(AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONNECT_QR_TITLE));
@@ -42,6 +71,7 @@ public class QRModalScreen extends Screen {
         this.allowShowQrMessage1 = AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONNECT_QR_WARN_SHOW);
         this.allowShowQrMessage2 = AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONNECT_QR_WARN_PRIVACY)
                 .withStyle(ChatFormatting.RED, ChatFormatting.UNDERLINE);
+        this.urlCopiedMessage = AFKraftTranslations.translatable(AFKraftTranslations.GUI_CONNECT_QR_URL_COPIED);
     }
 
     public void setOnClosed(Runnable onClosed) {
@@ -56,7 +86,17 @@ public class QRModalScreen extends Screen {
     protected void init() {
         super.init();
 
-        showQr = false;
+        if (this.viewState == ViewState.SHOW_QR) {
+            ensureQrTexture();
+        }
+
+        rebuildWidgetsForState();
+    }
+
+    private void ensureQrTexture() {
+        if (this.qrTexture != null) {
+            return;
+        }
 
         Identifier obsidian = WorldAndEntityAdapter.defaultId("textures/block/obsidian.png");
         Identifier ironBlock = WorldAndEntityAdapter.defaultId("textures/block/iron_block.png");
@@ -72,39 +112,122 @@ public class QRModalScreen extends Screen {
             );
             LOGGER.info("QR code image generated and registered successfully");
         }
+    }
 
-        int buttonWidth = 120;
-        int buttonHeight = 20;
-        int buttonsY = this.height / 2 + 15;
+    private void showQrView() {
+        this.viewState = this.viewState == ViewState.URL_COPIED
+                ? this.viewState.onUseQr()
+                : this.viewState.onShowQr();
+        ensureQrTexture();
+        rebuildWidgetsForState();
+    }
 
-        Button cancelConnectButton = Button.builder(
-                        AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_CANCEL),
-                        button -> onCancel()
-                )
-                .bounds(this.width / 2 - (buttonWidth / 2), this.height - (buttonHeight + 4), buttonWidth, buttonHeight)
-                .build();
+    private void copyUrlAndShowCopiedView() {
+        Minecraft client = this.minecraft != null ? this.minecraft : Minecraft.getInstance();
+        ClientUiAdapter.setClipboard(client, this.url);
+        this.viewState = this.viewState.onCopyUrl();
+        rebuildWidgetsForState();
+    }
 
-        Button cancelButton = Button.builder(
-                        AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_LATER),
-                        button -> onClose()
-                )
-                .bounds(this.width / 2 + 6, buttonsY, buttonWidth, buttonHeight)
-                .build();
+    private void rebuildWidgetsForState() {
+        this.clearWidgets();
 
-        Button authorizeButton = Button.builder(
-                        AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_SHOW_QR),
-                        button -> {
-                            showQr = true;
-                            this.removeWidget(button);
-                            this.removeWidget(cancelButton);
-                            this.addRenderableWidget(cancelConnectButton);
-                        }
-                )
-                .bounds(this.width / 2 - buttonWidth - 6, buttonsY, buttonWidth, buttonHeight)
-                .build();
+        int centerButtonsY = this.height / 2 + 15;
+        int bottomButtonsY = this.height - (BUTTON_HEIGHT + 4);
 
-        this.addRenderableWidget(authorizeButton);
-        this.addRenderableWidget(cancelButton);
+        switch (this.viewState) {
+            case INITIAL_WARNING -> {
+                int totalWidth = (INITIAL_BUTTON_WIDTH * 3) + (INITIAL_BUTTON_SPACING * 2);
+                int startX = (this.width - totalWidth) / 2;
+
+                Button showQrButton = Button.builder(
+                                AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_SHOW_QR),
+                                button -> showQrView()
+                        )
+                        .bounds(startX, centerButtonsY, INITIAL_BUTTON_WIDTH, BUTTON_HEIGHT)
+                        .build();
+
+                Button copyUrlButton = Button.builder(
+                                AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_COPY_URL),
+                                button -> copyUrlAndShowCopiedView()
+                        )
+                        .bounds(
+                                startX + INITIAL_BUTTON_WIDTH + INITIAL_BUTTON_SPACING,
+                                centerButtonsY,
+                                INITIAL_BUTTON_WIDTH,
+                                BUTTON_HEIGHT
+                        )
+                        .build();
+
+                Button laterButton = Button.builder(
+                                AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_LATER),
+                                button -> onClose()
+                        )
+                        .bounds(
+                                startX + (INITIAL_BUTTON_WIDTH + INITIAL_BUTTON_SPACING) * 2,
+                                centerButtonsY,
+                                INITIAL_BUTTON_WIDTH,
+                                BUTTON_HEIGHT
+                        )
+                        .build();
+
+                this.addRenderableWidget(showQrButton);
+                this.addRenderableWidget(copyUrlButton);
+                this.addRenderableWidget(laterButton);
+            }
+            case SHOW_QR -> {
+                int totalWidth = (ACTION_BUTTON_WIDTH * 2) + ACTION_BUTTON_SPACING;
+                int startX = (this.width - totalWidth) / 2;
+
+                Button copyUrlButton = Button.builder(
+                                AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_COPY_URL),
+                                button -> copyUrlAndShowCopiedView()
+                        )
+                        .bounds(startX, bottomButtonsY, ACTION_BUTTON_WIDTH, BUTTON_HEIGHT)
+                        .build();
+
+                Button cancelConnectButton = Button.builder(
+                                AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_CANCEL),
+                                button -> onCancel()
+                        )
+                        .bounds(
+                                startX + ACTION_BUTTON_WIDTH + ACTION_BUTTON_SPACING,
+                                bottomButtonsY,
+                                ACTION_BUTTON_WIDTH,
+                                BUTTON_HEIGHT
+                        )
+                        .build();
+
+                this.addRenderableWidget(copyUrlButton);
+                this.addRenderableWidget(cancelConnectButton);
+            }
+            case URL_COPIED -> {
+                int totalWidth = (ACTION_BUTTON_WIDTH * 2) + ACTION_BUTTON_SPACING;
+                int startX = (this.width - totalWidth) / 2;
+
+                Button useQrButton = Button.builder(
+                                AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_USE_QR),
+                                button -> showQrView()
+                        )
+                        .bounds(startX, centerButtonsY, ACTION_BUTTON_WIDTH, BUTTON_HEIGHT)
+                        .build();
+
+                Button cancelConnectButton = Button.builder(
+                                AFKraftTranslations.translatable(AFKraftTranslations.GUI_BTN_CANCEL),
+                                button -> onCancel()
+                        )
+                        .bounds(
+                                startX + ACTION_BUTTON_WIDTH + ACTION_BUTTON_SPACING,
+                                centerButtonsY,
+                                ACTION_BUTTON_WIDTH,
+                                BUTTON_HEIGHT
+                        )
+                        .build();
+
+                this.addRenderableWidget(useQrButton);
+                this.addRenderableWidget(cancelConnectButton);
+            }
+        }
     }
 
     //? if >=26.1 {
@@ -130,18 +253,50 @@ public class QRModalScreen extends Screen {
             /*GuiGraphics graphics
             *///?}
     ) {
-        if (!showQr) {
-            ClientUiAdapter.drawCenteredText(graphics, this.font, allowShowQrMessage1, this.width / 2, this.height / 2 - 40, 0xFFFFFFFF);
-            ClientUiAdapter.drawCenteredText(graphics, this.font, allowShowQrMessage2, this.width / 2, this.height / 2 - 20, 0xFF00FF00);
-            return;
-        }
+        switch (this.viewState) {
+            case INITIAL_WARNING -> {
+                int maxTextWidth = Math.max(180, this.width - 40);
+                List<FormattedCharSequence> line1 = this.font.split(allowShowQrMessage1, maxTextWidth);
+                List<FormattedCharSequence> line2 = this.font.split(allowShowQrMessage2, maxTextWidth);
+                int totalLines = line1.size() + line2.size();
+                int startY = this.height / 2 - 20 - (totalLines * LINE_HEIGHT);
+                int nextY = drawWrappedCenteredLines(graphics, line1, startY, COLOR_TEXT);
+                drawWrappedCenteredLines(graphics, line2, nextY + 6, COLOR_TEXT);
+            }
+            case SHOW_QR -> {
+                if (this.qrTextureId != null) {
+                    int x = (this.width - QR_SIZE) / 2;
+                    int y = (this.height - QR_SIZE) / 2;
 
-        if (this.qrTextureId != null) {
-            int x = (this.width - qrSize) / 2;
-            int y = (this.height - qrSize) / 2;
-
-            ClientUiAdapter.blitQrTexture(graphics, this.qrTextureId, x, y, qrSize);
+                    ClientUiAdapter.blitQrTexture(graphics, this.qrTextureId, x, y, QR_SIZE);
+                }
+            }
+            case URL_COPIED -> {
+                int maxTextWidth = Math.max(180, this.width - 40);
+                List<FormattedCharSequence> lines = this.font.split(urlCopiedMessage, maxTextWidth);
+                int totalHeight = lines.size() * LINE_HEIGHT;
+                int startY = this.height / 2 - 10 - totalHeight;
+                drawWrappedCenteredLines(graphics, lines, startY, COLOR_TEXT);
+            }
         }
+    }
+
+    private int drawWrappedCenteredLines(
+            //? if >=26.1 {
+            GuiGraphicsExtractor graphics,
+            //?} else {
+            /*GuiGraphics graphics,
+            *///?}
+            List<FormattedCharSequence> lines,
+            int startY,
+            int color
+    ) {
+        int y = startY;
+        for (FormattedCharSequence line : lines) {
+            ClientUiAdapter.drawCenteredText(graphics, this.font, line, this.width / 2, y, color);
+            y += LINE_HEIGHT;
+        }
+        return y;
     }
 
     @Override
