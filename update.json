@@ -1,55 +1,45 @@
 {
-  "homepage": "https://github.com/MARS42/afkraft-companion-mod",
+  "homepage": "https://github.com/MARS42/afkraft-companion-mod/releases",
   "promos": {
-    "1.21.1-latest": "1.0.0",
-    "1.21.1-recommended": "1.0.0",
-    "1.21.3-latest": "1.0.0",
-    "1.21.3-recommended": "1.0.0",
-    "1.21.4-latest": "1.0.0",
-    "1.21.4-recommended": "1.0.0",
-    "1.21.5-latest": "1.0.0",
-    "1.21.5-recommended": "1.0.0",
-    "1.21.8-latest": "1.0.0",
-    "1.21.8-recommended": "1.0.0",
-    "1.21.10-latest": "1.0.0",
-    "1.21.10-recommended": "1.0.0",
-    "1.21.11-latest": "1.0.0",
-    "1.21.11-recommended": "1.0.0",
-    "26.1.2-latest": "1.0.0",
-    "26.1.2-recommended": "1.0.0",
-    "26.2-latest": "1.0.0",
-    "26.2-recommended": "1.0.0",
-    "26.3-latest": "1.0.0",
-    "26.3-recommended": "1.0.0"
+    "1.21.1-latest": "1.0.0-beta.1",
+    "1.21.3-latest": "1.0.0-beta.1",
+    "1.21.4-latest": "1.0.0-beta.1",
+    "1.21.5-latest": "1.0.0-beta.1",
+    "1.21.8-latest": "1.0.0-beta.1",
+    "1.21.10-latest": "1.0.0-beta.1",
+    "1.21.11-latest": "1.0.0-beta.1",
+    "26.1.2-latest": "1.0.0-beta.1",
+    "26.2-latest": "1.0.0-beta.1",
+    "26.3-latest": "1.0.0-beta.1"
   },
   "1.21.1": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "1.21.3": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "1.21.4": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "1.21.5": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "1.21.8": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "1.21.10": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "1.21.11": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "26.1.2": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "26.2": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   },
   "26.3": {
-    "1.0.0": "Initial release"
+    "1.0.0-beta.1": "Initial closed beta pre-release"
   }
 }

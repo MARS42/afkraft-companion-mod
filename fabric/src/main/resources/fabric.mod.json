@@ -6,15 +6,16 @@
 	],
 	"version": "${version}",
 	"name": "AFKraft Companion",
-	"description": "AFKraft Companion Mod for tracking AFK containers, player stats, and mob spheres.",
+	"description": "Lightweight companion mod for AFKraft that streams opt-in AFK container, player, and mobcap sphere snapshots in real time.",
 	"authors": [
 		"IKangreburguito"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/MARS42/afkraft-companion-mod",
+		"sources": "https://github.com/MARS42/afkraft-companion-mod",
+		"issues": "https://github.com/MARS42/afkraft-companion-mod/issues"
 	},
-	"license": "CC0-1.0",
+	"license": "LicenseRef-PolyForm-Shield-1.0.0",
 	"icon": "assets/afkraft_companion/icon.png",
 	"environment": "*",
 	"entrypoints": {

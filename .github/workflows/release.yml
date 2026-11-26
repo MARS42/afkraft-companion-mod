@@ -1,0 +1,246 @@
+name: Release & Publish Mod
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (validate builds & publish payloads without uploading)'
+        type: boolean
+        required: true
+        default: true
+      publish_github:
+        description: 'Create/update consolidated GitHub Release with all 20 JARs'
+        type: boolean
+        required: true
+        default: true
+      publish_modrinth:
+        description: 'Publish all 20 JARs to Modrinth'
+        type: boolean
+        required: true
+        default: true
+      publish_curseforge:
+        description: 'Publish all 20 JARs to CurseForge'
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Domain, Version & Changelog
+    runs-on: ubuntu-24.04
+    outputs:
+      mod_version: ${{ steps.meta.outputs.mod_version }}
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: |
+            21
+            25
+          distribution: 'microsoft'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Extract release metadata
+        id: meta
+        shell: bash
+        run: |
+          MOD_VER=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '\r\n ')
+          if [ -z "$MOD_VER" ]; then
+            echo "Could not resolve mod_version from gradle.properties" >&2
+            exit 1
+          fi
+          if [[ "$MOD_VER" == *-pre* ]]; then
+            echo "ERROR: Bare -pre suffix is incompatible with NeoForge ComparableVersion. Use -alpha.N, -beta.N, or -rc.N." >&2
+            exit 1
+          fi
+          IS_PRE="false"
+          if [[ "$MOD_VER" == *-* ]]; then
+            IS_PRE="true"
+          fi
+          echo "mod_version=$MOD_VER" >> "$GITHUB_OUTPUT"
+          echo "tag_name=v$MOD_VER" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRE" >> "$GITHUB_OUTPUT"
+
+      - name: Verify pure domain
+        run: ./gradlew :domain:check --no-daemon
+
+  build:
+    name: Build & Verify MC ${{ matrix.version }}
+    needs: validate
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: true
+      matrix:
+        version:
+          - '1.21.1'
+          - '1.21.3'
+          - '1.21.4'
+          - '1.21.5'
+          - '1.21.8'
+          - '1.21.10'
+          - '1.21.11'
+          - '26.1.2'
+          - '26.2'
+          - '26.3'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: |
+            21
+            25
+          distribution: 'microsoft'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build and verify loader artifacts
+        run: ./gradlew :common:${{ matrix.version }}:check :fabric:${{ matrix.version }}:build :neoforge:${{ matrix.version }}:build --no-daemon
+
+      - name: Stage production JARs
+        shell: bash
+        run: |
+          mkdir -p staged-jars
+          cp fabric/versions/${{ matrix.version }}/build/libs/afkraft_companion-fabric-*.jar staged-jars/
+          cp neoforge/versions/${{ matrix.version }}/build/libs/afkraft_companion-neoforge-*.jar staged-jars/
+          rm -f staged-jars/*-dev.jar staged-jars/*-dev-sources.jar
+          ls -la staged-jars/
+
+      - name: Upload node artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-jars-${{ matrix.version }}
+          path: staged-jars/*.jar
+
+  publish-github:
+    name: Publish GitHub Release
+    needs: [validate, build]
+    if: inputs.publish_github && !inputs.dry_run
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download all release JARs
+        uses: actions/download-artifact@v7
+        with:
+          pattern: release-jars-*
+          path: release-bundle
+          merge-multiple: true
+
+      - name: Extract changelog notes
+        shell: bash
+        env:
+          MOD_VER: ${{ needs.validate.outputs.mod_version }}
+        run: |
+          awk -v ver="## [$MOD_VER]" '
+            index($0, "## [") == 1 {
+              if (found) exit
+              if (index($0, ver) == 1) { found = 1; next }
+            }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Release v$MOD_VER" > release-notes.md
+          fi
+
+      - name: Create or update GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.validate.outputs.tag_name }}
+          MOD_VER: ${{ needs.validate.outputs.mod_version }}
+          IS_PRE: ${{ needs.validate.outputs.is_prerelease }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "$IS_PRE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" release-bundle/*.jar --clobber
+            gh release edit "$TAG_NAME" --notes-file release-notes.md $PRERELEASE_FLAG
+          else
+            gh release create "$TAG_NAME" release-bundle/*.jar \
+              --title "AFKraft Companion v$MOD_VER" \
+              --notes-file release-notes.md \
+              $PRERELEASE_FLAG
+          fi
+
+  publish-platforms:
+    name: Publish MC ${{ matrix.version }} (Modrinth / CurseForge)
+    needs: [validate, build]
+    if: inputs.publish_modrinth || inputs.publish_curseforge
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        version:
+          - '1.21.1'
+          - '1.21.3'
+          - '1.21.4'
+          - '1.21.5'
+          - '1.21.8'
+          - '1.21.10'
+          - '1.21.11'
+          - '26.1.2'
+          - '26.2'
+          - '26.3'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: |
+            21
+            25
+          distribution: 'microsoft'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Publish Fabric & NeoForge builds for MC ${{ matrix.version }}
+        env:
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+        run: |
+          ./gradlew \
+            :fabric:${{ matrix.version }}:publishMods \
+            :neoforge:${{ matrix.version }}:publishMods \
+            -PdryRun=${{ inputs.dry_run }} \
+            -PenableModrinth=${{ inputs.publish_modrinth }} \
+            -PenableCurseforge=${{ inputs.publish_curseforge }} \
+            --no-daemon

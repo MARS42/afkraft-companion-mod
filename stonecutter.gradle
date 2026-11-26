@@ -3,12 +3,40 @@ plugins {
 	id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
 	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
 	id 'net.neoforged.moddev' version "${moddev_version}" apply false
+	id 'me.modmuss50.mod-publish-plugin' version "${mod_publish_version}" apply false
 }
 
 stonecutter.active '26.3' /* [SC] DO NOT EDIT */
 
 version = project.mod_version
 group = project.maven_group
+
+ext.extractReleaseChangelog = { String targetVersion ->
+	def changelogFile = rootProject.file("CHANGELOG.md")
+	if (!changelogFile.isFile()) {
+		return "Release ${targetVersion}"
+	}
+	def lines = changelogFile.readLines("UTF-8")
+	def headerPrefix = "## [${targetVersion}]"
+	def capturing = false
+	def body = []
+	for (String line : lines) {
+		if (line.startsWith("## [")) {
+			if (capturing) {
+				break
+			}
+			if (line.startsWith(headerPrefix)) {
+				capturing = true
+			}
+			continue
+		}
+		if (capturing) {
+			body.add(line)
+		}
+	}
+	def text = body.join("\n").trim()
+	return text ? text : "Release ${targetVersion}"
+}
 
 stonecutter.parameters {
 	replacements.string(stonecutter.eval(current.version, '<1.21.11')) {
@@ -65,6 +93,14 @@ def chiseledBuild = tasks.register("chiseledBuild") {
 	dependsOn(":domain:check", chiseledTest, collectArtifacts)
 	mcVersions.each { ver ->
 		dependsOn(":common:${ver}:check", ":fabric:${ver}:build", ":neoforge:${ver}:build")
+	}
+}
+
+tasks.register("publishAllMods") {
+	group = "publishing"
+	description = "Publishes (or dry-runs with -PdryRun=true) all 20 Fabric and NeoForge artifacts across configured platforms."
+	mcVersions.each { ver ->
+		dependsOn(":fabric:${ver}:publishMods", ":neoforge:${ver}:publishMods")
 	}
 }
 

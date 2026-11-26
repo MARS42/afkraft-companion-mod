@@ -74,4 +74,37 @@ class UpdateCheckerServiceTest {
         assertEquals(UpdateStatus.OUTDATED, result.status());
         assertEquals("1.0.1", result.latestVersion().toCleanString());
     }
+
+    @Test
+    void handlesClosedBetaUpToDateAndUpgradeToStable() {
+        UpdateCheckerService service = new UpdateCheckerService();
+        String betaManifest = """
+                {
+                  "homepage": "https://github.com/MARS42/afkraft-companion-mod/releases",
+                  "promos": {
+                    "26.3-latest": "1.0.0-beta.1"
+                  }
+                }
+                """;
+        String stableManifest = """
+                {
+                  "homepage": "https://github.com/MARS42/afkraft-companion-mod/releases",
+                  "promos": {
+                    "26.3-latest": "1.0.0",
+                    "26.3-recommended": "1.0.0"
+                  }
+                }
+                """;
+
+        SemanticVersion installedBeta = SemanticVersion.parse("1.0.0-beta.1+26.3");
+
+        UpdateCheckResult betaResult = service.parseAndCompare(betaManifest, installedBeta, "26.3");
+        assertEquals(UpdateStatus.UP_TO_DATE, betaResult.status());
+        assertFalse(betaResult.isOutdated());
+
+        UpdateCheckResult stableResult = service.parseAndCompare(stableManifest, installedBeta, "26.3");
+        assertEquals(UpdateStatus.OUTDATED, stableResult.status());
+        assertTrue(stableResult.isOutdated());
+        assertEquals("1.0.0", stableResult.latestVersion().toCleanString());
+    }
 }

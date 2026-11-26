@@ -60,6 +60,24 @@ class SemanticVersionTest {
     }
 
     @Test
+    void parsesPreReleaseWithMinecraftBuildMetadata() {
+        SemanticVersion betaWithMc = SemanticVersion.parse("1.0.0-beta.1+26.3");
+        SemanticVersion betaClean = SemanticVersion.parse("1.0.0-beta.1");
+        SemanticVersion stable = SemanticVersion.parse("1.0.0");
+
+        assertEquals(1, betaWithMc.major());
+        assertEquals(0, betaWithMc.minor());
+        assertEquals(0, betaWithMc.patch());
+        assertTrue(betaWithMc.isPreRelease());
+        assertEquals("beta.1", betaWithMc.preRelease());
+        assertEquals("26.3", betaWithMc.buildMetadata());
+        assertEquals("1.0.0-beta.1", betaWithMc.toCleanString());
+        assertEquals(0, betaWithMc.compareTo(betaClean));
+        assertEquals(betaClean, betaWithMc);
+        assertTrue(betaWithMc.compareTo(stable) < 0);
+    }
+
+    @Test
     void comparesVersionsCorrectly() {
         assertTrue(SemanticVersion.parse("1.0.1").compareTo(SemanticVersion.parse("1.0.0")) > 0);
         assertTrue(SemanticVersion.parse("1.1.0").compareTo(SemanticVersion.parse("1.0.9")) > 0);
