@@ -5,6 +5,7 @@ import com.mars4two.ikang.core.model.BlockCoord;
 import com.mars4two.ikang.core.model.DimensionKey;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.ChatFormatting;
+import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ClickEvent;
@@ -174,17 +175,52 @@ public final class WorldAndEntityAdapter {
             String command,
             String hoverTooltip
     ) {
-        return Component.literal(text)
+        return buildClickableCommandWord(
+                Component.literal(text),
+                color,
+                command,
+                Component.literal(hoverTooltip)
+        );
+    }
+
+    public static Component buildClickableCommandWord(
+            Component text,
+            ChatFormatting color,
+            String command,
+            Component hoverTooltip
+    ) {
+        return text.copy()
                 .withStyle(style -> style
                         .withColor(color)
                         .withBold(true)
                         .withUnderlined(true)
                         //? if >=1.21.5 {
                         .withClickEvent(new ClickEvent.RunCommand(command))
-                        .withHoverEvent(new HoverEvent.ShowText(Component.literal(hoverTooltip)))
+                        .withHoverEvent(new HoverEvent.ShowText(hoverTooltip))
                         //?} else {
                         /*.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hoverTooltip)))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverTooltip))
+                        *///?}
+                );
+    }
+
+    public static Component buildClickableUrlWord(
+            Component text,
+            ChatFormatting color,
+            String url,
+            Component hoverTooltip
+    ) {
+        return text.copy()
+                .withStyle(style -> style
+                        .withColor(color)
+                        .withBold(true)
+                        .withUnderlined(true)
+                        //? if >=1.21.5 {
+                        .withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create(url)))
+                        .withHoverEvent(new HoverEvent.ShowText(hoverTooltip))
+                        //?} else {
+                        /*.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverTooltip))
                         *///?}
                 );
     }
@@ -215,5 +251,24 @@ public final class WorldAndEntityAdapter {
         //?} else {
         /*server.tell(new TickTask(server.getTickCount(), task));
         *///?}
+    }
+
+    public static String minecraftVersionId(String fallback) {
+        try {
+            var version = SharedConstants.getCurrentVersion();
+            if (version != null) {
+                //? if >=1.21.6 {
+                String id = version.id();
+                //?} else {
+                /*String id = version.getId();
+                *///?}
+                if (id != null && !id.isBlank()) {
+                    return id;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Fallback when SharedConstants has not been bootstrapped (e.g. headless unit tests)
+        }
+        return fallback;
     }
 }

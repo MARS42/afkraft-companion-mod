@@ -6,6 +6,8 @@ public final class ClientServices {
 
     public static final ClientCommandBridge COMMANDS = Services.load(ClientCommandBridge.class);
     public static final ScreenWidgetBridge SCREENS = Services.load(ScreenWidgetBridge.class);
+    public static final ClientLifecycleHooks LIFECYCLE = Services.load(ClientLifecycleHooks.class);
+    public static final ClientKeyMappingBridge KEY_MAPPINGS = Services.load(ClientKeyMappingBridge.class);
 
     private ClientServices() {
     }

@@ -9,11 +9,11 @@ public final class MinecraftIdsUtils {
             Pattern.compile("effect\\.minecraft"), "e.m"
     );
     private static final Map<Pattern, String> ITEM_NAMESPACES_ALIASES = Map.of(
-            Pattern.compile("minecraft"), "i.m"
+            Pattern.compile("minecraft:"), "i.m."
     );
 
     private static final Map<Pattern, String> BLOCK_NAMESPACES_ALIASES = Map.of(
-            Pattern.compile("minecraft"), "b.m"
+            Pattern.compile("minecraft:"), "b.m."
     );
 
     private MinecraftIdsUtils() {

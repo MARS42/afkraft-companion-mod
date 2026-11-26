@@ -1,8 +1,11 @@
+import me.modmuss50.mpp.ReleaseType
+
 plugins {
 	id 'java-library'
 	id 'dev.kikugie.stonecutter'
 	id 'net.neoforged.moddev'
 	id 'maven-publish'
+	id 'me.modmuss50.mod-publish-plugin'
 }
 
 def javaVersion = project.java_version as int
@@ -170,6 +173,13 @@ jar {
 	from(rootProject.file("LICENSE")) {
 		rename { "${it}_$projectName" }
 	}
+	from(rootProject.file("NOTICE")) {
+		rename { "${it}_$projectName" }
+	}
+	from(rootProject.file("THIRD_PARTY_LICENSES/Apache-2.0.txt")) {
+		into("META-INF/licenses")
+		rename { "Apache-2.0-ZXing.txt" }
+	}
 }
 
 tasks.named("sourcesJar", Jar).configure {
@@ -184,6 +194,50 @@ tasks.named("sourcesJar", Jar).configure {
 	from(project(":domain").sourceSets.main.allSource)
 	from(commonProject.sourceSets.main.allSource)
 	from(commonProject.sourceSets.client.allSource)
+}
+
+def publishDryRunFlag = providers.gradleProperty("dryRun").map { it.toBoolean() }.getOrElse(false)
+def publishEnableModrinth = providers.gradleProperty("enableModrinth").map { it.toBoolean() }.getOrElse(true)
+def publishEnableCurseforge = providers.gradleProperty("enableCurseforge").map { it.toBoolean() }.getOrElse(true)
+def publishMrId = providers.environmentVariable("MODRINTH_PROJECT_ID").orNull
+def publishCfId = providers.environmentVariable("CURSEFORGE_PROJECT_ID").orNull
+def publishMrToken = providers.environmentVariable("MODRINTH_TOKEN").orNull
+def publishCfToken = providers.environmentVariable("CURSEFORGE_TOKEN").orNull
+def effectiveDryRun = publishDryRunFlag || (!publishMrToken && !publishCfToken)
+def neoforgeMcPublishList = (project.publish_neoforge_versions as String).split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+def lowerModVer = (project.mod_version as String).toLowerCase(Locale.ROOT)
+def resolvedReleaseType = lowerModVer.contains("-alpha") ? ReleaseType.ALPHA
+	: (lowerModVer.contains("-beta") || lowerModVer.contains("-rc") ? ReleaseType.BETA : ReleaseType.STABLE)
+
+publishMods {
+	dryRun = effectiveDryRun
+
+	file = project.tasks.named("jar").flatMap { it.archiveFile }
+	additionalFiles.from(project.tasks.named("sourcesJar").flatMap { it.archiveFile })
+	displayName = "AFKraft Companion ${project.mod_version} (NeoForge ${project.minecraft_version})"
+	version = "${project.mod_version}+neoforge-${project.minecraft_version}"
+	changelog = rootProject.ext.extractReleaseChangelog(project.mod_version as String)
+	type = resolvedReleaseType
+	modLoaders.add("neoforge")
+
+	if (publishEnableModrinth && (publishMrId || effectiveDryRun)) {
+		modrinth {
+			projectId = publishMrId ?: "dry-run-modrinth-id"
+			accessToken = project.providers.environmentVariable("MODRINTH_TOKEN").orElse("dry-run-token")
+			minecraftVersions.addAll(neoforgeMcPublishList)
+		}
+	}
+
+	if (publishEnableCurseforge && (publishCfId || effectiveDryRun)) {
+		curseforge {
+			projectId = publishCfId ?: "000000"
+			accessToken = project.providers.environmentVariable("CURSEFORGE_TOKEN").orElse("dry-run-token")
+			minecraftVersions.addAll(neoforgeMcPublishList)
+			javaVersions.add(JavaVersion.toVersion(javaVersion))
+			clientRequired = true
+			serverRequired = true
+		}
+	}
 }
 
 publishing {

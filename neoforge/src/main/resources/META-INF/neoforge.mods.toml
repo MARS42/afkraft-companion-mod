@@ -1,15 +1,19 @@
 modLoader="javafml"
 loaderVersion="[1,)"
-license="CC0-1.0"
+license="LicenseRef-PolyForm-Shield-1.0.0"
+issueTrackerURL="https://github.com/MARS42/afkraft-companion-mod/issues"
 
 [[mods]]
 modId="afkraft_companion"
 version="${version}"
 displayName="AFKraft Companion"
+displayURL="https://github.com/MARS42/afkraft-companion-mod"
+updateJSONURL="https://raw.githubusercontent.com/MARS42/afkraft-companion-mod/main/update.json"
 logoFile="assets/afkraft_companion/icon.png"
-authors="mars4two"
+iconFile="assets/afkraft_companion/icon.png"
+authors="IKangreburguito"
 description='''
-Companion mod for AFKraft.
+Lightweight companion mod for AFKraft that streams opt-in AFK container, player, and mobcap sphere snapshots in real time.
 '''
 
 [[mixins]]

@@ -13,7 +13,7 @@ public record PlayerInventorySnapshot(
 
     @Override
     public String getSnapshotName() {
-        return "playerInventory";
+        return SnapshotType.PLAYER_INVENTORY.snapshotName();
     }
 
     @Override

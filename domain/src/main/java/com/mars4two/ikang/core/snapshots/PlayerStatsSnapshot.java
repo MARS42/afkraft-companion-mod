@@ -11,7 +11,7 @@ public record PlayerStatsSnapshot(Set<UUID> playerIds, RawPlayerStats data) impl
 
     @Override
     public String getSnapshotName() {
-        return "playerStats";
+        return SnapshotType.PLAYER_STATS.snapshotName();
     }
 
     @Override

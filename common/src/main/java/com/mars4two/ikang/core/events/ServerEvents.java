@@ -5,15 +5,23 @@ import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundP
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedResponse;
+import com.mars4two.ikang.core.network.payloads.client.SaveSnapshotPreferencesResultClientboundPayload;
+import com.mars4two.ikang.core.network.payloads.client.SnapshotPreferencesSyncClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
+import com.mars4two.ikang.core.network.payloads.server.RequestSnapshotPreferencesServerboundPayload;
+import com.mars4two.ikang.core.network.payloads.server.UpdateSnapshotPreferencesServerboundPayload;
+import com.mars4two.ikang.core.preferences.SnapshotPreferencesManager;
+import com.mars4two.ikang.core.preferences.dtos.PreferencesOperationResult;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.storage.AFKContainerConfigData;
 import com.mars4two.ikang.core.storage.ContainerTrackingMode;
+import com.mars4two.ikang.core.util.AFKraftTranslations;
 import com.mars4two.ikang.core.util.BlockEntityWrapper;
 import com.mars4two.ikang.core.util.PortableContainerIdentityHelper;
+import com.mars4two.ikang.core.version.UpdateCheckerService;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
 import com.mars4two.ikang.platform.services.Services;
 import net.minecraft.ChatFormatting;
@@ -72,7 +80,6 @@ public final class ServerEvents {
             // TODO Implement "Remember server" feature
 //            if(AuthService.isPlayerAuthorized(playerId)){
 //                log.info("Player {} already authorized the server", playerId);
-//                player.sendSystemMessage(Component.literal("Bienvenido de nuevo, ya has autorizado este servidor para AFKraft"));
 //                return;
 //            }
             sendAuthorizeServerRequestToPlayer(player);
@@ -109,7 +116,8 @@ public final class ServerEvents {
                 payload.serverName(),
                 WorldAndEntityAdapter.playerName(admin),
                 () -> {
-                    admin.sendSystemMessage(Component.literal("Credenciales AFKraft generadas correctamente"));
+                    admin.sendSystemMessage(AFKraftTranslations.translatable(AFKraftTranslations.CHAT_ADMIN_CREDS_SUCCESS));
+                    SnapshotPreferencesManager.getInstance().refreshFromBackendAsync();
                     var server = admin.level().getServer();
                     if (!server.isDedicatedServer()) {
                         log.info("Server is not dedicated, no need to send authorize server request to players");
@@ -118,7 +126,7 @@ public final class ServerEvents {
 
                     server.getPlayerList().getPlayers().forEach(ServerEvents::sendAuthorizeServerRequestToPlayer);
                 },
-                () -> admin.sendSystemMessage(Component.literal("Error al generar credenciales AFKraft"))
+                () -> admin.sendSystemMessage(AFKraftTranslations.translatable(AFKraftTranslations.CHAT_ADMIN_CREDS_ERROR))
         );
     }
 
@@ -128,16 +136,16 @@ public final class ServerEvents {
             if (Boolean.FALSE.equals(isConnected)) {
                 log.info("Player {} is not connected, skipping authorize server request", profileId);
                 Component clickableWord = WorldAndEntityAdapter.buildClickableCommandWord(
-                        "[vincula]",
+                        AFKraftTranslations.translatable(AFKraftTranslations.CHAT_SERVER_LINK_TEXT),
                         ChatFormatting.GREEN,
                         "/afkraft connect",
-                        "Haz clic aquí para iniciar la vinculación"
+                        AFKraftTranslations.translatable(AFKraftTranslations.CHAT_SERVER_LINK_HOVER)
                 );
 
-                Component fullMessage = Component.literal("El servidor ha activado AFKraft, pero tú no has enlazado tu cuenta con AFKraft. Por favor, ")
-                        .withStyle(ChatFormatting.YELLOW)
-                        .append(clickableWord)
-                        .append(Component.literal(" tu cuenta para poder autorizar el servidor.").withStyle(ChatFormatting.YELLOW));
+                Component fullMessage = AFKraftTranslations.translatable(
+                        AFKraftTranslations.CHAT_SERVER_LINK_PROMPT,
+                        clickableWord
+                ).withStyle(ChatFormatting.YELLOW);
 
                 player.sendSystemMessage(fullMessage);
                 return;
@@ -265,10 +273,148 @@ public final class ServerEvents {
 
     public static void onServerStarted(MinecraftServer server) {
         SnapshotIngestManager.getInstance().start(server.getWorldData().getLevelName());
+
+        if (server.isDedicatedServer()) {
+            String modVer = Services.PLATFORM_INFO.getModVersion();
+            String mcVer = Services.PLATFORM_INFO.getMinecraftVersion();
+            new UpdateCheckerService().checkAsync(modVer, mcVer)
+                    .thenAccept(res -> {
+                        if (res.isOutdated()) {
+                            log.warn("[AFKraft Companion] An update is available: v{} (running: v{}). Download: {}",
+                                    res.latestVersion().toCleanString(),
+                                    res.currentVersion().toCleanString(),
+                                    res.downloadUrl());
+                        }
+                    });
+        }
+    }
+
+    public static void onRequestSnapshotPreferences(
+            MinecraftServer server,
+            ServerPlayer player,
+            RequestSnapshotPreferencesServerboundPayload payload
+    ) {
+        UUID playerId = WorldAndEntityAdapter.playerId(player);
+        SnapshotPreferencesManager manager = SnapshotPreferencesManager.getInstance();
+
+        manager.refreshFromBackendAsync().whenComplete((result, error) -> {
+            server.execute(() -> {
+                ServerPlayer target = server.getPlayerList().getPlayer(playerId);
+                if (target == null) {
+                    return;
+                }
+
+                if (error != null) {
+                    log.warn("Unexpected error fetching snapshot preferences for player {}", playerId, error);
+                    boolean authenticated = AuthService.findAdminProfileId().isPresent();
+                    boolean editable = authenticated && isTokenOwner(playerId);
+                    Services.NETWORK.sendToPlayer(target, new SnapshotPreferencesSyncClientboundPayload(
+                            authenticated,
+                            editable,
+                            authenticated ? manager.getEffectivePreferences() : Map.of(),
+                            authenticated ? AFKraftTranslations.PREFS_ERROR_LOAD_FAILED : AFKraftTranslations.PREFS_ERROR_NOT_AUTHENTICATED
+                    ));
+                    return;
+                }
+
+                if (result.status() == PreferencesOperationResult.Status.NOT_AUTHENTICATED) {
+                    Services.NETWORK.sendToPlayer(target, new SnapshotPreferencesSyncClientboundPayload(
+                            false,
+                            false,
+                            Map.of(),
+                            AFKraftTranslations.PREFS_ERROR_NOT_AUTHENTICATED
+                    ));
+                    return;
+                }
+
+                boolean editable = isTokenOwner(playerId);
+                String errorKey = result.isSuccess() ? "" : mapPreferenceErrorKey(result.status(), false);
+                Services.NETWORK.sendToPlayer(target, new SnapshotPreferencesSyncClientboundPayload(
+                        true,
+                        editable,
+                        result.snapshots(),
+                        errorKey
+                ));
+            });
+        });
+    }
+
+    public static void onUpdateSnapshotPreferences(
+            MinecraftServer server,
+            ServerPlayer player,
+            UpdateSnapshotPreferencesServerboundPayload payload
+    ) {
+        UUID playerId = WorldAndEntityAdapter.playerId(player);
+        SnapshotPreferencesManager manager = SnapshotPreferencesManager.getInstance();
+
+        if (AuthService.findAdminProfileId().isEmpty()) {
+            Services.NETWORK.sendToPlayer(player, new SaveSnapshotPreferencesResultClientboundPayload(
+                    false,
+                    manager.getEffectivePreferences(),
+                    AFKraftTranslations.PREFS_ERROR_NOT_AUTHENTICATED
+            ));
+            return;
+        }
+
+        if (!isTokenOwner(playerId)) {
+            log.warn("Rejected unauthorized snapshot preferences update from player {} ({})",
+                    WorldAndEntityAdapter.playerName(player), playerId);
+            Services.NETWORK.sendToPlayer(player, new SaveSnapshotPreferencesResultClientboundPayload(
+                    false,
+                    manager.getEffectivePreferences(),
+                    AFKraftTranslations.PREFS_ERROR_FORBIDDEN
+            ));
+            return;
+        }
+
+        manager.saveToBackendAsync(payload.snapshots()).whenComplete((result, error) -> {
+            server.execute(() -> {
+                ServerPlayer target = server.getPlayerList().getPlayer(playerId);
+                if (target == null) {
+                    return;
+                }
+
+                if (error != null) {
+                    log.warn("Unexpected error saving snapshot preferences for player {}", playerId, error);
+                    Services.NETWORK.sendToPlayer(target, new SaveSnapshotPreferencesResultClientboundPayload(
+                            false,
+                            manager.getEffectivePreferences(),
+                            AFKraftTranslations.PREFS_ERROR_SAVE_FAILED
+                    ));
+                    return;
+                }
+
+                String errorKey = result.isSuccess() ? "" : mapPreferenceErrorKey(result.status(), true);
+                Services.NETWORK.sendToPlayer(target, new SaveSnapshotPreferencesResultClientboundPayload(
+                        result.isSuccess(),
+                        result.snapshots(),
+                        errorKey
+                ));
+            });
+        });
+    }
+
+    private static boolean isTokenOwner(UUID playerId) {
+        return AuthService.findAdminProfileId()
+                .map(adminProfileId -> adminProfileId.equals(playerId))
+                .orElse(false);
+    }
+
+    private static String mapPreferenceErrorKey(PreferencesOperationResult.Status status, boolean isSave) {
+        return switch (status) {
+            case NOT_AUTHENTICATED -> AFKraftTranslations.PREFS_ERROR_NOT_AUTHENTICATED;
+            case FORBIDDEN -> AFKraftTranslations.PREFS_ERROR_FORBIDDEN;
+            case RATE_LIMITED -> AFKraftTranslations.PREFS_ERROR_RATE_LIMITED;
+            case NOT_FOUND -> AFKraftTranslations.PREFS_ERROR_NOT_FOUND;
+            case INVALID_REQUEST -> AFKraftTranslations.PREFS_ERROR_INVALID;
+            case SAVE_IN_PROGRESS -> AFKraftTranslations.PREFS_ERROR_SAVE_IN_PROGRESS;
+            default -> isSave ? AFKraftTranslations.PREFS_ERROR_SAVE_FAILED : AFKraftTranslations.PREFS_ERROR_LOAD_FAILED;
+        };
     }
 
     public static void onServerClosed(MinecraftServer server) {
         SnapshotIngestManager.getInstance().close();
+        SnapshotPreferencesManager.getInstance().reset();
         AuthService.clearModCredentials();
     }
 }

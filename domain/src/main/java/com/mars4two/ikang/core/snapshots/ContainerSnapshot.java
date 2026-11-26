@@ -20,7 +20,7 @@ public record ContainerSnapshot(
 
     @Override
     public String getSnapshotName() {
-        return "container";
+        return SnapshotType.CONTAINER.snapshotName();
     }
 
     @Override

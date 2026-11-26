@@ -1,5 +1,7 @@
 package com.mars4two.ikang;
 
+import com.mars4two.ikang.core.config.HttpConfig;
+import com.mars4two.ikang.core.config.ModClientTelemetry;
 import com.mars4two.ikang.core.events.ServerEvents;
 import com.mars4two.ikang.network.PayloadRegister;
 import com.mars4two.ikang.platform.mc.WorldAndEntityAdapter;
@@ -19,6 +21,19 @@ public final class AFKraftCompanion {
 
 	public static void init() {
 		log.info("Initializing AFKraft Companion common module");
+
+		ModClientTelemetry telemetry = ModClientTelemetry.of(
+				WorldAndEntityAdapter.minecraftVersionId(Services.PLATFORM_INFO.getMinecraftVersion()),
+				Services.PLATFORM_INFO.getModVersion(),
+				Services.PLATFORM_INFO.getLoaderName()
+		);
+		HttpConfig.configureClientTelemetry(telemetry);
+		log.debug(
+				"Configured client telemetry headers (gameVersion={}, modVersion={}, modLoader={})",
+				telemetry.gameVersion(),
+				telemetry.modVersion(),
+				telemetry.modLoader()
+		);
 
 		PayloadRegister.registerPayloads();
 

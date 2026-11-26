@@ -13,17 +13,12 @@ public record PlayerHotbarSnapshot(
 
     @Override
     public String getSnapshotName() {
-        return "playerHotbar";
+        return SnapshotType.PLAYER_HOTBAR.snapshotName();
     }
 
     @Override
     public String key() {
         return getSnapshotName() + playerIds;
-    }
-
-    @Override
-    public Object changeToken() {
-        return "" + data.items() + data.selectedSlot();
     }
 
     public static PlayerHotbarSnapshot of(InventoryView inventory) {

@@ -5,21 +5,37 @@ import com.mars4two.ikang.core.config.HttpConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 public class SnapshotsWebSocketClient implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(SnapshotsWebSocketClient.class);
 
     private final HttpClient httpClient;
+    private final Supplier<URI> uriSupplier;
+    private final Supplier<Optional<String>> accessTokenSupplier;
     private volatile WebSocket webSocket;
     private final AtomicBoolean connecting = new AtomicBoolean(false);
 
     public SnapshotsWebSocketClient(HttpClient httpClient) {
-        this.httpClient = httpClient;
+        this(httpClient, HttpConfig::getSnapshotsWebSocketUri, AuthService::getAccessToken);
+    }
+
+    public SnapshotsWebSocketClient(
+            HttpClient httpClient,
+            Supplier<URI> uriSupplier,
+            Supplier<Optional<String>> accessTokenSupplier
+    ) {
+        this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
+        this.uriSupplier = Objects.requireNonNull(uriSupplier, "uriSupplier");
+        this.accessTokenSupplier = Objects.requireNonNull(accessTokenSupplier, "accessTokenSupplier");
     }
 
     public boolean isConnected() {
@@ -31,7 +47,7 @@ public class SnapshotsWebSocketClient implements AutoCloseable {
             return;
         }
 
-        var tokenOpt = AuthService.getAccessToken();
+        var tokenOpt = accessTokenSupplier.get();
         if (tokenOpt.isEmpty()) {
             log.debug("Cannot connect WebSocket: not authenticated yet");
             connecting.set(false);
@@ -39,10 +55,10 @@ public class SnapshotsWebSocketClient implements AutoCloseable {
         }
 
         try {
-            var uri = HttpConfig.getSnapshotsWebSocketUri();
+            var uri = uriSupplier.get();
             log.info("Connecting snapshots WebSocket to {}...", uri);
 
-            httpClient.newWebSocketBuilder()
+            HttpConfig.newBackendWebSocketBuilder(httpClient)
                     .header("Authorization", "Bearer " + tokenOpt.get())
                     .buildAsync(uri, new WebSocketListener())
                     .thenAccept(ws -> {

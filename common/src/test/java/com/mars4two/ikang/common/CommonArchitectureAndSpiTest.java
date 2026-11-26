@@ -113,15 +113,18 @@ class CommonArchitectureAndSpiTest {
     }
 
     @Test
-    void allFiveSpisAndFiveVersionAdaptersExist() {
+    void allSpisAndFiveVersionAdaptersExist() {
         List<String> requiredPaths = List.of(
                 "src/main/java/com/mars4two/ikang/platform/services/Services.java",
                 "src/main/java/com/mars4two/ikang/platform/services/NetworkBridge.java",
                 "src/main/java/com/mars4two/ikang/platform/services/ServerLifecycleHooks.java",
                 "src/main/java/com/mars4two/ikang/platform/services/BlockInteractionHooks.java",
+                "src/main/java/com/mars4two/ikang/platform/services/PlatformInfoHooks.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ClientServices.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ClientCommandBridge.java",
                 "src/client/java/com/mars4two/ikang/client/platform/services/ScreenWidgetBridge.java",
+                "src/client/java/com/mars4two/ikang/client/platform/services/ClientLifecycleHooks.java",
+                "src/client/java/com/mars4two/ikang/client/platform/services/ClientKeyMappingBridge.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/SavedDataAdapter.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/NbtCompatAdapter.java",
                 "src/main/java/com/mars4two/ikang/platform/mc/InventoryEquipmentAdapter.java",
@@ -157,6 +160,18 @@ class CommonArchitectureAndSpiTest {
                 ),
                 new ServiceBinding(
                         "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ScreenWidgetBridge",
+                        "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/main/resources/META-INF/services/com.mars4two.ikang.platform.services.PlatformInfoHooks",
+                        "src/main/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientLifecycleHooks",
+                        "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientKeyMappingBridge",
                         "src/client/java"
                 )
         );
@@ -195,6 +210,18 @@ class CommonArchitectureAndSpiTest {
                 new ServiceBinding(
                         "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ScreenWidgetBridge",
                         "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/main/resources/META-INF/services/com.mars4two.ikang.platform.services.PlatformInfoHooks",
+                        "src/main/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientLifecycleHooks",
+                        "src/client/java"
+                ),
+                new ServiceBinding(
+                        "src/client/resources/META-INF/services/com.mars4two.ikang.client.platform.services.ClientKeyMappingBridge",
+                        "src/client/java"
                 )
         );
 
@@ -214,6 +241,7 @@ class CommonArchitectureAndSpiTest {
         assertTrue(tomlContent.contains("modId=\"afkraft_companion\""), "neoforge.mods.toml must declare modId=\"afkraft_companion\"");
         assertTrue(tomlContent.contains("afkraft_companion.mixins.json"), "neoforge.mods.toml must register server mixin config");
         assertTrue(tomlContent.contains("afkraft_companion.client.mixins.json"), "neoforge.mods.toml must register client mixin config");
+        assertTrue(tomlContent.contains("updateJSONURL="), "neoforge.mods.toml must declare updateJSONURL");
     }
 
     @Test
@@ -383,6 +411,64 @@ class CommonArchitectureAndSpiTest {
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.CONSUME_PARTIAL));
         assertFalse(WorldAndEntityAdapter.isSuccessfulBlockPlacement(InteractionResult.SUCCESS_NO_ITEM_USED));
         *///?}
+    }
+
+    @Test
+    void hotbarPickupItemDurabilityAndEquipmentHurtMixinsAreRegisteredAndWired() throws IOException {
+        Path mixinsJson = COMMON_ROOT.resolve("src/main/resources/afkraft_companion.mixins.json");
+        Path itemStackMixin = MAIN_JAVA.resolve("com/mars4two/ikang/mixin/ItemStackMixin.java");
+        Path playerInventoryMixin = MAIN_JAVA.resolve("com/mars4two/ikang/mixin/PlayerInventoryMixin.java");
+        Path playerSnapshotMixin = MAIN_JAVA.resolve("com/mars4two/ikang/mixin/PlayerSnapshotMixin.java");
+
+        assertTrue(Files.isRegularFile(mixinsJson), "Missing afkraft_companion.mixins.json");
+        assertTrue(Files.isRegularFile(itemStackMixin), "Missing ItemStackMixin.java");
+        assertTrue(Files.isRegularFile(playerInventoryMixin), "Missing PlayerInventoryMixin.java");
+        assertTrue(Files.isRegularFile(playerSnapshotMixin), "Missing PlayerSnapshotMixin.java");
+
+        String mixinsConfig = Files.readString(mixinsJson);
+        assertTrue(mixinsConfig.contains("\"ItemStackMixin\""), "afkraft_companion.mixins.json must register ItemStackMixin");
+
+        String itemStackSource = Files.readString(itemStackMixin);
+        assertTrue(itemStackSource.contains("hurtAndBreak"), "ItemStackMixin must inject into hurtAndBreak");
+        assertTrue(itemStackSource.contains("afkraft_companion$syncEquipmentAndHotbar"), "ItemStackMixin must trigger syncEquipmentAndHotbar");
+
+        String inventorySource = Files.readString(playerInventoryMixin);
+        assertTrue(
+                inventorySource.contains("ingestPlayerFullInventoryState"),
+                "PlayerInventoryMixin must ingest full inventory state (hotbar + inventory + equipment) on non-slot-specific additions/updates"
+        );
+
+        String snapshotSource = Files.readString(playerSnapshotMixin);
+        assertTrue(
+                snapshotSource.contains("afkraft_companion$syncEquipmentAndHotbar"),
+                "PlayerSnapshotMixin hurt handler must trigger syncEquipmentAndHotbar"
+        );
+        assertTrue(
+                snapshotSource.contains("afkraft_companion$syncSlotChange"),
+                "PlayerSnapshotMixin initMenu listener must sync slot changes"
+        );
+    }
+
+    @Test
+    void qrModalScreenSupportsThreeStateCopyUrlAndQrFlowViaClientUiAdapter() throws IOException {
+        Path qrModal = CLIENT_JAVA.resolve("com/mars4two/ikang/client/core/screens/QRModalScreen.java");
+        Path uiAdapter = CLIENT_JAVA.resolve("com/mars4two/ikang/client/platform/mc/ClientUiAdapter.java");
+
+        assertTrue(Files.isRegularFile(qrModal), "Missing QRModalScreen.java");
+        assertTrue(Files.isRegularFile(uiAdapter), "Missing ClientUiAdapter.java");
+
+        String modalSource = Files.readString(qrModal);
+        assertTrue(modalSource.contains("INITIAL_WARNING"), "QRModalScreen must define INITIAL_WARNING state");
+        assertTrue(modalSource.contains("SHOW_QR"), "QRModalScreen must define SHOW_QR state");
+        assertTrue(modalSource.contains("URL_COPIED"), "QRModalScreen must define URL_COPIED state");
+        assertTrue(modalSource.contains("ClientUiAdapter.setClipboard("), "QRModalScreen must copy URL via ClientUiAdapter.setClipboard");
+        assertTrue(modalSource.contains("AFKraftTranslations.GUI_BTN_COPY_URL"), "QRModalScreen must use GUI_BTN_COPY_URL translation key");
+        assertTrue(modalSource.contains("AFKraftTranslations.GUI_BTN_USE_QR"), "QRModalScreen must use GUI_BTN_USE_QR translation key");
+        assertTrue(modalSource.contains("AFKraftTranslations.GUI_CONNECT_QR_URL_COPIED"), "QRModalScreen must use GUI_CONNECT_QR_URL_COPIED translation key");
+        assertFalse(modalSource.contains("keyboardHandler"), "QRModalScreen must not touch Minecraft.keyboardHandler directly; delegate to ClientUiAdapter");
+
+        String adapterSource = Files.readString(uiAdapter);
+        assertTrue(adapterSource.contains("public static void setClipboard("), "ClientUiAdapter must expose setClipboard helper");
     }
 
     private static int countOccurrences(String text, String needle) {

@@ -6,6 +6,8 @@ import com.mars4two.ikang.client.core.auth.dtos.ConnectResponse;
 import com.mars4two.ikang.core.auth.dtos.HasConnectedResponse;
 import com.mars4two.ikang.core.auth.dtos.ModCredentialsResponse;
 import com.mars4two.ikang.core.config.GsonConfig;
+import com.mars4two.ikang.core.config.HttpConfig;
+import com.mars4two.ikang.core.config.ModClientTelemetry;
 import com.mars4two.ikang.core.snapshots.PlayerStatsSnapshot;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotIngestManager;
 import com.mars4two.ikang.core.snapshots.ingest.SnapshotsIngestRequest;
@@ -40,8 +42,25 @@ class AuthIngestAndConnectDomainTest {
 
     @AfterEach
     void tearDown() {
+        HttpConfig.configureClientTelemetry(ModClientTelemetry.EMPTY);
         AuthService.clearModCredentials();
         ClientConnectDomainService.cancelActivePolling();
+    }
+
+    @Test
+    void authServiceRequestsIncludeConfiguredClientTelemetryHeaders() {
+        HttpConfig.configureClientTelemetry(ModClientTelemetry.of("26.3", "1.0.0+26.3", "Fabric"));
+
+        var jsonPost = AuthService.buildJsonPostRequest(HttpConfig.getModCredentialsUri(), "{}");
+        assertEquals(Optional.of("26.3"), jsonPost.headers().firstValue(ModClientTelemetry.HEADER_GAME_VERSION));
+        assertEquals(Optional.of("1.0.0"), jsonPost.headers().firstValue(ModClientTelemetry.HEADER_MOD_VERSION));
+        assertEquals(Optional.of("fabric"), jsonPost.headers().firstValue(ModClientTelemetry.HEADER_MOD_LOADER));
+        assertEquals(Optional.of("application/json"), jsonPost.headers().firstValue("Content-Type"));
+
+        var emptyPost = AuthService.buildEmptyPostRequest(HttpConfig.getIsConnectedUri(PLAYER_ID));
+        assertEquals(Optional.of("26.3"), emptyPost.headers().firstValue(ModClientTelemetry.HEADER_GAME_VERSION));
+        assertEquals(Optional.of("1.0.0"), emptyPost.headers().firstValue(ModClientTelemetry.HEADER_MOD_VERSION));
+        assertEquals(Optional.of("fabric"), emptyPost.headers().firstValue(ModClientTelemetry.HEADER_MOD_LOADER));
     }
 
     @Test
@@ -78,7 +97,7 @@ class AuthIngestAndConnectDomainTest {
     void snapshotIngestManagerBuildsExpectedWireRequestPayload() {
         PlayerStatsSnapshot snap = new PlayerStatsSnapshot(
                 Set.of(PLAYER_ID),
-                new RawPlayerStats("survival", 20.0f, 20.0f, 20, 30, 0.5f, 1.0, 64.0, -2.0, 90.0f, 0.0f)
+                new RawPlayerStats("survival", 20.0f, 20.0f, 20, 300, 30, 0.5f, 1.0, 64.0, -2.0, 90.0f, 0.0f)
         );
 
         SnapshotsIngestRequest request = SnapshotIngestManager.buildIngestRequest(
@@ -174,7 +193,7 @@ class AuthIngestAndConnectDomainTest {
 
             @Override
             public RawPlayerStats stats() {
-                return new RawPlayerStats("survival", 20f, 20f, 20, 1, 0f, 0, 64, 0, 0f, 0f);
+                return new RawPlayerStats("survival", 20f, 20f, 20, 300, 1, 0f, 0, 64, 0, 0f, 0f);
             }
 
             @Override

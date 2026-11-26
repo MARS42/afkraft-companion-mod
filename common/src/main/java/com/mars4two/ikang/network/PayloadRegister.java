@@ -5,10 +5,14 @@ import com.mars4two.ikang.core.network.payloads.client.AFKraftStatusClientBoundP
 import com.mars4two.ikang.core.network.payloads.client.AuthorizeServerRequestClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.GetCredentialsStatusClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.client.IsServerAuthenticatedResponse;
+import com.mars4two.ikang.core.network.payloads.client.SaveSnapshotPreferencesResultClientboundPayload;
+import com.mars4two.ikang.core.network.payloads.client.SnapshotPreferencesSyncClientboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.AuthorizeServerResponseServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.GetCredentialsRequestServerboundPayload;
 import com.mars4two.ikang.core.network.payloads.server.IsServerAuthenticatedRequest;
 import com.mars4two.ikang.core.network.payloads.server.RegisterAFKContainerServerPayload;
+import com.mars4two.ikang.core.network.payloads.server.RequestSnapshotPreferencesServerboundPayload;
+import com.mars4two.ikang.core.network.payloads.server.UpdateSnapshotPreferencesServerboundPayload;
 import com.mars4two.ikang.platform.services.Services;
 
 public final class PayloadRegister {
@@ -38,6 +42,14 @@ public final class PayloadRegister {
                 IsServerAuthenticatedResponse.TYPE,
                 IsServerAuthenticatedResponse.STREAM_CODEC
         );
+        Services.NETWORK.registerClientbound(
+                SnapshotPreferencesSyncClientboundPayload.TYPE,
+                SnapshotPreferencesSyncClientboundPayload.STREAM_CODEC
+        );
+        Services.NETWORK.registerClientbound(
+                SaveSnapshotPreferencesResultClientboundPayload.TYPE,
+                SaveSnapshotPreferencesResultClientboundPayload.STREAM_CODEC
+        );
     }
 
     public static void registerServerboundPayloads() {
@@ -60,6 +72,16 @@ public final class PayloadRegister {
                 IsServerAuthenticatedRequest.TYPE,
                 IsServerAuthenticatedRequest.STREAM_CODEC,
                 (payload, server, player) -> ServerEvents.onIsServerAuthenticatedRequest(player, payload)
+        );
+        Services.NETWORK.registerServerbound(
+                RequestSnapshotPreferencesServerboundPayload.TYPE,
+                RequestSnapshotPreferencesServerboundPayload.STREAM_CODEC,
+                (payload, server, player) -> ServerEvents.onRequestSnapshotPreferences(server, player, payload)
+        );
+        Services.NETWORK.registerServerbound(
+                UpdateSnapshotPreferencesServerboundPayload.TYPE,
+                UpdateSnapshotPreferencesServerboundPayload.STREAM_CODEC,
+                (payload, server, player) -> ServerEvents.onUpdateSnapshotPreferences(server, player, payload)
         );
     }
 }

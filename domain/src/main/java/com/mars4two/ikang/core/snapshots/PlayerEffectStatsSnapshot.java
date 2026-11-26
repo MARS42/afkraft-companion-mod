@@ -10,7 +10,7 @@ public record PlayerEffectStatsSnapshot(Set<UUID> playerIds, RawPlayerEffects da
 
     @Override
     public String getSnapshotName() {
-        return "playerEffectStats";
+        return SnapshotType.PLAYER_EFFECT_STATS.snapshotName();
     }
 
     @Override

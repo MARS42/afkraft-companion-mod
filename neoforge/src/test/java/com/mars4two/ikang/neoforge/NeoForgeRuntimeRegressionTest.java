@@ -2,6 +2,8 @@ package com.mars4two.ikang.neoforge;
 
 import com.mars4two.ikang.AFKraftCompanion;
 import com.mars4two.ikang.client.AFKraftCompanionClient;
+import com.mars4two.ikang.core.config.HttpConfig;
+import com.mars4two.ikang.core.config.ModClientTelemetry;
 import com.mars4two.ikang.neoforge.platform.NeoForgeBlockInteractionHooks;
 import com.mars4two.ikang.neoforge.platform.NeoForgeNetworkBridge;
 import com.mars4two.ikang.platform.services.Services;
@@ -59,6 +61,13 @@ class NeoForgeRuntimeRegressionTest {
         });
         AFKraftCompanion.init();
         AFKraftCompanionClient.init();
+
+        ModClientTelemetry telemetry = HttpConfig.getClientTelemetry();
+        assertEquals("neoforge", telemetry.modLoader(), "AFKraftCompanion.init() must configure NeoForge loader telemetry");
+        assertTrue(
+                telemetry.modVersion() != null && !telemetry.modVersion().isBlank() && !telemetry.modVersion().contains("+"),
+                () -> "AFKraftCompanion.init() must configure clean SemVer modVersion without build metadata, got: " + telemetry.modVersion()
+        );
         Services.NETWORK.registerClientbound(SyntheticOrphanPayload.TYPE, SyntheticOrphanPayload.STREAM_CODEC);
 
         NeoForgeNetworkBridge.onRegisterPayloadHandlers(new RegisterPayloadHandlersEvent());
