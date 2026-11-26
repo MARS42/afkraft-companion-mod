@@ -9,6 +9,8 @@ on:
       - '.idea/**'
       - '.vscode/**'
       - 'LICENSE'
+      - 'NOTICE'
+      - 'THIRD_PARTY_LICENSES/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

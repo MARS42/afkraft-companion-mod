@@ -1,0 +1,34 @@
+Required Notice: Copyright IKangreburguito (https://github.com/MARS42/afkraft-companion-mod)
+
+Additional Clarifications & Ecosystem Notices
+=============================================
+
+1. Modpack Redistribution
+   Including unmodified AFKraft Companion .jar binaries downloaded from official
+   AFKraft Modrinth or CurseForge project pages inside non-competing Minecraft
+   modpacks on Modrinth or CurseForge is a permitted distribution under the
+   PolyForm Shield License 1.0.0.
+
+2. Trademarks & Hosted Backend Services
+   The "AFKraft" name, logos, icons, and hosted backend/web services
+   (*.afkraft.com) are not licensed for competing or unauthorized third-party
+   clients. Access to AFKraft web and API services is governed separately by
+   AFKraft's Terms of Service and Privacy Policy (see PRIVACY.md).
+
+3. Minecraft Disclaimer
+   NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH
+   MOJANG OR MICROSOFT.
+
+Third-Party Bundled Software Notices
+====================================
+
+This distribution bundles the following unmodified third-party software via
+Jar-in-Jar (Fabric Loom `include` / NeoForge `jarJar`):
+
+- ZXing ("Zebra Crossing") Core (com.google.zxing:core:3.5.3)
+  Project URL: https://github.com/zxing/zxing
+  Copyright 2007-2024 ZXing authors
+  License: Apache License, Version 2.0
+  A copy of the Apache License, Version 2.0 is provided in
+  THIRD_PARTY_LICENSES/Apache-2.0.txt (and META-INF/licenses/Apache-2.0-ZXing.txt
+  inside compiled mod archives).

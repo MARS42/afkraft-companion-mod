@@ -1,6 +1,9 @@
+import me.modmuss50.mpp.ReleaseType
+
 plugins {
 	id 'dev.kikugie.stonecutter'
 	id 'maven-publish'
+	id 'me.modmuss50.mod-publish-plugin'
 }
 
 def isObfuscated = stonecutter.eval(stonecutter.current.version, '<26.0')
@@ -154,6 +157,13 @@ jar {
 	from(rootProject.file("LICENSE")) {
 		rename { "${it}_$projectName" }
 	}
+	from(rootProject.file("NOTICE")) {
+		rename { "${it}_$projectName" }
+	}
+	from(rootProject.file("THIRD_PARTY_LICENSES/Apache-2.0.txt")) {
+		into("META-INF/licenses")
+		rename { "Apache-2.0-ZXing.txt" }
+	}
 }
 
 tasks.named("sourcesJar", Jar).configure {
@@ -167,6 +177,54 @@ tasks.named("sourcesJar", Jar).configure {
 	from(project(":domain").sourceSets.main.allSource)
 	from(commonProject.sourceSets.main.allSource)
 	from(commonProject.sourceSets.client.allSource)
+}
+
+def publishDryRunFlag = providers.gradleProperty("dryRun").map { it.toBoolean() }.getOrElse(false)
+def publishEnableModrinth = providers.gradleProperty("enableModrinth").map { it.toBoolean() }.getOrElse(true)
+def publishEnableCurseforge = providers.gradleProperty("enableCurseforge").map { it.toBoolean() }.getOrElse(true)
+def publishMrId = providers.environmentVariable("MODRINTH_PROJECT_ID").orNull
+def publishCfId = providers.environmentVariable("CURSEFORGE_PROJECT_ID").orNull
+def publishMrToken = providers.environmentVariable("MODRINTH_TOKEN").orNull
+def publishCfToken = providers.environmentVariable("CURSEFORGE_TOKEN").orNull
+def effectiveDryRun = publishDryRunFlag || (!publishMrToken && !publishCfToken)
+def fabricProdJarTask = ext.productionJarTaskName as String
+def fabricProdSourcesJarTask = ext.productionSourcesJarTaskName as String
+def fabricMcPublishList = (project.publish_fabric_versions as String).split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+def lowerModVer = (project.mod_version as String).toLowerCase(Locale.ROOT)
+def resolvedReleaseType = lowerModVer.contains("-alpha") ? ReleaseType.ALPHA
+	: (lowerModVer.contains("-beta") || lowerModVer.contains("-rc") ? ReleaseType.BETA : ReleaseType.STABLE)
+
+publishMods {
+	dryRun = effectiveDryRun
+
+	file = project.tasks.named(fabricProdJarTask).flatMap { it.archiveFile }
+	additionalFiles.from(project.tasks.named(fabricProdSourcesJarTask).flatMap { it.archiveFile })
+	displayName = "AFKraft Companion ${project.mod_version} (Fabric ${project.minecraft_version})"
+	version = "${project.mod_version}+fabric-${project.minecraft_version}"
+	changelog = rootProject.ext.extractReleaseChangelog(project.mod_version as String)
+	type = resolvedReleaseType
+	modLoaders.add("fabric")
+
+	if (publishEnableModrinth && (publishMrId || effectiveDryRun)) {
+		modrinth {
+			projectId = publishMrId ?: "dry-run-modrinth-id"
+			accessToken = project.providers.environmentVariable("MODRINTH_TOKEN").orElse("dry-run-token")
+			minecraftVersions.addAll(fabricMcPublishList)
+			requires("fabric-api")
+		}
+	}
+
+	if (publishEnableCurseforge && (publishCfId || effectiveDryRun)) {
+		curseforge {
+			projectId = publishCfId ?: "000000"
+			accessToken = project.providers.environmentVariable("CURSEFORGE_TOKEN").orElse("dry-run-token")
+			minecraftVersions.addAll(fabricMcPublishList)
+			javaVersions.add(JavaVersion.toVersion(javaVersion))
+			clientRequired = true
+			serverRequired = true
+			requires("fabric-api")
+		}
+	}
 }
 
 publishing {
